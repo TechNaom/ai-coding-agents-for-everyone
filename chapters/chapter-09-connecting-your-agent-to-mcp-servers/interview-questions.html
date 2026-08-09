@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connecting Your Agent to MCP Servers Interview Questions — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interview questions for Connecting Your Agent to MCP Servers.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-09">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="practice/index.html">&larr; Back to practice bank</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 9 Interview Questions</span>
+    <span class="reading-time">~18 min</span>
+  </div>
+  <h1>Interview Questions: Connecting Your Agent to MCP Servers</h1>
+  <p>Grouped by level. Each includes a strong answer, a red flag, and a follow-up. A plain-markdown mirror of these same eight questions is available at <a href="interview-questions.md">interview-questions.md</a>.</p>
+
+  <div class="lesson-card">
+    <h2>1. (Beginner) What actually changes about <code>git_status</code> when it moves from a Chapter 8 local function to a Chapter 9 MCP-based tool -- its behavior, or something else?</h2>
+    <p><strong>Strong answer:</strong> Its behavior doesn't change at all -- same command (<code>git status --porcelain</code>), same output, same result a model calling it would observe. What changes is location and reuse: it's no longer a Python function living only inside this course's own agent file, it's implemented once in a separate, standalone server process (<code>mcp_git_server.py</code>) that any MCP-speaking client could connect to and call, not just this one agent.</p>
+    <p><strong>Red flag:</strong> Says MCP tools are "smarter" or "more powerful" than local functions, or can't articulate that the actual git command being run is identical either way.</p>
+    <p><strong>Follow-up:</strong> "If you diffed the two git_status implementations (Chapter 8's local function vs. this chapter's MCP tool), what would actually be different?"</p>
+    <p><strong>What this proves:</strong> Understands MCP as a mechanism for where a tool lives and how it's shared, not a claim about the tool's own quality or capability.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>2. (Beginner) Why does this chapter link back to <code>mcp-for-everyone</code> for MCP fundamentals instead of explaining what a resource, a transport, or a tool schema are from scratch?</h2>
+    <p><strong>Strong answer:</strong> Because this course's own architecture rule is "deepens, does not duplicate" -- <code>mcp-for-everyone</code> already spends eight full chapters on MCP itself, and re-explaining protocol basics here would be redundant content that adds no value over pointing directly at material that already covers it well. This chapter's job is narrower and more specific: given that you already understand MCP, how do you actually wire it into an agent built the way this course built one.</p>
+    <p><strong>Red flag:</strong> Thinks re-explaining a prerequisite from scratch is always more helpful, without recognizing the redundancy cost across a whole course ecosystem, or can't name what this chapter assumes the reader already knows.</p>
+    <p><strong>Follow-up:</strong> "What's the risk of a course NOT stating its prerequisites clearly, the way this chapter does?"</p>
+    <p><strong>What this proves:</strong> Understands course/content architecture reasoning, not just the technical material itself.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>3. (Intermediate) The <code>openai</code> client's tool-calling shape and MCP's own client API are structurally different. Name the two specific mismatches this chapter had to bridge, and how each was solved.</h2>
+    <p><strong>Strong answer:</strong> First, a schema-shape mismatch: <code>TOOLS</code> needs <code>{"type": "function", "function": {"name", "description", "parameters"}}</code> entries, while MCP's <code>list_tools()</code> returns its own <code>Tool</code> objects with <code>name</code>/<code>description</code>/<code>input_schema</code> -- solved by <code>connect_git_tools()</code> converting one into the other at startup, not by changing either shape to match the other. Second, a sync/async mismatch: this course's loop (<code>run_agent</code>) is plain synchronous code, unchanged since Chapter 7, while MCP's client API (<code>list_tools()</code>/<code>call_tool()</code>) is entirely <code>async</code> -- solved by <code>MCPBridge</code>, which keeps one persistent connection alive on a background thread's own event loop and exposes plain blocking methods, so <code>dispatch_tool_call</code> never needs an <code>await</code>.</p>
+    <p><strong>Red flag:</strong> Only names one of the two mismatches, or conflates them as a single problem, or thinks the loop itself had to become <code>async</code> to support MCP tools.</p>
+    <p><strong>Follow-up:</strong> "Why keep the loop synchronous at all -- why not just make run_agent async def and simplify the bridge away?"</p>
+    <p><strong>What this proves:</strong> Can distinguish two genuinely different integration problems (a data-shape mismatch and a concurrency-model mismatch) instead of treating "MCP integration" as one undifferentiated task.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>4. (Intermediate) <code>connect_git_tools()</code> strips the <code>workspace</code> argument out of the schema shown to the model, and <code>dispatch_tool_call</code> injects it back in right before the MCP call. Why not just let the model supply <code>workspace</code> itself?</h2>
+    <p><strong>Strong answer:</strong> The model has no reliable way to know this agent's own absolute workspace path, and shouldn't need to -- asking it to supply a value it can only guess at invites exactly the kind of subtly-wrong tool call Chapter 7 warned about, for no benefit, since the harness already knows the correct value with certainty. This is the same what-the-model-controls-vs-what-the-harness-enforces boundary Chapter 7's <code>_safe_path()</code> established for file paths: <code>workspace</code> is a harness-owned fact about this specific agent's environment, not something the model's own judgment should be involved in at all.</p>
+    <p><strong>Red flag:</strong> Suggests just prompting the model harder to always get <code>workspace</code> right, without recognizing this is a harness-vs-model control question, not a prompting question.</p>
+    <p><strong>Follow-up:</strong> "What would happen if a small model occasionally supplied a wrong or relative workspace value instead?"</p>
+    <p><strong>What this proves:</strong> Applies the harness-vs-model-trusted distinction to a new context (an MCP tool argument) instead of only recognizing it in the one example (file paths) it was originally taught with.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>5. (Senior) MCPBridge's docstring describes a real bug an earlier version hit: an "Attempted to exit cancel scope in a different task" error from <code>anyio</code>. Walk through why that happened and why the fix (one coroutine, a thread-safe queue) actually resolves it.</h2>
+    <p><strong>Strong answer:</strong> The earlier version scheduled the MCP client's connect (<code>__aenter__</code>) and disconnect (<code>__aexit__</code>) as two separately <code>run_coroutine_threadsafe</code>-scheduled calls on the same event loop. <code>anyio</code>'s task groups (which MCP's stdio transport uses internally) tie a cancel scope to the specific async task that opened it -- and two separately-scheduled coroutines still count as two distinct tasks even though they share one event loop, so the scope opened in the "enter" task couldn't be legally closed from the "exit" task. The fix keeps the client's entire connected lifetime -- open, serve requests, close -- inside a single coroutine (<code>_worker</code>), so there's only ever one task involved; the background thread never re-enters the context manager directly, it only ever pushes requests onto a queue that <code>_worker</code> reads from inside that same coroutine.</p>
+    <p><strong>Red flag:</strong> Describes the fix mechanically ("use a queue instead") without explaining why the original approach actually broke -- the task-identity detail specifically -- or thinks the bug was about threading in general rather than cancel-scope task identity specifically.</p>
+    <p><strong>Follow-up:</strong> "Would this bug have shown up if the MCP client used a transport that didn't rely on anyio task groups internally?"</p>
+    <p><strong>What this proves:</strong> Can trace a real, subtle async/concurrency bug to its actual mechanism rather than pattern-matching to "threading is hard" without understanding why this specific fix works.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>6. (Senior) A teammate proposes moving <code>run_shell_command</code> behind an MCP server too, "for consistency with git_status and git_diff." What's your assessment?</h2>
+    <p><strong>Strong answer:</strong> Consistency alone isn't a reason -- the actual criteria this chapter used were generic, reusable, and low-blast-radius, and <code>run_shell_command</code> fails the first two by design: its entire point is running whatever arbitrary command string the model composes for a specific task, which has no fixed behavior a shared server could meaningfully standardize the way a fixed <code>git status --porcelain</code> call can. Moving it behind MCP wouldn't make it safer, either -- it would add a process boundary and a connection to manage around the exact same unscoped risk Chapter 8's denylist already named honestly. If anything, it adds a new failure mode (server unreachable, connection dropped) without reducing the original one (a destructive command the denylist didn't anticipate).</p>
+    <p><strong>Red flag:</strong> Agrees on "consistency" grounds without evaluating <code>run_shell_command</code>'s specific properties against the actual MCP trade-off criteria, or claims MCP would make it safer without explaining a specific mechanism for how.</p>
+    <p><strong>Follow-up:</strong> "Is there ANY version of a shell-command tool that would be a good MCP candidate? What would have to be different about it?"</p>
+    <p><strong>What this proves:</strong> Resists a surface-level "consistency" argument in favor of evaluating each tool against concrete trade-off criteria on its own merits.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>7. (Architect) You're deciding whether a new internal tool your team is building should be a local function or an MCP server. Walk through the actual decision process, using this chapter's criteria.</h2>
+    <p><strong>Strong answer:</strong> Start with three questions, in this order. First: is this tool tightly coupled to one specific agent's own state or boundary (like <code>_safe_path()</code>/<code>WORKSPACE</code>) -- if yes, hand-rolled, because an MCP server would either have to duplicate that boundary logic itself or, worse, not enforce it at all. Second: does the tool have a fixed, standardizable behavior, or does its whole point involve arbitrary caller-composed input with no fixed shape to standardize (like <code>run_shell_command</code>) -- arbitrary-input tools are poor MCP candidates regardless of how "useful" wrapping them sounds. Third, if it passes both: is it actually going to be reused by more than one agent or project, and is its blast radius low enough that a connection failure or a compromised server isn't catastrophic -- if both hold, the reuse/standardization benefit of MCP is real and worth the added connection-management and latency cost; if not, you're paying MCP's real costs (a process to run, a connection to manage, new failure modes) for a benefit that doesn't actually materialize.</p>
+    <p><strong>Red flag:</strong> Treats "MCP vs. hand-rolled" as a stylistic or architectural-fashion choice rather than working through concrete, tool-specific trade-offs, or can't name a real tool that should stay hand-rolled despite MCP being available.</p>
+    <p><strong>Follow-up:</strong> "Your team's tool is generic and reusable but gets called on nearly every single agent loop step. Does that change your answer?"</p>
+    <p><strong>What this proves:</strong> Architect-level judgment: a repeatable, criteria-based decision process rather than a one-off preference, directly transferable to tools this chapter never discussed.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>8. (Architect) How would you explain to a non-technical stakeholder what's actually different about this chapter's agent compared to Chapter 8's, given that from a user's perspective both agents do exactly the same things?</h2>
+    <p><strong>Strong answer:</strong> Nothing about what the agent can accomplish changed for an end user -- the same tasks, the same tools' behavior, the same loop. What changed is an internal engineering property: two of this agent's tools are now implemented in a shared, reusable place instead of copy-pasted into this one project, which means the next team that needs the same two git operations in a completely different agent doesn't have to rewrite them, and a bug fix to the git-tools server benefits every agent connected to it at once instead of needing to be separately fixed in every project that hand-rolled its own copy. The honest trade a stakeholder should also hear: that reuse comes with a new running process to operate and monitor, and a new way this specific capability can fail (the server being unreachable) that didn't exist when the tool was just a function call inside the agent's own code.</p>
+    <p><strong>Red flag:</strong> Oversells MCP as a user-facing improvement when nothing about the agent's actual behavior changed, or omits the operational cost side of the trade-off entirely.</p>
+    <p><strong>Follow-up:</strong> "If your team only ever builds one agent and has no plans to build a second, is this swap still worth making?"</p>
+    <p><strong>What this proves:</strong> Can translate an internal architecture decision into an honest, non-oversold stakeholder explanation that names both the benefit and the real cost.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="practice/index.html">&larr; Practice Bank</a>
+    <a href="project/index.html">Project &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

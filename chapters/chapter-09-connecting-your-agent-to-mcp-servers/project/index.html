@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connecting Your Agent to MCP Servers Project — AI Coding Agents for Everyone</title>
+<meta name="description" content="Module 3's real Level 3 (Independent) project: swap Chapter 8's hand-rolled git_status/git_diff for MCP-based versions, wiring the MCP integration yourself with no scaffold for that part.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-09">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../interview-questions.html">&larr; Back to interview questions</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 9 Project</span>
+    <span class="reading-time">~35 min · <span class="badge-difficulty">Level 3 — Independent</span></span>
+  </div>
+  <h1>Project: Swap git_status/git_diff for MCP-Based Versions</h1>
+
+  <div class="hook">
+    <p>
+      This is Module 3's real Level 3 (Independent) project, per
+      <code>docs/curriculum/CURRICULUM_MAP.md</code>: "build a coding
+      agent from scratch with MCP-based tools, no scaffold." Read
+      literally against every prior tool this course built by hand,
+      that would mean re-deriving Chapter 8's entire file from nothing
+      — which wouldn't actually test what this chapter teaches. What's
+      genuinely new and independent here isn't the file layer, the
+      denylist, or the loop; it's the MCP integration itself: opening a
+      client connection, discovering a server's tools, and bridging
+      them into this course's <code>TOOLS</code>/<code>TOOL_FUNCTIONS</code>
+      shape. That's exactly the one piece this project gives you
+      <strong>no scaffold for</strong> — <code>connect_git_tools()</code>
+      in <code>starter.py</code> is a single unimplemented function with
+      a full docstring explaining the task, not filled-in code with one
+      small blank the way Chapter 8's L2 project worked.
+    </p>
+  </div>
+
+  <h2>What's provided</h2>
+  <p>
+    <a href="starter.py"><code>starter.py</code></a> is Chapter 8's
+    exact agent (<code>read_file</code>, <code>write_file</code>,
+    <code>edit_file</code>, hardened <code>run_shell_command</code>,
+    <code>_safe_path</code>, <code>dispatch_tool_call</code>'s
+    defensive handling, <code>run_agent</code>'s loop) with
+    <code>git_status</code> and <code>git_diff</code> removed as local
+    functions. <a href="mcp_git_server.py"><code>mcp_git_server.py</code></a>
+    is a separate, standalone MCP server exposing those same two tools
+    over MCP instead — read it first, it's short. The
+    <code>MCPBridge</code> class (the plumbing that lets a synchronous
+    loop call an inherently async MCP client) is also fully provided,
+    with a docstring explaining a real implementation pitfall this
+    chapter's build hit and fixed. None of that is your job to write.
+  </p>
+
+  <h2>Your task</h2>
+  <p>
+    Implement <code>connect_git_tools()</code> — the one function left
+    as a <code>TODO</code>. It needs to: start
+    <code>mcp_git_server.py</code> as a subprocess and open an MCP
+    client connection over stdio; call the server's
+    <code>list_tools()</code> to discover what it exposes; convert each
+    discovered tool's MCP metadata into this course's existing
+    <code>{"type": "function", "function": {...}}</code> schema shape
+    and append it to <code>TOOLS</code>; register each tool's name in
+    <code>MCP_TOOL_NAMES</code> so the already-provided
+    <code>dispatch_tool_call</code> routes calls for it to the MCP
+    server; and strip the harness-injected <code>workspace</code>
+    argument out of what the model sees, the exact MCP-flavored version
+    of the <code>_safe_path()</code> boundary Chapter 8 taught for
+    local file paths. Full detail is in <code>starter.py</code>'s
+    module docstring.
+  </p>
+
+  <div class="what-is">
+    <span class="label">What "done" looks like</span>
+    Running <code>connect_git_tools()</code> directly (no model needed
+    — see <a href="README.md">README.md</a> for the exact command)
+    should report a successful connection, show <code>git_status</code>
+    and <code>git_diff</code> present in <code>TOOLS</code> with
+    <code>workspace</code> correctly stripped from their schemas, and
+    let <code>dispatch_tool_call</code> successfully call either one
+    against a real git repository — all without touching a model at
+    all. <a href="solution.py"><code>solution.py</code></a> shows one
+    fully worked, tested version if you want a reference — but the goal
+    is a correct, working <code>connect_git_tools()</code>, not a
+    byte-for-byte match.
+  </div>
+
+  <h2>Then: review your own diff</h2>
+  <p>
+    Before calling it finished, apply Chapter 3's five-question
+    checklist to your own change — specifically question 2 (did it
+    touch anything outside the stated boundary? did <code>workspace</code>
+    actually get stripped from every discovered schema, or did you
+    leave it in and let the model try to guess an absolute path it has
+    no way of knowing?) and question 4 (is it consistent with the rest
+    of the file's patterns — does a connection failure return
+    <code>False</code> with a clear message, matching every other
+    failure path in this file, or does it let an exception escape and
+    crash the whole agent?).
+  </p>
+
+  <div class="points-to-remember">
+    <h2>Why this is the right project for right now</h2>
+    <p>
+      You've now built a loop from nothing (Chapter 7), extended a
+      tool layer four times with real, specific failure-mode care
+      (Chapter 8), and read this chapter's argument for why some tools
+      are worth getting from a shared, reusable server instead of
+      hand-rolling per project. This project is the one place in
+      Module 3 where you write the actual bridge between "a protocol
+      exposes tools" and "this agent's existing dispatch shape" — the
+      piece every other file in this chapter handed you working code
+      for everywhere else.
+    </p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../interview-questions.html">&larr; Interview Questions</a>
+    <a href="../../../index.html">All Chapters &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

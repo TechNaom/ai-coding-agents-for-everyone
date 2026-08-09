@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connecting Your Agent to MCP Servers Quiz — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interactive quiz for Connecting Your Agent to MCP Servers.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-09" data-chapter-id="chapter-09">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="lesson.html">&larr; Back to the lesson</a></p>
+
+  <span class="chapter-badge">Chapter 9 Quiz</span>
+  <h1>Connecting Your Agent to MCP Servers</h1>
+  <p>Eight questions. Fill in the blank, then check your answers.</p>
+
+  <div class="quiz-progress-wrap" aria-hidden="true">
+    <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+  </div>
+
+  <form onsubmit="return false;">
+    <div class="quiz-question">
+      <label for="q1"><span class="q-num">1</span> MCP is a standard protocol for exposing tools to a model-calling client, so a tool implemented once as a server can be __________ across any MCP-speaking client, instead of being rewritten per project.</label>
+      <div class="fib-row">
+        <input type="text" id="q1" class="fib-blank" data-answers="reused,shared" aria-label="Answer for question 1">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q2"><span class="q-num">2</span> This chapter deliberately does not re-teach MCP fundamentals -- it links back to <code>mcp-for-everyone</code> Chapters 1-8 for that, following this course's own "deepens, does not __________" rule.</label>
+      <div class="fib-row">
+        <input type="text" id="q2" class="fib-blank" data-answers="duplicate" aria-label="Answer for question 2">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q3"><span class="q-num">3</span> MCP's client API (<code>await client.list_tools()</code>, <code>await client.call_tool(...)</code>) is entirely __________, which is why this chapter needs MCPBridge to keep the loop synchronous instead of rewriting run_agent.</label>
+      <div class="fib-row">
+        <input type="text" id="q3" class="fib-blank" data-answers="async,asynchronous" aria-label="Answer for question 3">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q4"><span class="q-num">4</span> MCPBridge runs the MCP client's entire connected lifetime inside ONE coroutine because two separately-scheduled coroutines on the same event loop still count as two different __________ to anyio's task groups, which raised a real "cancel scope" error in an earlier version of this code.</label>
+      <div class="fib-row">
+        <input type="text" id="q4" class="fib-blank" data-answers="tasks" aria-label="Answer for question 4">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q5"><span class="q-num">5</span> connect_git_tools() strips the <code>workspace</code> argument out of every discovered tool's schema before showing it to the model, then dispatch_tool_call injects it back in right before the MCP call -- the same what-the-model-controls-vs-what-the-__________-enforces boundary Chapter 7's _safe_path drew for file paths.</label>
+      <div class="fib-row">
+        <input type="text" id="q5" class="fib-blank" data-answers="harness" aria-label="Answer for question 5">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q6"><span class="q-num">6</span> If mcp_git_server.py can't be reached, connect_git_tools() returns False and lets the agent keep running with its remaining local tools instead of crashing -- the same __________-degradation posture Chapter 7 established for a missing openai package.</label>
+      <div class="fib-row">
+        <input type="text" id="q6" class="fib-blank" data-answers="graceful" aria-label="Answer for question 6">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q7"><span class="q-num">7</span> This chapter kept run_shell_command hand-rolled rather than moving it behind MCP because its whole point is running arbitrary, __________-composed input, with no fixed behavior a shared server could standardize.</label>
+      <div class="fib-row">
+        <input type="text" id="q7" class="fib-blank" data-answers="caller,model" aria-label="Answer for question 7">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q8"><span class="q-num">8</span> Per the curriculum map, Module 3's assessment is a working code review __________, not a written exam -- applying Chapter 3's five questions to a tool-integration diff instead of a general essay.</label>
+      <div class="fib-row">
+        <input type="text" id="q8" class="fib-blank" data-answers="checklist" aria-label="Answer for question 8">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div id="check-all-wrap">
+      <button type="button" id="check-all-btn" class="check-btn">Check All Answers</button>
+      <span id="quiz-score"></span>
+    </div>
+
+    <div class="quiz-celebration" id="quiz-celebration" aria-live="polite">
+      Perfect score. Chapter complete.
+    </div>
+  </form>
+
+  <div class="chapter-nav">
+    <a href="lesson.html">&larr; Back to Lesson</a>
+    <a href="exercises/index.html">Exercises &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/quiz-engine.js"></script>
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

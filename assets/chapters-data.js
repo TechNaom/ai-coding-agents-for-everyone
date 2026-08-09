@@ -89,7 +89,8 @@ window.ACAFE_MODULES = [
         id: "chapter-09",
         num: 9,
         title: "Connecting Your Agent to MCP Servers",
-        description: "Swapping hand-rolled tools for MCP-based ones."
+        description: "Swapping hand-rolled tools for MCP-based ones.",
+        path: "chapters/chapter-09-connecting-your-agent-to-mcp-servers/lesson.html"
       }
     ]
   },

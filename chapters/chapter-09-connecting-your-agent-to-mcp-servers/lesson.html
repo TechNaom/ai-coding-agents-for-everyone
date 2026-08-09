@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connecting Your Agent to MCP Servers — AI Coding Agents for Everyone</title>
+<meta name="description" content="Swap Chapter 8's hand-rolled git_status/git_diff for MCP-based versions, bridging MCP's list_tools/call_tool protocol into this course's TOOLS/dispatch_tool_call shape -- closing Module 3.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-09">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 9</span>
+    <span class="badge-difficulty">Advanced</span>
+    <span class="reading-time">~35 min</span>
+  </div>
+
+  <h1>Connecting Your Agent to MCP Servers</h1>
+  <p class="lede">
+    Chapter 7 built a loop from nothing. Chapter 8 went deep on the
+    tool layer sitting inside that loop — five hand-rolled tools, each
+    with real, specific failure-mode care. Every one of those tools
+    was a local Python function, written once, living only in this
+    course's own files. This chapter, the last in Module 3, swaps two
+    of them — <code>git_status</code>, <code>git_diff</code> — for
+    versions served by a completely separate process instead, talking
+    a standard protocol instead of just being a function you can call
+    directly. The loop doesn't change. The tool layer's shape doesn't
+    change. What changes is where two tool calls actually go.
+  </p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#hook">1. Two tools, same behavior, a different address</a>
+    <a href="#what-is-mcp">2. What MCP actually is, briefly</a>
+    <a href="#why-here">3. Why this matters for THIS agent, concretely</a>
+    <a href="#the-bridge">4. The real integration work: bridging MCP into TOOLS/dispatch_tool_call</a>
+    <a href="#what-changes">5. What changes and what doesn't</a>
+    <a href="#trade-offs">6. Honest trade-offs: when hand-rolled is still right</a>
+    <a href="#review-checklist">7. Module 3's assessment: reviewing a tool-integration diff</a>
+    <a href="#thought-process">8. GenAI Builder Thought Process</a>
+    <a href="#recap">9. Points to remember — closing Module 3</a>
+  </nav>
+
+  <div class="hook" id="hook">
+    <p>
+      Here's the exact same tool call, dispatched two different ways.
+      Chapter 8's version:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">Chapter 8 -- git_status is a local function</span>
+      </div>
+      <pre><code>def git_status():
+    result = subprocess.run(["git", "status", "--porcelain"], cwd=WORKSPACE, ...)
+    return result.stdout or "(clean -- no changes)"
+
+TOOL_FUNCTIONS = {"git_status": git_status, ...}
+# dispatch_tool_call looks it up directly: TOOL_FUNCTIONS[name](**args)</code></pre>
+    </div>
+    <p>This chapter's version:</p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">Chapter 9 -- git_status lives behind MCP, in a different process</span>
+      </div>
+      <pre><code># mcp_git_server.py -- a SEPARATE, standalone process:
+@mcp.tool()
+def git_status(workspace: str) -> str:
+    result = subprocess.run(["git", "status", "--porcelain"], cwd=workspace, ...)
+    return result.stdout or "(clean -- no changes)"
+
+# this agent's process: no git_status function exists here at all.
+# dispatch_tool_call routes the call over MCP_BRIDGE.call_tool(...) instead.</code></pre>
+    </div>
+    <p>
+      Same command, same output, same behavior a model calling either
+      one would observe. What changed is entirely about location and
+      reuse, not about what the tool does. That distinction — same
+      capability, different mechanism for exposing it — is this whole
+      chapter, and it's a deliberately smaller subject than it might
+      sound: Module 3 already did the hard conceptual work (Chapter 4's
+      "a tool is a schema plus a real function the harness executes,"
+      Chapter 8's "what's the worst-case bad call, and is it loud or
+      silent"). This chapter applies that same understanding to a tool
+      whose real function now lives somewhere else.
+    </p>
+  </div>
+
+  <section id="what-is-mcp" class="subtopic">
+    <h2>What MCP Actually Is, Briefly</h2>
+    <p>
+      This course's soft prerequisite, <code>mcp-for-everyone</code>,
+      spends eight full chapters on the Model Context Protocol — what
+      it is, how a server exposes tools and resources, how a client
+      discovers and calls them, transports, permissions, prompt
+      injection risk in tool output, testing, and production hardening.
+      This chapter does not re-teach any of that. If MCP itself is new
+      to you — the actual protocol mechanics, not just "it's a way to
+      expose tools" — go read that course's Chapters 1 through 8 first;
+      this chapter assumes you already know what a resource is, what a
+      transport is, and what a tool schema looks like from the
+      protocol's side. What follows is the shortest useful summary,
+      enough to place today's code in context, not a substitute for
+      that material.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... MCP, in one paragraph?</span>
+      The Model Context Protocol is a standard way to expose tools
+      (and other capabilities — resources, prompts) to a model-calling
+      client, independent of which specific application is doing the
+      calling. A server implements a tool once; any MCP-speaking
+      client — a chat app, an IDE integration, or (as of this chapter)
+      this course's own agent — can discover and call that same tool
+      without the tool's author writing separate integration code for
+      each one. The practical shift from everything Chapters 7 and 8
+      built: those tools only ever existed as Python functions inside
+      this course's own files. An MCP server's tools exist independent
+      of any one client, meant to be connected to and reused.
+    </div>
+    <p>
+      Concretely for this chapter: <code>mcp_git_server.py</code>
+      (read it — it's short) implements <code>git_status</code> and
+      <code>git_diff</code> exactly once, using the <code>mcp</code>
+      Python SDK's server-side decorator API. Nothing about that file
+      knows or cares that this course's particular agent is the one
+      calling it. A completely different agent, written in a different
+      language, using a different loop shape entirely, could connect
+      to the exact same server process and get the exact same two
+      tools, with zero changes to <code>mcp_git_server.py</code>.
+    </p>
+  </section>
+
+  <section id="why-here" class="subtopic">
+    <h2>Why This Matters for THIS Agent, Concretely</h2>
+    <p>
+      Chapter 8 closed with a direct question worth sitting with before
+      writing any code: what does a given tool's worst-case bad call
+      look like, and who's responsible for scoping it? That question
+      doesn't go away when a tool moves behind MCP — but a second,
+      genuinely new question joins it: <strong>does re-implementing
+      this specific tool, per project, actually buy anything?</strong>
+      For <code>read_file</code>/<code>write_file</code>/<code>edit_file</code>,
+      the honest answer is no — they're tightly coupled to this exact
+      agent's <code>WORKSPACE</code> boundary and <code>_safe_path()</code>
+      check, and there's no meaningful "shared, reusable read_file
+      server" worth depending on for that. For <code>git_status</code>/
+      <code>git_diff</code>, the answer flips: they're generic (any
+      agent working in any git repository needs the same two
+      commands), they're read-only (low blast radius if the server
+      itself has a bug), and hand-writing the same
+      <code>subprocess.run(["git", "status", "--porcelain"], ...)</code>
+      call inside every new agent this course — or you — ever builds
+      is pure duplication with no upside. That's the concrete case for
+      MCP here, not an abstract "protocols are good" argument: two
+      specific tools that are generic enough and safe enough to be
+      worth getting from one shared place instead of retyping.
+    </p>
+  </section>
+
+  <section id="the-bridge" class="subtopic">
+    <h2>The Real Integration Work: Bridging MCP Into TOOLS/dispatch_tool_call</h2>
+    <p>
+      Here's the part that isn't obvious from "MCP exposes tools" alone:
+      this course's agent, since Chapter 7, is built against the plain
+      <code>openai</code> client's <code>TOOLS</code>/<code>tool_calls</code>
+      shape — a list of <code>{"type": "function", "function": {...}}</code>
+      schemas, a model response with <code>message.tool_calls</code>,
+      dispatch by looking up a name in a dict. MCP's client-side API is
+      a different shape entirely: a <code>Client</code> connection, an
+      <code>await client.list_tools()</code> call returning MCP's own
+      <code>Tool</code> objects, and <code>await client.call_tool(name,
+      args)</code> returning an MCP-specific result object. Nothing
+      about this pairs up automatically — something has to translate
+      between the two.
+    </p>
+    <div class="what-is">
+      <span class="label">Where this pattern comes from</span>
+      The <code>Client</code> / <code>await client.list_tools()</code> /
+      <code>await client.call_tool(name, args)</code> shape below — and
+      reading <code>result.tools</code>, <code>result.is_error</code>,
+      <code>result.content[0].text</code>, <code>result.structured_content</code>
+      off the results — is drawn directly from
+      <code>mcp-for-everyone</code> Chapter 7 ("Building an MCP
+      Client/Host") and Chapter 8 ("Connecting Multiple Servers"); both
+      of that course's reference solutions use exactly this shape.
+      That's reused, verified knowledge, not re-derived here. One piece
+      genuinely is new: those two chapters connect to their MCP server
+      <em>in-process</em> (<code>Client(mod.mcp)</code>, importing the
+      server module directly). This chapter's server is a real,
+      separate, standalone process, launched over the stdio transport
+      — a different corner of the same <code>mcp</code> package
+      (<code>StdioServerParameters</code>, <code>stdio_client</code>),
+      verified independently against the actually-installed <code>mcp</code>
+      2.0.0 package this session, not sourced from
+      <code>mcp-for-everyone</code>'s in-process examples.
+    </div>
+    <p>
+      There's a second, less obvious mismatch: MCP's client API is
+      <code>async</code> throughout. This course's <code>run_agent</code>
+      loop has been plain synchronous code since Chapter 7, and this
+      chapter is explicit that it stays that way — rewriting the loop
+      to <code>async def</code> everywhere just to accommodate one tool
+      source would be exactly backwards, letting an implementation
+      detail of one tool's origin leak into code that has nothing to do
+      with tools at all. The fix is a small bridge class,
+      <code>MCPBridge</code>, that keeps one persistent MCP client
+      connection alive on a background thread's own event loop and
+      exposes plain, blocking, synchronous methods —
+      <code>list_tools()</code>, <code>call_tool()</code> — that
+      <code>dispatch_tool_call</code> can call exactly like any other
+      function, no <code>await</code> anywhere in the loop:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">the shape of the bridge, abbreviated -- full version in project/solution.py</span>
+      </div>
+      <pre><code>class MCPBridge:
+    """One persistent MCP client connection, on a background thread's
+    own event loop, exposed through plain synchronous methods."""
+
+    def __init__(self, command, args):
+        self._requests = queue.Queue()
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(target=self._run_loop, args=(command, args), daemon=True)
+        self._thread.start()
+        # ... waits for the connection to actually be ready before returning
+
+    async def _worker(self, command, args):
+        from mcp import Client, StdioServerParameters, stdio_client
+        params = StdioServerParameters(command=command, args=args)
+        async with Client(stdio_client(params)) as client:
+            while True:
+                kind, payload, result_q = await self._loop.run_in_executor(None, self._requests.get)
+                if kind == "list_tools":
+                    result = await client.list_tools()
+                    result_q.put(("ok", result.tools))
+                elif kind == "call_tool":
+                    name, call_args = payload
+                    result = await client.call_tool(name, call_args)
+                    result_q.put(("ok", result.content[0].text if result.content else str(result.structured_content)))
+
+    def list_tools(self):
+        return self._call("list_tools")     # blocks, returns a plain value
+
+    def call_tool(self, name, args):
+        return self._call("call_tool", (name, args))</code></pre>
+    </div>
+    <p>
+      One implementation detail worth naming, because it's the kind of
+      bug that only shows up once you actually run this: an earlier,
+      more "obvious" version of this class scheduled the client's
+      connect and disconnect as two separately-scheduled coroutines on
+      the same event loop, and it raised a real error from the
+      <code>anyio</code> library underneath MCP's stdio transport —
+      <code>"Attempted to exit cancel scope in a different task than it
+      was entered in."</code> <code>anyio</code>'s task groups tie a
+      cancel scope to the specific async task that opened it, and two
+      separately-scheduled coroutines still count as two different
+      tasks even on the same loop. The fix used above: the client's
+      entire connected lifetime runs inside one coroutine
+      (<code>_worker</code>), and the background thread only ever talks
+      to it through a thread-safe queue, never re-entering the
+      <code>async with</code> block from a separate call. This is
+      exactly the kind of thing you only find by actually running code
+      against a real installed package, not by reasoning about async
+      Python in the abstract — the same discipline this course's own
+      build process has followed since Chapter 7.
+    </p>
+    <p>
+      With that bridge in place, <code>connect_git_tools()</code> does
+      the actual translation this section opened with — turning MCP's
+      tool metadata into this course's schema shape:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">MCP tool metadata -&gt; this course's TOOLS shape</span>
+      </div>
+      <pre><code>def connect_git_tools():
+    bridge = MCPBridge(sys.executable, [GIT_SERVER_SCRIPT])
+    tools = bridge.list_tools()   # a list of MCP Tool objects
+
+    for t in tools:
+        # workspace is harness-injected, never shown to the model --
+        # the MCP-flavored version of Chapter 8's _safe_path boundary
+        schema = dict(t.input_schema)
+        properties = {k: v for k, v in schema.get("properties", {}).items() if k != "workspace"}
+        required = [r for r in schema.get("required", []) if r != "workspace"]
+        schema = {**schema, "properties": properties, "required": required}
+
+        TOOLS.append({
+            "type": "function",
+            "function": {"name": t.name, "description": t.description, "parameters": schema},
+        })
+        MCP_TOOL_NAMES.add(t.name)</code></pre>
+    </div>
+    <p>
+      And <code>dispatch_tool_call</code> gains exactly one new branch
+      — everything else in it is byte-for-byte Chapter 8's version:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">one new branch, nothing else touched</span>
+      </div>
+      <pre><code>if name in TOOL_FUNCTIONS:
+    return TOOL_FUNCTIONS[name](**args)   # unchanged from Chapter 8
+
+if name in MCP_TOOL_NAMES:                # NEW
+    full_args = {**args, "workspace": WORKSPACE}   # harness injects it back
+    return MCP_BRIDGE.call_tool(name, full_args)
+
+return f"error: unknown tool: {name}"     # unchanged from Chapter 8</code></pre>
+    </div>
+    <p>
+      Notice the <code>workspace</code> argument's round trip: stripped
+      out of the schema the model sees in <code>connect_git_tools()</code>,
+      injected back in by the harness right before the MCP call in
+      <code>dispatch_tool_call</code>. The model never sets it, never
+      sees it, and has no way to get it wrong — the exact same
+      what-the-model-controls-versus-what-the-harness-enforces line
+      Chapter 7's <code>_safe_path</code> drew for local file paths,
+      applied here to an argument that happens to cross a protocol
+      boundary instead of just a function call.
+    </p>
+  </section>
+
+  <section id="what-changes" class="subtopic">
+    <h2>What Changes and What Doesn't</h2>
+    <p>
+      Say this plainly, because it's the single most important fact in
+      this chapter: <code>run_agent</code> — the entire plan/act/observe/repeat
+      loop, unchanged since Chapter 7 — does not change at all. Not one
+      line. It calls <code>client.chat.completions.create(...)</code>,
+      checks <code>msg.tool_calls</code>, calls
+      <code>dispatch_tool_call</code>, appends the result, repeats. It
+      has no idea, and needs no idea, whether a given tool call is
+      about to run a local Python function or trigger an
+      <code>MCPBridge.call_tool()</code> round trip to a separate
+      process. That decision was already made, once, before the loop
+      ever runs — inside <code>connect_git_tools()</code> and the one
+      new branch in <code>dispatch_tool_call</code>.
+    </p>
+    <p>
+      What <em>did</em> change, concretely: <code>TOOLS</code> is no
+      longer a single fixed list defined once at the top of the file —
+      it's built partly at startup, from a live server's own
+      description of itself, instead of entirely hand-typed. And
+      <code>TOOL_FUNCTIONS</code> genuinely lost two entries — there is
+      no <code>git_status</code> Python function in this agent's
+      process anymore, on purpose. Both of those are real, meaningful
+      changes to how this agent is assembled. Neither one required
+      touching the mechanism Chapters 4 through 7 spent six chapters
+      establishing.
+    </p>
+  </section>
+
+  <section id="trade-offs" class="subtopic">
+    <h2>Honest Trade-Offs: When Hand-Rolled Is Still Right</h2>
+    <p>
+      MCP tools are not a strict upgrade over hand-rolled ones, and
+      this chapter isn't claiming they are. Getting a tool from an MCP
+      server instead of writing it locally trades one specific set of
+      costs for one specific set of benefits, and both sides are real:
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the actual cost of the MCP swap, stated without overselling the benefit?</span>
+      <strong>What you gain:</strong> the tool's implementation is
+      written once and reusable across any MCP-speaking client, not
+      just this one agent — real for genuinely generic, low-blast-radius
+      tools like read-only git commands. <strong>What you pay:</strong>
+      a running server process that has to actually be there (this
+      chapter's <code>connect_git_tools()</code> treats a missing or
+      unreachable server as non-fatal for exactly this reason — see
+      below); a client connection that has to be opened, kept alive,
+      and cleanly closed, which is real code (<code>MCPBridge</code>,
+      above) that a local function call never needed; a real latency
+      cost — a subprocess round trip and a protocol message, not a
+      direct in-process function call — that's negligible for
+      <code>git_status</code> but wouldn't be free for something called
+      on every single loop step; and a whole new failure mode class
+      (the server crashes, the connection drops mid-run, a schema
+      mismatch between what the server reports and what actually
+      executes) that a hand-rolled tool structurally cannot have,
+      because there's no separate process to fail.
+    </div>
+    <p>
+      This is exactly why <code>connect_git_tools()</code>'s failure
+      path is a graceful <code>False</code> return, not a crash —
+      losing <code>git_status</code>/<code>git_diff</code> for one run
+      because a server didn't start is a real capability loss, but it's
+      not a reason to abort a task that might not have needed git
+      tools anyway, and it would be a strange trade if adding MCP
+      integration made this agent <em>less</em> reliable than Chapter
+      8's version whenever the MCP server happened to be down. The same
+      graceful-degradation posture this course has used since Chapter
+      7 for a missing <code>openai</code> package or an unreachable
+      Ollama server applies here too, one layer further out.
+    </p>
+    <p>
+      So: when is hand-rolled still the right call? <strong>When a
+      tool is tightly coupled to this specific agent's own state</strong> —
+      <code>read_file</code>/<code>write_file</code>/<code>edit_file</code>
+      are inseparable from <code>_safe_path()</code> and this exact
+      agent's <code>WORKSPACE</code> boundary; there's no meaningful
+      "generic file-editing MCP server" that wouldn't just be
+      reinventing that same boundary somewhere else, worse, further
+      away from the code that needs to enforce it. <strong>When the
+      tool's whole point is running arbitrary, caller-composed
+      input</strong> — <code>run_shell_command</code> exists to run
+      whatever command string the model composes; there's no
+      "shared run-any-shell-command server" worth depending on, because
+      the tool has no fixed behavior to standardize in the first place.
+      <strong>When latency actually matters</strong> — a tool called on
+      nearly every loop step is a worse candidate for a
+      network/subprocess round trip than one called occasionally. And
+      MCP is worth it when a tool is <strong>generic, reusable across
+      more than one agent or project, and low-blast-radius enough that
+      a connection failure or a compromised server isn't catastrophic
+      </strong> — exactly the profile <code>git_status</code>/
+      <code>git_diff</code> fit, and exactly why this chapter picked
+      those two specifically, not <code>run_shell_command</code>.
+    </p>
+  </section>
+
+  <section id="review-checklist" class="subtopic">
+    <h2>Module 3's Assessment: Reviewing a Tool-Integration Diff</h2>
+    <p>
+      Per <code>docs/curriculum/CURRICULUM_MAP.md</code>, Module 3's
+      assessment is a working code review checklist — not a written
+      exam, a demonstrated skill: given a real tool-integration diff,
+      can you find what's actually wrong with it using the review
+      discipline Chapter 3 taught? This chapter's practice bank leans
+      directly into that. Several scenarios below hand you a plausible-
+      looking MCP integration with one deliberate, realistic flaw —
+      a stripped-then-never-reinjected <code>workspace</code> argument,
+      a connection failure that crashes instead of degrading gracefully,
+      an MCP tool result treated as trusted without checking
+      <code>result.is_error</code> first — and ask you to find it the
+      same way Chapter 3's five questions would catch it in any other
+      diff: does it match its stated goal, does it stay inside its
+      boundary, is every change justified, is it consistent with this
+      file's existing patterns, and is it a root-cause fix or a
+      symptom fix. Nothing about reviewing an MCP-integration diff
+      needs a new checklist — it needs the same one, pointed at a new
+      kind of boundary (a protocol connection, not just a file path).
+    </p>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p><strong>Problem:</strong> a developer hears "MCP" and reaches
+      for it as the default way to add any new tool going forward,
+      treating "it's an MCP server" as inherently safer or more
+      professional than a local function, independent of what the tool
+      actually does.</p>
+      <p><strong>Assumption being made:</strong> that moving a tool
+      behind a protocol is itself a safety or quality improvement — the
+      same category of mistake as assuming "more tools" is inherently
+      good or bad news, which Chapter 8's own closing section already
+      named directly.</p>
+      <p><strong>What actually distinguishes it:</strong> MCP changes
+      <em>where</em> a tool's implementation lives and how many clients
+      can reuse it. It does not automatically change whether the tool
+      is safe, whether its worst-case bad call is loud or silent, or
+      whether it's the right tool for the job at all — a poorly-scoped
+      tool exposed over MCP is still a poorly-scoped tool, now with an
+      extra network hop and a connection to manage. This chapter's
+      actual criteria for reaching for MCP were narrow and specific:
+      generic, reusable, low-blast-radius. <code>run_shell_command</code>
+      fails all three, and moving it behind MCP wouldn't have made it
+      safer — it would have added a process boundary around the exact
+      same unscoped risk Chapter 8 already named honestly.</p>
+      <p><strong>Why this matters closing Module 3:</strong> the
+      question this whole module has circled back to at every tool
+      layer decision — Chapter 8's "what's the worst-case bad call, and
+      is it loud or silent," this chapter's "does sharing this tool
+      actually buy anything" — isn't a checklist item you finish and
+      move past. It's the actual judgment call every new tool needs,
+      whether it's a three-line local function or a full MCP server,
+      for the rest of this course and past it.</p>
+      <p><strong>Working definition to carry forward:</strong> MCP is a
+      mechanism for sharing a tool's implementation across clients, not
+      a safety property. Deciding whether a given tool belongs behind
+      MCP or hand-rolled locally is a design judgment — generic versus
+      agent-specific, reusable versus one-off, low-blast-radius versus
+      high — made the same way every other tool-layer decision in this
+      module was made: by asking what the tool actually does on a bad
+      call, not by which mechanism sounds more sophisticated.</p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember — Closing Module 3</h2>
+      <ul>
+        <li>MCP is a standard protocol for exposing tools (and other
+        capabilities) to a model-calling client, independent of which
+        specific application is calling — a tool implemented once as an
+        MCP server can be reused by any MCP-speaking client, unlike a
+        hand-rolled tool that only ever exists inside one project's own
+        files. This course's soft prerequisite, <code>mcp-for-everyone</code>
+        (Chapters 1-8), covers the protocol itself in depth; this
+        chapter deepens that knowledge for one specific use, it doesn't
+        re-teach it.</li>
+        <li>Bridging an MCP server's tools into this course's
+        <code>TOOLS</code>/<code>TOOL_FUNCTIONS</code> shape required
+        two real pieces of new work: converting MCP's own tool metadata
+        into this course's schema shape (<code>connect_git_tools()</code>),
+        and bridging MCP's inherently <code>async</code> client API into
+        a synchronous loop without rewriting the loop
+        (<code>MCPBridge</code>, running one persistent connection on a
+        background thread's event loop, exposed as plain blocking
+        methods).</li>
+        <li><code>run_agent</code> — the entire plan/act/observe/repeat
+        loop — did not change at all since Chapter 7. Only where
+        <code>dispatch_tool_call</code>'s lookup actually goes changed:
+        a local Python function call for <code>TOOL_FUNCTIONS</code>
+        entries, an <code>MCPBridge.call_tool()</code> round trip for
+        <code>MCP_TOOL_NAMES</code> entries.</li>
+        <li>MCP tools trade a real, concrete set of costs (a running
+        server process, a connection to open and manage, real latency,
+        a new class of connection-failure modes) for reuse and
+        standardization. Worth it for tools that are generic, reusable
+        across more than one agent, and low-blast-radius —
+        <code>git_status</code>/<code>git_diff</code> here. Not worth it
+        for tools tightly coupled to this specific agent's own state
+        (<code>read_file</code>/<code>write_file</code>/<code>edit_file</code>'s
+        <code>_safe_path()</code> boundary) or whose entire point is
+        running arbitrary caller-composed input
+        (<code>run_shell_command</code>).</li>
+        <li>A harness-injected argument (<code>workspace</code>) that
+        the model never sees or sets, stripped from the schema and
+        reinjected right before the call, is the same
+        what-the-model-controls-versus-what-the-harness-enforces
+        boundary Chapter 7's <code>_safe_path</code> established —
+        applied here across a protocol boundary instead of just a
+        function call.</li>
+        <li><strong>Module 3, closed:</strong> Chapter 7 built the loop
+        and proved the mechanism worked with three tools. Chapter 8
+        went deep on the tool layer — five tools, each with real,
+        specific failure-mode design. This chapter went wide on tool
+        <em>portability</em> — the same loop, the same dispatch shape,
+        now able to reach tools it doesn't implement itself. Module 3's
+        assessment (a working code review checklist, not a written
+        exam) asks you to apply Chapter 3's same five review questions
+        to a tool-integration diff — see this chapter's practice bank.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="what-is">
+    <span class="label">Interview questions (4 levels)</span>
+    See <a href="interview-questions.html">Chapter 9 interview questions</a>.
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

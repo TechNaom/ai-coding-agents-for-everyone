@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connecting Your Agent to MCP Servers Exercises — AI Coding Agents for Everyone</title>
+<meta name="description" content="Hands-on exercises for Connecting Your Agent to MCP Servers.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-09">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../quiz.html">&larr; Back to the quiz</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 9 Exercises</span>
+    <span class="reading-time">~45 min</span>
+  </div>
+  <h1>Exercises: Connecting Your Agent to MCP Servers</h1>
+  <p>This chapter's exercises don't need a running MCP server, an
+  installed <code>mcp</code> package, or a live model to verify —
+  <code>starter.py</code> and <code>solution.py</code> in this folder
+  test the schema-translation, dispatch-routing, and result-unpacking
+  logic against small fake stand-ins, so every exercise below is
+  checkable by running the file directly.</p>
+
+  <div class="what-is">
+    <span class="label">Exercise standard</span>
+    Six tasks below. At least three are production-gear: harder,
+    ambiguous, real-world judgment calls rather than clean textbook
+    cases.
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">1</span> Implement <code>strip_injected_args</code></h3>
+    <p>Open <code>starter.py</code>. Fill in TODO 1 inside
+    <code>strip_injected_args</code>: given an MCP tool's raw schema and
+    a set of harness-injected argument names, return a new schema with
+    those names removed from both <code>properties</code> and
+    <code>required</code>, without mutating the input. Run
+    <code>python3 starter.py</code> and get the first five checks to
+    <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">2</span> Implement <code>classify_tool_call</code></h3>
+    <p>Fill in TODO 2 inside <code>classify_tool_call</code>: return
+    <code>"local"</code>, <code>"mcp"</code>, or <code>"unknown"</code>
+    for a given tool name, checking local tools first. Get the next
+    three checks to <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">3</span> Implement <code>mcp_result_to_text</code></h3>
+    <p>Fill in TODO 3 inside <code>mcp_result_to_text</code>: given a
+    fake MCP result object, return the correct string
+    <code>dispatch_tool_call</code> should pass back to the model —
+    a formatted error if <code>is_error</code> is true, the first
+    content block's text on success, or a stringified
+    <code>structured_content</code> as a last resort. Get the remaining
+    three checks to <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">4</span> (Production-gear) Trace a malformed schema by hand</h3>
+    <p>Without running any code, work out what
+    <code>strip_injected_args({"type": "object"}, {"workspace"})</code>
+    returns — a schema dict entirely missing both
+    <code>properties</code> and <code>required</code> keys, not just an
+    empty one. Write out each line of your implementation that gets
+    triggered, in order, and what each intermediate value equals. Then
+    run it and confirm your trace was right. This mirrors a real
+    situation: not every MCP server's schema is guaranteed to include
+    every JSON-Schema key, and code that assumes
+    <code>schema["properties"]</code> always exists will crash on one
+    that doesn't.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">5</span> (Production-gear) What happens on a name collision?</h3>
+    <p>Suppose a hand-rolled local tool and a discovered MCP tool
+    happen to share the same name — say, someone later adds a local
+    <code>git_status</code> function to <code>TOOL_FUNCTIONS</code>
+    without realizing an MCP server already provides one. Using
+    <code>classify_tool_call</code>'s actual checking order (local
+    first), trace which implementation would actually run, and explain
+    in 2-3 sentences why silently picking one over the other — instead
+    of raising an error or logging a warning about the collision — is a
+    real design gap worth flagging in a code review, even though the
+    code "works" either way. Then add a test case to a copy of
+    <code>starter.py</code> that would have caught this collision if it
+    happened.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">6</span> (Production-gear) Review a flawed connect_git_tools() diff</h3>
+    <p>A coworker submits this diff to <code>connect_git_tools()</code>:
+    they changed the failure path so that if <code>bridge.list_tools()</code>
+    raises an exception, the function re-raises it instead of printing a
+    message and returning <code>False</code>, arguing "failing loudly is
+    more honest than silently continuing with fewer tools." Using
+    Chapter 3's five-question review checklist (does it match its stated
+    goal, does it stay inside its boundary, is the change justified, is
+    it consistent with the rest of the file, is it a root-cause fix or
+    does it trade one problem for a worse one), write a 3-4 sentence
+    review of this specific change. Is "more honest" actually the right
+    frame here, given what a crash at this exact point would do to the
+    rest of <code>main()</code>'s error handling?</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../quiz.html">&larr; Back to Quiz</a>
+    <a href="../practice/index.html">Practice Bank &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

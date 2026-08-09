@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connecting Your Agent to MCP Servers Practice Bank — AI Coding Agents for Everyone</title>
+<meta name="description" content="Practice bank for Connecting Your Agent to MCP Servers.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-09">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../exercises/index.html">&larr; Back to exercises</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 9 Practice Bank</span>
+    <span class="reading-time">~26 min</span>
+  </div>
+  <h1>Practice Bank: Connecting Your Agent to MCP Servers</h1>
+  <p>Module 3's assessment is a working code review checklist, not a
+  written exam — this bank leans directly into that. A runnable script
+  (<code>starter.py</code> / <code>solution.py</code> in this folder)
+  hands you four small MCP-integration diffs, each with one deliberate
+  flaw, and its own answer key referencing Chapter 3's five review
+  questions. Predict, then run, then work through the seven scenarios
+  below, which extend the same review discipline to situations the
+  script doesn't cover.</p>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Review</span>
+    <h3>The schema that looked fine in the demo</h3>
+    <p>A coworker's <code>connect_git_tools()</code> passes every
+    manual test they tried — the agent successfully calls
+    <code>git_status</code> and <code>git_diff</code> in a live demo.
+    During review, you notice the discovered tools' schemas still list
+    <code>workspace</code> as a required argument the model can set.
+    Why did the demo work anyway, and what's the realistic failure case
+    this schema bug would actually cause in a run the demo didn't
+    happen to exercise?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Trade-off</span>
+    <h3>The teammate who wants everything behind MCP</h3>
+    <p>A teammate argues the whole team should standardize on MCP for
+    every new agent tool going forward, "since we already have the
+    plumbing now." Using this chapter's three criteria (agent-specific
+    state coupling, fixed vs. arbitrary behavior, actual reuse/blast-radius),
+    name one tool type from Chapter 8 that should stay hand-rolled even
+    with MCP plumbing already available, and explain why "we already
+    have the infrastructure" isn't itself a reason to use it everywhere.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Failure mode</span>
+    <h3>The server that's up but slow</h3>
+    <p><code>mcp_git_server.py</code> is running and reachable, but a
+    disk issue on the machine makes every <code>git status</code> call
+    take 12 seconds instead of milliseconds. <code>MCPBridge</code>'s
+    <code>_call()</code> method has a <code>timeout</code> parameter.
+    What should actually happen when that timeout fires mid-task — and
+    is "crash the whole agent" or "silently treat it as if git_status
+    said nothing changed" ever the right default? What's the honest
+    third option?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The confident stakeholder pitch</span>
+    <h3>"MCP means our tools are basically plug-and-play now"</h3>
+    <p>A product manager, excited after reading about MCP, says "great,
+    now any team can just plug their agent into our git tools server
+    with zero integration work." Using what this chapter's own
+    <code>MCPBridge</code> class had to solve (the sync/async bridging
+    problem specifically), explain what's actually still real
+    integration work for a NEW client connecting to an existing MCP
+    server, even though the server itself needs no changes.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Ambiguous ownership</span>
+    <h3>Who reviews mcp_git_server.py?</h3>
+    <p>Your team's existing review process assigns every pull request
+    to whoever owns the affected agent. A change to
+    <code>mcp_git_server.py</code> potentially affects every agent
+    connected to it, not just the one your team happens to be working
+    on. What does this suggest about how review ownership should differ
+    for a shared MCP server's code versus a single agent's own
+    hand-rolled tool, and why does Chapter 3's "did it touch anything
+    outside the stated boundary" question need a wider definition of
+    "boundary" here?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The graceful-degradation trap</span>
+    <h3>When "gracefully continuing" hides a real problem</h3>
+    <p><code>connect_git_tools()</code> returning <code>False</code>
+    and letting the agent continue without git tools is the right
+    default failure behavior, per this chapter's own reasoning. Now
+    imagine the SAME graceful degradation happening silently on every
+    single run for three weeks because a config typo broke
+    <code>GIT_SERVER_SCRIPT</code>'s path, and nobody noticed because
+    every run still "succeeded." What's the gap between "doesn't crash"
+    and "doesn't hide a real, ongoing problem," and what would you add
+    to this code to close it?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Scoping a task</span>
+    <h3>The vague cleanup task, one more time</h3>
+    <p>Same setup as Chapters 7 and 8's practice banks: a learner passes
+    the task <code>"clean up the workspace"</code> to this chapter's
+    MCP-extended agent. Does routing <code>git_status</code>/<code>git_diff</code>
+    through MCP instead of a local function change how risky this vague
+    task is, compared to Chapter 8's version — or is this one of the
+    cases where the swap this chapter made is genuinely invisible to
+    that particular risk? Explain your answer using the loop's actual
+    behavior, not just intuition.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../exercises/index.html">&larr; Exercises</a>
+    <a href="../interview-questions.html">Interview Questions &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>
