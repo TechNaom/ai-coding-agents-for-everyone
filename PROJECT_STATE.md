@@ -135,6 +135,30 @@ production-grade, interview-ready, original content only).
       spot-checking future chapters' practice pages for the same class
       of error. Module 1 and 2 written exams are NOT built yet
       (`examPath` still null for both).
+- [x] **Chapter 7 built and live — reference chapter, starts Module 3**:
+      "Build: A Minimal Coding Agent." First chapter with real, running
+      code: agent built from scratch against the `openai` package
+      pointed at Ollama's local endpoint (`llama3.2`, tool calling
+      confirmed live), 3 tools with a harness-enforced `_safe_path`
+      boundary, a ~30-line loop mapped explicitly onto Chapter 4's
+      vocabulary, two genuine live-run transcripts, a directly-observed
+      reliability caveat (small models sometimes send malformed tool
+      arguments) with the defensive code it demands, and a verified
+      "use a hosted API instead" section (OpenAI/Anthropic/Gemini via
+      their OpenAI-compatible endpoints, each re-checked against
+      current docs). First chapter using the richer
+      python-for-everyone-derived file pattern (README.md in
+      exercises/practice/project, `interview-questions.md`,
+      `ai-paired.html`). **Known gap, disclosed not hidden**:
+      `project/starter.py`/`solution.py` weren't re-observed live in
+      the build session or in this session's own re-check — the local
+      Ollama server hung on every generation call (even a plain
+      non-tool completion) both times, a sandbox-wide issue, not a
+      code bug. Re-run live once Ollama is reliably reachable, to close
+      this one flagged gap. Also flagged, not yet done: extend
+      `scripts/local_check.sh`/`ci.yml` to also run
+      `practice/solution.py` files (currently only exercises/project
+      solutions run in CI).
 
 ## Pending / Not Started
 
@@ -214,23 +238,26 @@ scenarios/8 interview questions minimum, tested code before writing).
 
 ## Next Recommended Task
 
-Modules 1 and 2 (Chapters 1-6) are done. Next: install Ollama locally,
-pull a tool-calling-capable model, `pip install openai`, and verify
-the exact chat/tool-calling API shape against Ollama's real local
-`/v1/chat/completions` endpoint before writing any code. Then build
-Chapter 7 ("Build: A Minimal Coding Agent" — the reference chapter,
-starts Module 3) using the `openai` client pointed at Ollama by
-default, with a documented hosted-provider-swap section (OpenAI,
-Anthropic, Gemini — see "Learner provider-swap option" above). State
-the hardware requirement (RAM/disk for the model) explicitly in the
-lesson text, replacing the old dollar-cost disclosure. Update
-`.github/workflows/ci.yml`'s `pip install` line from `ollama` to
-`openai` to match (or a graceful-skip pattern if running a local model
-in CI proves impractical) alongside this chapter. Starting with
-Chapter 7, use `python-for-everyone`'s richer per-chapter file pattern
-(see "Structural reference note" above), not the mcp-for-everyone-
-derived pattern Chapters 1-6 used.
+Chapter 7 (reference chapter) is done. Next: Chapter 8 ("Giving Your
+Agent File/Shell/Git Tools," Module 3, Advanced) — go deeper on the
+tool layer specifically (more file operations, real git integration,
+more careful shell-command handling) on top of Chapter 7's already-
+built loop, which doesn't need to change. Continue using
+python-for-everyone's richer per-chapter file pattern (README.md x3,
+`interview-questions.md`, `ai-paired.html` where relevant). Read
+Chapter 7 fully first — its loop, tool-schema shape, and
+`dispatch_tool_call` defensive-handling pattern are the direct
+foundation Chapter 8 extends, not replaces. Chapter 8 is also where
+Module 3's real L2 project ("extend a provided minimal agent with one
+new tool, partial scaffold") should ship, per CURRICULUM_MAP.md — both
+Chapter 7's `project/index.html` and its `ai-paired.html` already
+point forward to this.
 
-Also outstanding, not blocking Chapter 7: write the Module 1 and
-Module 2 written exams (assessments/written-exams/) — the one piece of
-each completed module not yet built.
+Before writing any new tool code, re-verify against a live Ollama
+server if one is reachable (Chapter 7's build hit a sandbox-wide
+generation hang partway through — check `ollama ps` / try a plain
+completion first). Also outstanding, not blocking Chapter 8: write the
+Module 1 and Module 2 written exams (assessments/written-exams/), and
+consider extending `scripts/local_check.sh`/`ci.yml` to run
+`practice/solution.py` files too (flagged in Chapter 7's audit, not
+yet done).

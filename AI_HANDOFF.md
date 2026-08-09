@@ -21,7 +21,7 @@ EVALUATE → SECURE → OPTIMIZE → SCALE → ARCHITECT progression; layered
 depth for 5 personas; story-first; no shallow tutorials; 13 chapters,
 don't pad; all content original.
 
-## Current state (as of 2026-08-09, Modules 1-2 complete)
+## Current state (as of 2026-08-09, Modules 1-2 complete, Chapter 7 built)
 
 **Read `PROJECT_STATE.md` for the authoritative, up-to-date status.**
 
@@ -143,30 +143,45 @@ No website root `index.html` yet (Step 9, comes later).
 
 ## Current task
 
-Install Ollama, pull a tool-calling-capable open-weight model,
-`pip install openai`, and verify the real chat/tool-calling API shape
-against Ollama's local `/v1/chat/completions` endpoint first. Then
-build Chapter 7 ("Build: A Minimal Coding Agent") as the reference
-chapter — the first chapter that actually runs a model, built from
-scratch using the `openai` client pointed at Ollama by default, no
-Anthropic API dependency in the primary path — and the first to use
-python-for-everyone's richer per-chapter file pattern instead of the
-mcp-for-everyone-derived one Chapters 1-6 used. Include the
-clearly-marked "use a hosted API instead" section (OpenAI, Anthropic,
-Gemini) per the provider-swap policy above, each endpoint re-verified
-against current docs, not assumed. State the hardware requirement in
-the lesson text. Update `.github/workflows/ci.yml`'s `pip install`
-line from `ollama` to `openai` (or a graceful-skip pattern if running
-a local model in CI proves impractical) as part of this task. Read
-Chapters 1-6 fully first for continuity/terminology.
+Chapter 7 is done — it's real, running code: a minimal agent using the
+`openai` client pointed at Ollama's local endpoint by default
+(`llama3.2`, tool calling confirmed live), a 3-tool harness-enforced
+loop, and a verified hosted-provider-swap section. Build Chapter 8
+("Giving Your Agent File/Shell/Git Tools," Module 3, Advanced) next —
+go deeper on the tool layer specifically (more file operations, real
+git integration, careful shell-command handling) on top of Chapter 7's
+loop, which does not need to change (Chapter 7's own "GenAI Builder
+Thought Process" section makes this point explicitly — the loop is
+short and stable, the tool layer is where real effort goes). Read
+Chapter 7 fully first — its `TOOLS` schema shape, `_safe_path`
+boundary pattern, and `dispatch_tool_call` defensive-handling (catch
+`JSONDecodeError`/`KeyError`, never let a malformed tool call crash the
+loop) are the direct foundation to extend. Chapter 8 is also where
+Module 3's real L2 project ships ("extend a provided minimal agent
+with one new tool, partial scaffold" — Chapter 7's `project/index.html`
+and `ai-paired.html` both already point forward to this). Continue
+using python-for-everyone's richer per-chapter file pattern. Before
+writing new tool code, check whether a local Ollama server is actually
+reachable and generating (not just responding to `/api/tags`) — Chapter
+7's build hit a sandbox-wide generation hang partway through that
+wasn't a code bug; don't assume it's resolved without checking.
+
+**Known gap to close when possible, not blocking**: Chapter 7's
+`project/starter.py`/`solution.py` haven't been re-observed live yet
+(disclosed in `quality-audits/chapter-07-audit.md`) — re-run them once
+Ollama is reliably reachable.
 
 ## Next task after that
 
 Continue module by module per `docs/curriculum/CURRICULUM_MAP.md`
-(Module 3: Chapters 8-9), validating each with a
+(Chapter 9 after Chapter 8: MCP tool-connection chapter, reusing
+`mcp-for-everyone`'s verified MCP patterns), validating each with a
 `quality-audits/chapter-0N-audit.md` before moving on. Also write the
-Module 1 and Module 2 written exams (assessments/written-exams/) —
-outstanding but not blocking. Don't mass-generate ahead of validation.
+Module 1 and Module 2 written exams (assessments/written-exams/), and
+consider extending `scripts/local_check.sh`/`ci.yml` to run
+`practice/solution.py` files too (currently only exercises/project
+solutions get CI coverage) — both outstanding but not blocking. Don't
+mass-generate ahead of validation.
 
 ## Important architectural decisions (see PROJECT_STATE.md for full detail)
 
