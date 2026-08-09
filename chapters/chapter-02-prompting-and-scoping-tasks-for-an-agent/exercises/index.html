@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompting and Scoping Tasks for an Agent Exercises — AI Coding Agents for Everyone</title>
+<meta name="description" content="Hands-on exercises for Prompting and Scoping Tasks for an Agent.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-02">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../quiz.html">&larr; Back to the quiz</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 2 Exercises</span>
+    <span class="reading-time">~28 min</span>
+  </div>
+  <h1>Exercises: Prompting and Scoping Tasks for an Agent</h1>
+  <p>Still conceptual — no SDK or code execution yet, that starts in
+  Module 3. These exercises build the judgment to write and evaluate
+  prompts that give an agent the right amount of context and the right
+  size of task.</p>
+
+  <div class="what-is">
+    <span class="label">Exercise standard</span>
+    Six tasks below. At least three are production-gear: harder,
+    ambiguous, real-world judgment calls rather than clean textbook
+    cases.
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">1</span> Rank the three prompts</h3>
+    <p>Here are three prompts for the same task — adding pagination to
+    an existing API endpoint that currently returns every row at once:
+    (A) "add pagination to the users endpoint"; (B) "In
+    `api/users.py`, the `list_users` endpoint returns every row with no
+    limit. Add `limit`/`offset` query params, default `limit=50`,
+    max `limit=200`. Update the existing test file. Acceptance: a
+    request with no params returns 50 rows and a `next_offset` field,
+    `pytest tests/api/test_users.py` still passes."; (C) "Please
+    completely refactor `api/users.py` to be more RESTful and add
+    pagination and better error handling and maybe caching if it makes
+    sense." Rank them best to worst for how well-scoped they are, and
+    justify the ranking using this chapter's three ingredients (context,
+    scope, acceptance criterion) — not just a gut feeling.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">2</span> Find the missing ingredient</h3>
+    <p>This prompt is close but flawed: "In `billing/invoices.py`, fix
+    the rounding error in `calculate_total`. Don't touch anything else."
+    Identify the one ingredient from this chapter (context, scope
+    boundary, or acceptance criterion) that's missing, and write the one
+    sentence you'd add to fix it.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">3</span> Trim the over-stuffed prompt</h3>
+    <p>You're handed a 400-word prompt for a coding agent that includes:
+    the bug symptom, the file to look at, a full company history of why
+    the module was built that way, two unrelated tickets pasted in for
+    "context," a boundary on what not to touch, and an acceptance
+    criterion. Identify which parts serve one of the three jobs of
+    context (locate the problem, know what correct looks like, know
+    what's off limits) and which parts are padding that should be cut.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">4</span> (Production-gear) The reasonable-sounding trap</h3>
+    <p>A teammate proposes this prompt: "Clean up the error handling in
+    `payments/gateway.py` and fix any related issues you notice." It
+    sounds like ordinary diligence, not recklessness. Explain
+    specifically why it's still an open-ended, unbounded mandate despite
+    sounding reasonable, and rewrite it into a well-scoped version that
+    preserves the intent (improve error handling) but adds a boundary
+    and an acceptance condition.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">5</span> (Production-gear) No clean acceptance condition</h3>
+    <p>You need an agent's help with a task that has no obvious
+    mechanically checkable acceptance condition: "improve the
+    readability of this 200-line function without changing its
+    behavior." There's no single test that proves "readability"
+    improved. Propose a way to scope this prompt so the agent still has
+    something concrete to aim for and a human still has something
+    concrete to check, even without a pass/fail test.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">6</span> (Production-gear) Set the boundary, justify the blast radius</h3>
+    <p>You're scoping a task: "add a new field to the user profile API
+    response." The user table is shared by three other services, and
+    there's a caching layer in front of the API that would need
+    invalidating if the response shape changes. Write the boundary
+    clause you'd add to the prompt (what the agent must stop and ask
+    about before touching), and justify it in terms of blast radius —
+    not just "better safe than sorry."</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../quiz.html">&larr; Back to Quiz</a>
+    <a href="../practice/index.html">Practice Bank &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

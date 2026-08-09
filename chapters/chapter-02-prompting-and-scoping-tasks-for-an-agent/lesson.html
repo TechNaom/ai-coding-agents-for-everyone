@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompting and Scoping Tasks for an Agent — AI Coding Agents for Everyone</title>
+<meta name="description" content="How to give a coding agent enough context without drowning it, and how to scope a task so it's neither trivial nor dangerously open-ended.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-02">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 2</span>
+    <span class="badge-difficulty">Beginner</span>
+    <span class="reading-time">~19 min</span>
+  </div>
+
+  <h1>Prompting and Scoping Tasks for an Agent</h1>
+  <p class="lede">
+    Chapter 1 established that an agent runs its own plan/act/observe/
+    repeat loop instead of predicting one line at a time. That's exactly
+    why the request you hand it matters so much more than the request
+    you'd hand autocomplete — a vague instruction to a loop that acts on
+    its own judgment doesn't just produce a mediocre suggestion, it can
+    send several unsupervised steps in the wrong direction before anyone
+    notices. This chapter is about writing the request well in the first
+    place.
+  </p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#hook">1. Same ticket, two prompts, two outcomes</a>
+    <a href="#context">2. Enough context, not all the context</a>
+    <a href="#scoping">3. Scoping the task: not trivial, not open-ended</a>
+    <a href="#stopping">4. Boundaries and when the agent should stop and ask</a>
+    <a href="#thought-process">5. GenAI Builder Thought Process</a>
+    <a href="#recap">6. Points to remember</a>
+  </nav>
+
+  <div class="hook" id="hook">
+    <p>
+      Two engineers on the same team hit the same bug report the same
+      morning: "Users report the search page sometimes shows results
+      from the wrong region." Both reach for a coding agent.
+    </p>
+    <p>
+      Engineer A types: <em>"fix the bug where search shows the wrong
+      region."</em> The agent, running its own loop, has to guess what
+      "the bug" even is. It searches for anything with "region" in the
+      name, finds three candidates, picks the one that looks most
+      recently touched, and starts editing. Twenty minutes and four
+      files later, it reports success — it fixed a real bug, just not
+      the one from the report. The actual defect, a stale cache key in
+      the search-filter code, is untouched.
+    </p>
+    <p>
+      Engineer B spends two extra minutes writing the request: <em>"In
+      `search/filters.py`, the `region` filter sometimes returns results
+      for the wrong region when a user switches regions mid-session.
+      Reproduce it with the steps in ticket #482, find the root cause,
+      fix only that file and its existing test file, and stop and ask me
+      before touching anything under `search/cache/`. Acceptance: the
+      steps in #482 no longer reproduce, and `pytest tests/search/` still
+      passes."</em> The agent reproduces the bug, traces it to a stale
+      cache key exactly as suspected, asks a single clarifying question
+      about whether to also invalidate the cache on region switch, gets
+      a one-word answer, and ships a two-file fix that closes the
+      ticket. Same agent, same loop, same underlying model. Completely
+      different outcome — because the request was scoped, not just
+      typed.
+    </p>
+  </div>
+
+  <section id="context" class="subtopic">
+    <h2>Enough Context, Not All the Context</h2>
+    <p>
+      A blank, one-line prompt forces the agent to spend its own
+      plan/act/observe cycles just figuring out what you meant — cycles
+      it's spending on guesswork instead of on the actual problem, and
+      guesswork it can't check against your intent because you never
+      stated it. That's what happened to Engineer A: the agent wasn't
+      lazy or broken, it was accurately doing what an under-specified
+      request produces, which is a plausible-looking wrong answer.
+    </p>
+    <p>
+      The opposite failure is just as real and less talked about:
+      pasting an entire design doc, three related tickets, and a wall of
+      background history into the prompt. This doesn't make the agent
+      smarter — it makes the actual instruction harder to find inside
+      the noise, and it burns context-window budget on material the
+      agent may never need to act on. (Chapter 6 covers context-window
+      limits in depth; for now, the practical takeaway is simpler: more
+      text is not the same thing as more useful context.)
+    </p>
+    <div class="what-is">
+      <span class="label">What is... "enough" context?</span>
+      The minimum set of facts the agent needs to (1) locate the right
+      part of the codebase, (2) understand what "correct" looks like for
+      this specific task, and (3) know what it's explicitly allowed or
+      not allowed to touch. If a fact doesn't serve one of those three
+      jobs, it's probably padding, not context.
+    </div>
+    <p>
+      Notice what Engineer B's prompt actually included: a specific
+      file, a specific symptom, a reproduction path, an explicit
+      "fix only" boundary, and an acceptance condition. Nothing about
+      company history, nothing about why the cache layer was originally
+      built that way, nothing about unrelated tickets. Every sentence
+      did one of the three jobs above.
+    </p>
+  </section>
+
+  <section id="scoping" class="subtopic">
+    <h2>Scoping the Task: Not Trivial, Not Open-Ended</h2>
+    <p>
+      Scoping is a separate decision from context: it's about how big a
+      slice of work you hand the agent in one request. Get it wrong in
+      either direction and you pay for it, just in different currencies.
+    </p>
+    <p>
+      A task scoped too small wastes the loop's actual advantage. Asking
+      an agent to "rename this one local variable" spends a full
+      plan/act/observe cycle — including whatever setup and review
+      overhead your tool adds — on something you could've typed
+      yourself in five seconds with ordinary editor tools. It's not
+      wrong, it's just not where an agent earns its keep.
+    </p>
+    <p>
+      A task scoped too large is the more dangerous failure. "Modernize
+      the entire billing module" has no natural stopping point, no
+      single acceptance check, and no boundary on which files are fair
+      game — so the agent has to invent its own definition of "done,"
+      and it may invent one you wouldn't have signed off on. This is
+      also exactly the setup that produces the compounding-mistake
+      failure mode Chapter 5 covers in depth: a loop with no boundary
+      and no checkpoint can run many wrong steps before a human ever
+      sees the first one.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">three prompts, same underlying bug</span>
+      </div>
+      <pre><code>1) "Fix the region bug."
+   -- no file, no reproduction, no acceptance check, no boundary.
+   -- the agent has to guess what "the bug" and "done" both mean.
+
+2) "Rewrite search/filters.py to be cleaner and fix any bugs
+   you find while you're in there."
+   -- open-ended scope creep disguised as one task; "any bugs
+   -- you find" has no boundary and no stopping point.
+
+3) "In search/filters.py, the region filter returns stale
+   results after a mid-session region switch (repro: ticket
+   #482). Find the root cause, fix only that file and its
+   test file, don't touch search/cache/ without asking.
+   Acceptance: #482 no longer reproduces, pytest passes."
+   -- specific symptom, specific file, explicit boundary,
+   -- checkable acceptance condition.</code></pre>
+    </div>
+    <p>
+      Prompt 2 is worth sitting with, because it doesn't look reckless
+      the way prompt 1 does — "fix any bugs you find while you're in
+      there" sounds like reasonable diligence. But it hands the agent an
+      unbounded mandate: it can now justify touching almost anything in
+      that file as "a bug I found," and there's no acceptance condition
+      to tell it, or you, when the task is actually finished.
+    </p>
+    <p>
+      The right size for a single request is a task with one clear
+      symptom or goal, a boundary on what's in play, and a way to check
+      whether it worked — big enough to be worth the loop's overhead,
+      small enough that a human can hold the whole intended change in
+      their head before reviewing the diff.
+    </p>
+  </section>
+
+  <section id="stopping" class="subtopic">
+    <h2>Boundaries and When the Agent Should Stop and Ask</h2>
+    <p>
+      Prompt 3 above did something prompt 1 didn't: it named a specific
+      area the agent should not enter without checking in first
+      (<code>search/cache/</code>). That's not the agent being less
+      capable — it's the human deciding, up front, where the blast
+      radius of an unreviewed intermediate step gets uncomfortable, and
+      saying so explicitly rather than hoping the agent guesses the same
+      line.
+    </p>
+    <p>
+      A well-scoped prompt does two things a vague one doesn't: it
+      states what's in scope, and it states what to do when the agent
+      hits something outside that scope — stop and ask, versus use its
+      own judgment and proceed. Leaving that unstated doesn't remove the
+      decision, it just means the agent makes it for you, silently, in
+      the middle of a task you can't see yet.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... an acceptance criterion, for a prompt?</span>
+      A condition the agent (and you) can check mechanically or nearly
+      so — "this specific test passes," "this specific input no longer
+      reproduces the bug," "this function now returns X for input Y" —
+      rather than a subjective goal like "make it better" or "clean this
+      up." An agent loop can steer toward a checkable condition. It
+      cannot steer toward a feeling.
+    </div>
+    <p>
+      This is also where "give it enough context" and "scope it well"
+      meet: an acceptance criterion is itself a piece of context, and
+      arguably the single most load-bearing one, because it's the thing
+      the agent's own observe step can check itself against without
+      waiting for you. Prompt 3's agent could tell, on its own, whether
+      it had actually fixed the ticket before ever showing a human
+      anything — because "pytest passes and #482 no longer reproduces"
+      is something its own tool calls can verify.
+    </p>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p><strong>Problem:</strong> a developer's coding agent keeps
+      "going off and doing too much" or "not understanding what I
+      wanted," and their fix is to switch tools, assuming the model
+      itself is the problem.</p>
+      <p><strong>Assumption being made:</strong> that prompt quality is
+      a minor detail once you've picked a good enough model or tool,
+      rather than the primary lever the human actually controls before
+      the loop starts running.</p>
+      <p><strong>What actually distinguishes a good prompt here:</strong>
+      not length, not politeness, not how much background it includes —
+      specifically whether it gives the agent (1) enough context to
+      locate the problem and know what "correct" means, (2) a scope
+      that's neither trivial nor open-ended, and (3) an explicit
+      boundary plus a rule for when to stop and ask instead of guessing.</p>
+      <p><strong>Why this matters before Chapter 3:</strong> you can't
+      review an agent's diff well (Chapter 3) against a request that
+      never defined what success looked like — "is this diff right?"
+      only has a checkable answer if the prompt that produced it had a
+      checkable acceptance criterion in the first place. Bad scoping
+      upstream makes good reviewing downstream almost impossible.</p>
+      <p><strong>Working definition to carry forward:</strong> a
+      well-scoped prompt names the symptom or goal, the files or systems
+      that are in play, an explicit boundary on what's off-limits
+      without checking in, and a condition the agent can verify before
+      calling itself done.</p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember</h2>
+      <ul>
+        <li>A vague prompt doesn't produce a mediocre answer from an
+        agent the way it might from a search engine — it produces
+        several unsupervised loop cycles spent guessing, which can look
+        confident and still be wrong.</li>
+        <li>"Enough context" means the minimum facts needed to locate
+        the problem, know what correct looks like, and know what's off
+        limits — not the maximum amount of background you can paste in.</li>
+        <li>Scope tasks so they're neither trivial (not worth the loop's
+        overhead) nor open-ended (no natural stopping point, no single
+        acceptance check, an invented definition of "done").</li>
+        <li>An explicit boundary ("don't touch X without asking") puts
+        the blast-radius decision in the human's hands up front, instead
+        of leaving the agent to guess it mid-task.</li>
+        <li>A checkable acceptance criterion — a specific test passing,
+        a specific repro no longer reproducing — is the single most
+        useful sentence in a prompt, because it's the one thing the
+        agent's own observe step can verify without you.</li>
+        <li>Bad scoping is the upstream cause of the failure modes
+        Chapter 5 covers in depth (looping, stalling, going off the
+        rails) — tightening the prompt is often cheaper than debugging
+        the transcript afterward.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="what-is">
+    <span class="label">Interview questions (4 levels)</span>
+    See <a href="interview-questions.html">Chapter 2 interview questions</a>.
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

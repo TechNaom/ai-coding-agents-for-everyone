@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompting and Scoping Tasks for an Agent Quiz — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interactive quiz for Prompting and Scoping Tasks for an Agent.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-02" data-chapter-id="chapter-02">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="lesson.html">&larr; Back to the lesson</a></p>
+
+  <span class="chapter-badge">Chapter 2 Quiz</span>
+  <h1>Prompting and Scoping Tasks for an Agent</h1>
+  <p>Seven questions. Fill in the blank, then check your answers.</p>
+
+  <div class="quiz-progress-wrap" aria-hidden="true">
+    <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+  </div>
+
+  <form onsubmit="return false;">
+    <div class="quiz-question">
+      <label for="q1"><span class="q-num">1</span> A vague prompt to an agent doesn't just produce a mediocre answer — it produces several unsupervised loop cycles spent __________, which can look confident and still be wrong.</label>
+      <div class="fib-row">
+        <input type="text" id="q1" class="fib-blank" data-answers="guessing" aria-label="Answer for question 1">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q2"><span class="q-num">2</span> "Enough" context means the minimum facts needed to locate the problem, know what correct looks like, and know what's off __________.</label>
+      <div class="fib-row">
+        <input type="text" id="q2" class="fib-blank" data-answers="limits,limit" aria-label="Answer for question 2">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q3"><span class="q-num">3</span> A task scoped too __________ has no natural stopping point, no single acceptance check, and forces the agent to invent its own definition of "done."</label>
+      <div class="fib-row">
+        <input type="text" id="q3" class="fib-blank" data-answers="large,big,open-ended" aria-label="Answer for question 3">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q4"><span class="q-num">4</span> A task scoped too small wastes the loop's actual __________ — spending a full plan/act/observe cycle on something you could type yourself in five seconds.</label>
+      <div class="fib-row">
+        <input type="text" id="q4" class="fib-blank" data-answers="advantage,overhead,value" aria-label="Answer for question 4">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q5"><span class="q-num">5</span> An explicit __________ ("don't touch X without asking") puts the blast-radius decision in the human's hands up front instead of leaving the agent to guess it mid-task.</label>
+      <div class="fib-row">
+        <input type="text" id="q5" class="fib-blank" data-answers="boundary" aria-label="Answer for question 5">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q6"><span class="q-num">6</span> A checkable acceptance __________ — a specific test passing, a specific repro no longer reproducing — is the one thing the agent's own observe step can verify without you.</label>
+      <div class="fib-row">
+        <input type="text" id="q6" class="fib-blank" data-answers="criterion,criteria,condition" aria-label="Answer for question 6">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q7"><span class="q-num">7</span> Bad scoping is the upstream cause of the failure modes __________ 5 covers in depth, like looping, stalling, or going off the rails.</label>
+      <div class="fib-row">
+        <input type="text" id="q7" class="fib-blank" data-answers="chapter" aria-label="Answer for question 7">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div id="check-all-wrap">
+      <button type="button" id="check-all-btn" class="check-btn">Check All Answers</button>
+      <span id="quiz-score"></span>
+    </div>
+
+    <div class="quiz-celebration" id="quiz-celebration" aria-live="polite">
+      Perfect score. Chapter complete.
+    </div>
+  </form>
+
+  <div class="chapter-nav">
+    <a href="lesson.html">&larr; Back to Lesson</a>
+    <a href="exercises/index.html">Exercises &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/quiz-engine.js"></script>
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

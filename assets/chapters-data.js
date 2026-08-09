@@ -26,7 +26,8 @@ window.ACAFE_MODULES = [
         id: "chapter-02",
         num: 2,
         title: "Prompting and Scoping Tasks for an Agent",
-        description: "Framing a task so an agent can actually succeed at it."
+        description: "Framing a task so an agent can actually succeed at it.",
+        path: "chapters/chapter-02-prompting-and-scoping-tasks-for-an-agent/lesson.html"
       },
       {
         id: "chapter-03",

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompting and Scoping Tasks for an Agent Practice Bank — AI Coding Agents for Everyone</title>
+<meta name="description" content="Practice bank for Prompting and Scoping Tasks for an Agent.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-02">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../exercises/index.html">&larr; Back to exercises</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 2 Practice Bank</span>
+    <span class="reading-time">~20 min</span>
+  </div>
+  <h1>Practice Bank: Prompting and Scoping Tasks for an Agent</h1>
+  <p>Short scenarios, one judgment question each — practice spotting
+  under-scoped, over-scoped, and well-scoped prompts in realistic,
+  sometimes ambiguous situations.</p>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Ticket triage</span>
+    <h3>The one-line ticket</h3>
+    <p>A support ticket says only "export button doesn't work." Before
+    typing anything into a coding agent, what two or three pieces of
+    information would you go find first, and why would skipping that
+    step likely produce a plausible-looking wrong fix rather than an
+    obvious failure?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Scope creep</span>
+    <h3>The "while you're in there" request</h3>
+    <p>A teammate asks an agent to "update the deprecated date library
+    call in `reports/monthly.py`, and while you're in there feel free to
+    tidy up the rest of the file." The agent comes back having reordered
+    imports, renamed three local variables, and changed a logging
+    format — none of which was the actual ask. Whose scoping choice
+    caused this, and what specific phrase in the prompt made it
+    possible?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Overcorrection</span>
+    <h3>The context dump</h3>
+    <p>After getting burned by a vague prompt once, an engineer starts
+    pasting the entire onboarding doc, five past Slack threads, and the
+    whole module's git history into every prompt "just to be safe." What
+    would you tell them about why this isn't actually safer, using this
+    chapter's three-jobs-of-context idea?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Boundary-setting</span>
+    <h3>The shared config file</h3>
+    <p>You're scoping a task to add a new environment variable to a
+    service. The config file the agent needs to edit is also read by two
+    other services in the same repo. What boundary clause would you add
+    to the prompt, and what should happen if the agent decides it also
+    needs to touch one of those other services to make the change work?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Acceptance criteria</span>
+    <h3>The "make it faster" request</h3>
+    <p>A prompt reads: "This endpoint is slow, make it faster." There's
+    no stated target. The agent adds a cache layer and reports "much
+    faster now." What's missing that would let both the agent and a
+    human actually verify the task succeeded, and how would you rewrite
+    the request to include it?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Size judgment</span>
+    <h3>The one-word variable rename</h3>
+    <p>An engineer opens a full agent session, complete with a detailed
+    prompt with context, scope, and acceptance criteria, just to rename
+    one poorly-named local variable in a function they already have
+    open. Every part of the prompt is technically well-formed. What's
+    still wrong with reaching for the agent here, and what would you
+    have done instead?</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../exercises/index.html">&larr; Exercises</a>
+    <a href="../interview-questions.html">Interview Questions &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

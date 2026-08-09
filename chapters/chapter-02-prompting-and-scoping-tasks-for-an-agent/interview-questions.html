@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompting and Scoping Tasks for an Agent Interview Questions — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interview questions for Prompting and Scoping Tasks for an Agent.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-02">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="practice/index.html">&larr; Back to practice bank</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 2 Interview Questions</span>
+    <span class="reading-time">~14 min</span>
+  </div>
+  <h1>Interview Questions: Prompting and Scoping Tasks for an Agent</h1>
+  <p>Grouped by level. Each includes a strong answer, a red flag, and a follow-up.</p>
+
+  <div class="lesson-card">
+    <h2>1. (Beginner) What's the difference between "fix the bug" and a well-scoped prompt for a coding agent?</h2>
+    <p><strong>Strong answer:</strong> "Fix the bug" gives the agent no file, no symptom detail, no acceptance check, and no boundary — it has to guess what "the bug" and "done" both mean, and its guess might be a real but wrong fix. A well-scoped prompt names the specific symptom, where to look, what's in or out of bounds, and a condition that proves the fix worked (a specific test passing, a specific repro no longer reproducing).</p>
+    <p><strong>Red flag:</strong> Says the agent "should just figure it out" because it's smart, without acknowledging that under-specified requests force guesswork the agent can't validate against actual intent.</p>
+    <p><strong>Follow-up:</strong> "What's the one sentence you'd add to a vague bug-fix prompt that would improve it the most, and why that one first?"</p>
+    <p><strong>What this proves:</strong> Understands that prompt quality directly drives what an autonomous loop does with its unsupervised steps, not just how "nice" the request sounds.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>2. (Beginner) Why can pasting too much background into a prompt actually hurt, rather than help?</h2>
+    <p><strong>Strong answer:</strong> More text doesn't automatically mean more useful context — it can bury the actual instruction inside material the agent doesn't need to act on, and it spends context-window budget on things that don't help it locate the problem, know what correct looks like, or know what's off limits. The three jobs context needs to do are specific; irrelevant history doesn't do any of them.</p>
+    <p><strong>Red flag:</strong> Assumes "more information is always safer," treating context length as a free lever with no downside.</p>
+    <p><strong>Follow-up:</strong> "Given a five-paragraph ticket, how would you decide what to actually include in the prompt versus leave out?"</p>
+    <p><strong>What this proves:</strong> Distinguishes context volume from context usefulness — a judgment call that matters even more once real context-window limits are covered (Chapter 6).</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>3. (Intermediate) A task is scoped "too small" for an agent. What does that actually mean, and why is it a real cost, not just an inefficiency?</h2>
+    <p><strong>Strong answer:</strong> A too-small task, like renaming one local variable in a function you already have open, spends a full plan/act/observe cycle — plus whatever review overhead the tool adds — on something faster to do by hand. It's a real cost because it trains a habit of reaching for the agent reflexively rather than judging when its loop actually earns its overhead, which compounds across a team over time.</p>
+    <p><strong>Red flag:</strong> Says smaller tasks are always safer or better because "less can go wrong," missing that overhead itself is a cost even when nothing goes wrong.</p>
+    <p><strong>Follow-up:</strong> "What's a rule of thumb you'd give a new hire for deciding a task is 'agent-worthy'?"</p>
+    <p><strong>What this proves:</strong> Recognizes that scoping is a two-sided judgment call (too small has a cost too), not just "avoid open-ended tasks."</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>4. (Intermediate) Explain why "rewrite this file to be cleaner and fix any bugs you find while you're in there" is a riskier prompt than it sounds.</h2>
+    <p><strong>Strong answer:</strong> It doesn't sound reckless the way a totally vague prompt does — it sounds like reasonable diligence. But "any bugs you find" is an unbounded mandate: it can justify touching almost anything in the file, and there's no acceptance condition telling the agent, or the human, when the task is actually finished. It's open-ended scope creep wearing the disguise of a single task.</p>
+    <p><strong>Red flag:</strong> Treats it as a fine prompt because the intent (clean code, fix bugs) sounds reasonable, without noticing it lacks a boundary or a stopping condition.</p>
+    <p><strong>Follow-up:</strong> "How would you rewrite that prompt to keep the spirit of 'clean up while you're in there' but bound its scope?"</p>
+    <p><strong>What this proves:</strong> Can spot scope creep that's disguised as reasonable-sounding language, not just scope creep that's obviously vague.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>5. (Senior) How do you decide what belongs in a prompt's explicit boundary versus what you leave to the agent's judgment?</h2>
+    <p><strong>Strong answer:</strong> Base it on blast radius of an unreviewed intermediate step, not on how likely a mistake feels. Areas where a wrong edit could be dangerous even before human review — shared infrastructure, auth, caching layers other features depend on — get an explicit "don't touch without asking" boundary. Areas where a wrong edit is easy to spot and cheap to revert (a single well-tested function) can be left to the agent's judgment, since review will catch it and the cost of a miss is low.</p>
+    <p><strong>Red flag:</strong> Applies a blanket rule ("always name every file explicitly" or "never restrict, review catches everything") instead of reasoning about blast radius per task.</p>
+    <p><strong>Follow-up:</strong> "How would this change for a codebase with weak test coverage versus strong test coverage?"</p>
+    <p><strong>What this proves:</strong> Applies a risk-based framework to scoping decisions instead of a one-size-fits-all rule — the same kind of judgment Chapter 1's architect question applied to agent-versus-inline-suggestion choice.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>6. (Senior) A teammate's prompt has a clear symptom and a clear file, but no acceptance criterion. What's your specific critique?</h2>
+    <p><strong>Strong answer:</strong> Symptom and file get the agent to the right place, but without a checkable acceptance criterion, neither the agent's own observe step nor the human reviewer has a mechanical way to confirm the task actually succeeded — "looks fixed" is not the same as "verified fixed." The fix: add a specific, checkable condition (a named test passing, a specific repro no longer reproducing) so the agent can verify its own work before ever showing it to a human.</p>
+    <p><strong>Red flag:</strong> Says the prompt is "good enough" because the agent will probably figure out when it's done, treating acceptance criteria as a nice-to-have rather than the thing that makes self-verification possible.</p>
+    <p><strong>Follow-up:</strong> "What would you do if the task genuinely has no mechanically checkable acceptance condition — how do you scope it then?"</p>
+    <p><strong>What this proves:</strong> Identifies the specific missing piece rather than giving a vague "add more detail" critique, and can reason about the harder case where a clean checkable condition doesn't exist.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>7. (Architect) You're writing a team-wide prompting standard for agent-assisted work. What are the non-negotiable fields, and why those specifically?</h2>
+    <p><strong>Strong answer:</strong> At minimum: the symptom or goal, the files/systems in scope, an explicit boundary on what requires check-in before touching, and a checkable acceptance condition. Each maps to a distinct failure this chapter covers: missing symptom/goal produces guesswork (Engineer A's failure), missing boundary produces uncontrolled blast radius, missing acceptance condition means neither the agent nor the reviewer can verify success. A standard that only demands "be specific" without naming these fields will get inconsistent compliance; a checklist with named fields is auditable.</p>
+    <p><strong>Red flag:</strong> Proposes a standard that's purely stylistic ("write clear, detailed prompts") without naming concrete, checkable fields a reviewer could audit a prompt against.</p>
+    <p><strong>Follow-up:</strong> "How would you enforce this standard without slowing every engineer down on genuinely small, low-risk tasks?"</p>
+    <p><strong>What this proves:</strong> Can turn a conceptual lesson into an operational, auditable team standard — architect-level translation from principle to practice.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>8. (Architect) How does poor task scoping at the prompting stage create downstream cost even when the agent's output eventually gets reviewed and caught?</h2>
+    <p><strong>Strong answer:</strong> Catching a bad result in review doesn't make the earlier cost disappear — the agent still spent loop cycles (and compute) on the wrong problem, the reviewer still has to reconstruct what the agent was actually trying to do without a clear original intent to check it against, and the team loses the time to redo the request properly. At scale, this shows up as a tax on review bandwidth and a slower overall cycle time, not a single wasted attempt — which is why scoping discipline belongs earlier in the pipeline (prompting) rather than being treated as something review alone can fix.</p>
+    <p><strong>Red flag:</strong> Argues that scoping quality doesn't matter much "because review catches problems anyway," missing that review is a more expensive and slower place to catch a problem than the prompt itself.</p>
+    <p><strong>Follow-up:</strong> "If you had to pick one metric to track that would reveal a team's prompting/scoping discipline is slipping, what would it be?"</p>
+    <p><strong>What this proves:</strong> Reasons about scoping as a systemic, org-level cost driver, not just a per-task correctness concern — connects this chapter to Chapter 3's review economics.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="practice/index.html">&larr; Practice Bank</a>
+    <a href="project/index.html">Build the Project &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>
