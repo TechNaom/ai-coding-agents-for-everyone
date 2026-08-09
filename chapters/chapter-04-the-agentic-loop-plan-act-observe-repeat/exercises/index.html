@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Agentic Loop: Plan, Act, Observe, Repeat Exercises — AI Coding Agents for Everyone</title>
+<meta name="description" content="Hands-on exercises for The Agentic Loop: Plan, Act, Observe, Repeat.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-04">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../quiz.html">&larr; Back to the quiz</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 4 Exercises</span>
+    <span class="reading-time">~30 min</span>
+  </div>
+  <h1>Exercises: The Agentic Loop: Plan, Act, Observe, Repeat</h1>
+  <p>Still conceptual — no SDK or code execution here, that starts in
+  Module 3. Each exercise hands you a short transcript fragment or
+  turn-by-turn scenario; the work is tracing the mechanism precisely —
+  what was in context, what got predicted, and why — not guessing at
+  what "felt" right.</p>
+
+  <div class="what-is">
+    <span class="label">Exercise standard</span>
+    Six tasks below. At least three are production-gear: harder,
+    ambiguous, real-world judgment calls rather than clean textbook
+    cases.
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">1</span> Turn 1, unpacked</h3>
+    <p>Here is a single model turn, as literal data:</p>
+    <pre><code>{
+  "role": "assistant",
+  "content": [
+    { "type": "text",
+      "text": "I'll check the test file to see the exact
+               expected error message before changing anything." },
+    { "type": "tool_use",
+      "id": "call_9",
+      "name": "read_file",
+      "input": { "path": "tests/api/test_export.py" } }
+  ]
+}</code></pre>
+    <p>Identify, separately: (a) what the model produced, (b) what has
+    and hasn't happened in the actual codebase at this exact point, and
+    (c) what determines whether the harness treats this as a valid,
+    executable request.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">2</span> Which tool, and why</h3>
+    <p>The agent has these tools, described to it up front:</p>
+    <pre><code>list_files(directory: string)
+  "List file and directory names one level under the given path."
+
+grep_codebase(pattern: string)
+  "Search file contents for a regex pattern across the repo."
+
+read_file(path: string)
+  "Read the exact contents of one file. Requires an exact path."</code></pre>
+    <p>The task is: "The error message 'Invalid export format' appears
+    somewhere in the codebase — find where it's raised and add a new
+    branch for the 'xlsx' format." At the very first turn, nothing else
+    is in context yet. Which tool does the model most likely call, and
+    why does calling <code>read_file</code> at this exact point require
+    information the model doesn't have?</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">3</span> Name the stop</h3>
+    <p>Four short transcript endings, each cut off right after the last
+    thing that happened:</p>
+    <ol type="a">
+      <li>The model's final message contains only text: "All three
+      tests now pass and the diff matches the acceptance criterion."</li>
+      <li>The harness's log shows: <code>"step_count: 40/40 —
+      forcing stop before next tool call"</code>.</li>
+      <li>The model attempts a tool call to
+      <code>run_shell("rm -rf build/")</code>; the harness's log shows
+      <code>"blocked: destructive command outside allowed list"</code>,
+      and the model's next turn is text asking the human to confirm.</li>
+      <li>The model calls <code>run_tests</code>; the tool result is
+      <code>"Error: test runner exited with signal 9 (OOM), no output
+      captured"</code>, and the next several turns keep calling
+      <code>run_tests</code> again with no change in outcome.</li>
+    </ol>
+    <p>Name which of the four stop mechanisms from the lesson each one
+    is (or, for (d), name what's actually happening if it isn't a clean
+    stop at all), and state what kind of review scrutiny each case
+    would need.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">4</span> (Production-gear) The plan that didn't get revised</h3>
+    <p>An agent working on "migrate the <code>orders</code> table's
+    <code>status</code> column from a string to an enum" writes this
+    upfront plan on turn 1, before any tool calls:</p>
+    <pre><code>1. Add the new enum type in the schema
+2. Update the orders model to use it
+3. Write a migration script
+4. Update the two call sites in orders/service.py</code></pre>
+    <p>On turn 6, a <code>grep_codebase</code> result reveals four more
+    call sites in <code>reports/exporters.py</code> and
+    <code>billing/reconcile.py</code> that step 4 didn't account for.
+    The transcript shows the agent updating only the original two call
+    sites and then declaring the task done. Using this chapter's
+    upfront-plan-vs-reactive distinction, explain specifically what
+    should have happened at turn 6 and didn't, and why an upfront,
+    unrevised plan is the mechanism that produced this specific gap
+    (not "the agent was careless").</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">5</span> (Production-gear) Diagnose the tool-confusion bug</h3>
+    <p>A harness exposes two tools to the model:</p>
+    <pre><code>update_config(key: string, value: string)
+  "Update a configuration value."
+
+set_env(key: string, value: string)
+  "Set an environment variable."</code></pre>
+    <p>Given the task "increase the request timeout to 30 seconds," the
+    agent calls <code>set_env("REQUEST_TIMEOUT", "30")</code>, but the
+    timeout is actually read from a config file at startup, not an
+    environment variable — the fix silently does nothing. Using the
+    lesson's account of how tool selection works (no separate router,
+    just prediction matched against tool descriptions), explain what's
+    actually missing from these two tool descriptions that made this
+    outcome likely, and propose a specific rewritten description for
+    each tool that would have made the correct choice the
+    higher-probability one.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">6</span> (Production-gear) Build the turn-by-turn trace</h3>
+    <p>You're handed this compressed summary of an agent run: "Task:
+    fix the flaky <code>test_checkout_total</code> test. The agent
+    searched for the test, read it, ran it three times to confirm
+    flakiness, found a float-rounding issue in
+    <code>cart/pricing.py</code>, read that file, made an edit using
+    <code>Decimal</code> instead of <code>float</code>, ran the test
+    five times to confirm it passed consistently, then stopped." Rebuild
+    this as an actual numbered turn-by-turn trace, where each turn lists:
+    the tool called (or "text only, no tool call" for the final turn),
+    the argument(s), and — in your own words, tied to the mechanism, not
+    a paraphrase of the summary — what specific new fact in context made
+    that turn's call the most probable next action given the turn
+    before it. Flag anywhere the compressed summary hides a decision
+    point that the real trace would have had to make explicitly (for
+    example: how did it know to look in <code>cart/pricing.py</code>
+    specifically?).</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../quiz.html">&larr; Back to Quiz</a>
+    <a href="../practice/index.html">Practice Bank &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Agentic Loop: Plan, Act, Observe, Repeat Quiz — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interactive quiz for The Agentic Loop: Plan, Act, Observe, Repeat.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-04" data-chapter-id="chapter-04">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="lesson.html">&larr; Back to the lesson</a></p>
+
+  <span class="chapter-badge">Chapter 4 Quiz</span>
+  <h1>The Agentic Loop: Plan, Act, Observe, Repeat</h1>
+  <p>Eight questions. Fill in the blank, then check your answers.</p>
+
+  <div class="quiz-progress-wrap" aria-hidden="true">
+    <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+  </div>
+
+  <form onsubmit="return false;">
+    <div class="quiz-question">
+      <label for="q1"><span class="q-num">1</span> A tool call is a structured piece of model output — a name plus a JSON object of arguments — produced the same way any text is produced: as the most probable __________ of everything currently in the model's input.</label>
+      <div class="fib-row">
+        <input type="text" id="q1" class="fib-blank" data-answers="continuation" aria-label="Answer for question 1">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q2"><span class="q-num">2</span> A tool result is the genuine return value of a real function call, serialized and appended to the conversation — not a __________ the model invents about what happened.</label>
+      <div class="fib-row">
+        <input type="text" id="q2" class="fib-blank" data-answers="summary" aria-label="Answer for question 2">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q3"><span class="q-num">3</span> The model is __________ between turns: every turn re-reads the entire conversation so far and produces exactly one more message, rather than perceiving events as they happen.</label>
+      <div class="fib-row">
+        <input type="text" id="q3" class="fib-blank" data-answers="stateless" aria-label="Answer for question 3">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q4"><span class="q-num">4</span> Which tool gets called, and with what arguments, is decided by matching the current input against the tool __________ and schemas the model was given up front — there's no separate router.</label>
+      <div class="fib-row">
+        <input type="text" id="q4" class="fib-blank" data-answers="descriptions" aria-label="Answer for question 4">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q5"><span class="q-num">5</span> The clean stop happens when a turn produces no __________ block at all — the harness's signal that the model believes there's nothing left to act on.</label>
+      <div class="fib-row">
+        <input type="text" id="q5" class="fib-blank" data-answers="tool_use,tool call,tool-use" aria-label="Answer for question 5">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q6"><span class="q-num">6</span> The hard stop is a harness-enforced turn or step __________ — a safety valve against a loop that keeps calling tools without converging, independent of what the model wants to do next.</label>
+      <div class="fib-row">
+        <input type="text" id="q6" class="fib-blank" data-answers="limit,cap" aria-label="Answer for question 6">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q7"><span class="q-num">7</span> An upfront, multi-step plan is predictable and easy to audit mid-task but __________ exactly where flexibility is needed — it has to be explicitly revised when reality contradicts it.</label>
+      <div class="fib-row">
+        <input type="text" id="q7" class="fib-blank" data-answers="brittle" aria-label="Answer for question 7">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q8"><span class="q-num">8</span> In reactive re-planning, every turn's effective plan is just whatever the model predicts is the single best next action given the entire history so far, including the newest tool __________.</label>
+      <div class="fib-row">
+        <input type="text" id="q8" class="fib-blank" data-answers="result" aria-label="Answer for question 8">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div id="check-all-wrap">
+      <button type="button" id="check-all-btn" class="check-btn">Check All Answers</button>
+      <span id="quiz-score"></span>
+    </div>
+
+    <div class="quiz-celebration" id="quiz-celebration" aria-live="polite">
+      Perfect score. Chapter complete.
+    </div>
+  </form>
+
+  <div class="chapter-nav">
+    <a href="lesson.html">&larr; Back to Lesson</a>
+    <a href="exercises/index.html">Exercises &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/quiz-engine.js"></script>
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

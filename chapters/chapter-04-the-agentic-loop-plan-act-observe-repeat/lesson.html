@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Agentic Loop: Plan, Act, Observe, Repeat — AI Coding Agents for Everyone</title>
+<meta name="description" content="What's actually happening inside each turn of an agent's loop: how a model picks a tool call, what a tool result really is as data, and why the loop stops when it does.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-04">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 4</span>
+    <span class="badge-difficulty">Intermediate</span>
+    <span class="reading-time">~20 min</span>
+  </div>
+
+  <h1>The Agentic Loop: Plan, Act, Observe, Repeat</h1>
+  <p class="lede">
+    You already know the name of this loop from Chapter 1, and you've
+    watched it change direction mid-task in Chapters 2 and 3. What you
+    haven't seen yet is what's literally inside one turn of it — what a
+    "tool call" is as actual data, how the model decides which one to
+    make, and why the whole thing eventually stops instead of running
+    forever. This chapter opens the hood.
+  </p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#hook">1. One turn of the loop, unpacked</a>
+    <a href="#tool-calls">2. Inside one iteration: what a tool call and a tool result actually are</a>
+    <a href="#decisions">3. How the model picks a tool, and the arguments to call it with</a>
+    <a href="#termination">4. Why the loop stops when it does</a>
+    <a href="#replanning">5. Planning once vs. re-planning after every observation</a>
+    <a href="#thought-process">6. GenAI Builder Thought Process</a>
+    <a href="#recap">7. Points to remember</a>
+  </nav>
+
+  <div class="hook" id="hook">
+    <p>
+      The task: "Add rate limiting to <code>POST /api/comments</code> —
+      max 5 requests per minute per user. Acceptance:
+      <code>pytest tests/api/test_comments.py</code> passes, including a
+      new test for the 6th request in a minute returning 429."
+    </p>
+    <p>
+      Watch what the agent's first three turns actually contain — not a
+      summary of what it did, but the literal shape of the data going
+      back and forth between the model and the harness running it.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">turn 1 — the model's output</span>
+      </div>
+      <pre><code>{
+  "role": "assistant",
+  "content": [
+    { "type": "text",
+      "text": "I'll first check whether rate limiting already
+               exists anywhere in this codebase before adding a
+               new implementation." },
+    { "type": "tool_use",
+      "id": "call_1",
+      "name": "search_codebase",
+      "input": { "query": "rate limit" } }
+  ]
+}</code></pre>
+    </div>
+    <p>
+      Nothing has happened in the codebase yet. The model has produced
+      text plus one structured request — a name and a JSON object of
+      arguments. The harness (the actual program running the agent, not
+      the model itself) reads that request, executes a real search, and
+      hands the result back as the next message:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">turn 2 — what comes back, and what the model does with it</span>
+      </div>
+      <pre><code>{
+  "role": "user",
+  "content": [
+    { "type": "tool_result",
+      "tool_use_id": "call_1",
+      "content": "billing/middleware.py:14: def
+                   rate_limit(key, max_per_minute): ..." }
+  ]
+}
+
+-- the model's very next turn, reading only the message above
+-- plus everything before it:
+
+{
+  "role": "assistant",
+  "content": [
+    { "type": "text",
+      "text": "There's already a rate_limit decorator used by
+               billing. I'll reuse it on the comments route
+               instead of writing a new limiter." },
+    { "type": "tool_use",
+      "id": "call_2",
+      "name": "read_file",
+      "input": { "path": "billing/middleware.py" } }
+  ]
+}</code></pre>
+    </div>
+    <p>
+      Nothing here is mysterious once you see it laid out — but notice
+      what it rules out. The model didn't "watch" the search happen.
+      It had no idea a <code>rate_limit</code> decorator existed until
+      that exact block of text was placed in front of it and it
+      generated its next output based on everything now sitting in its
+      input, including that new block. That's the entire mechanism
+      behind "the agent discovered something and changed course" —
+      not intuition, a text block landing in context and a fresh
+      prediction over an input that's now different than it was one
+      turn ago.
+    </p>
+  </div>
+
+  <section id="tool-calls" class="subtopic">
+    <h2>Inside One Iteration: What a Tool Call and a Tool Result Actually Are</h2>
+    <p>
+      Chapter 1 named "act" as the step with no autocomplete equivalent
+      — a real effect, not a text prediction a human has to apply. Here
+      is the mechanical version of that claim: a tool call is the model
+      emitting a specific, structured piece of output — a tool name and
+      a JSON object of arguments — instead of (or alongside) ordinary
+      prose. It looks different from a sentence, but it's produced the
+      same way a sentence is: token by token, as the most probable
+      continuation given everything currently in the model's input.
+      What makes it an "action" and not just more text is what the
+      harness does with it next: it actually calls a function — runs a
+      search, opens a file, executes a shell command — with real
+      side effects in the real world, and that call either succeeds or
+      fails independently of what the model predicted would happen.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... a "tool result," precisely?</span>
+      The genuine output of that real function call — file contents, a
+      test runner's stdout and exit code, a search hit list, an error
+      traceback — serialized into a message and appended to the
+      conversation the model will read on its next turn. It is not a
+      summary the model writes about what it thinks happened. It's the
+      actual return value, verbatim (sometimes truncated for length),
+      placed where the model can read it next.
+    </div>
+    <p>
+      The part worth sitting with: the model has no persistent memory
+      of the tool actually running. There's no background process it's
+      "aware of" while <code>search_codebase</code> executes. The model
+      is stateless between turns — every single call to it is given the
+      entire conversation so far, from the original task down through
+      every tool call and every tool result, re-read from scratch, and
+      it produces exactly one more message. "Observe" isn't the model
+      perceiving an event; it's the model reading a block of text that
+      wasn't there a moment ago and that changes what the most probable
+      next output is. That distinction matters because it explains
+      something that looks strange the first time you see it: an agent
+      can "forget" a tool result it read three turns ago in a way a
+      human never would, simply because that text is still technically
+      present but now competing with a lot of newer text for the
+      model's attention — the mechanics of exactly how much of that
+      still fits, and what gets effectively deprioritized as it grows,
+      is Chapter 6's subject in full.
+    </p>
+  </section>
+
+  <section id="decisions" class="subtopic">
+    <h2>How the Model Picks a Tool, and the Arguments to Call It With</h2>
+    <p>
+      Every tool available to the agent is described to the model up
+      front, before the task even starts — a name, a plain-language
+      description of what it does, and a schema for its arguments (this
+      argument is required, that one is a string, this other one is an
+      enum with three allowed values). That description is the only
+      thing that tells the model <code>search_codebase</code> exists and
+      what shape its input should take. Nothing about tool selection is
+      hardcoded logic outside the model — there's no separate
+      if/else router deciding "this request sounds like a search, call
+      the search tool." The model itself predicts, as its next output,
+      either ordinary text or a tool-shaped block whose name matches one
+      of the tools it was told about and whose arguments are filled in
+      to match that tool's schema.
+    </p>
+    <p>
+      This is why tool descriptions matter more than most people
+      expect the first time they read one: two tools that do similar
+      things but are described ambiguously will get confused for each
+      other, and a tool with a vague argument description gets called
+      with vague or wrong arguments, for the same underlying reason a
+      vague prompt (Chapter 2) produces guesswork instead of a targeted
+      answer — the model is filling in a gap with its best statistical
+      guess, not looking up a fact it's certain of.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">why "search_codebase" over "read_file" on turn 1</span>
+      </div>
+      <pre><code>Tools available at turn 1 (as described to the model):
+
+  search_codebase(query: string)
+    "Full-text search across the repository. Use when the
+     relevant file is not yet known."
+
+  read_file(path: string)
+    "Read the exact contents of one file. Use when the file
+     path is already known."
+
+  run_tests(path: string)
+    "Run a test file or directory and return pass/fail output."
+
+At turn 1, no file path has appeared anywhere in the
+conversation yet -- only the task description. "search_codebase"
+is the only tool whose description matches a state where no path
+is known. Calling "read_file" here would require a path the
+model doesn't have -- it would have to invent one, which is
+exactly the shape of a hallucinated argument.</code></pre>
+    </div>
+    <p>
+      Once <code>turn 2</code>'s tool result put an actual path,
+      <code>billing/middleware.py</code>, into the conversation, calling
+      <code>read_file</code> with that exact string stopped being a
+      guess and became the highest-probability next step given
+      everything now in context — a real fact just appeared that makes
+      that specific call the obvious continuation. The "decision" isn't
+      a separate reasoning module bolted onto a predictor; it's the same
+      prediction mechanism Chapter 1 already described for autocomplete,
+      now operating over a much richer, constantly growing input, and
+      constrained to sometimes emit structured tool calls instead of
+      only prose.
+    </p>
+  </section>
+
+  <section id="termination" class="subtopic">
+    <h2>Why the Loop Stops When It Does</h2>
+    <p>
+      A loop that only ever added more turns forever would be useless —
+      so every real agent implementation has more than one way for it
+      to end, and it's worth naming all of them separately because they
+      get confused with each other in practice.
+    </p>
+    <p>
+      <strong>The clean stop: a turn with no tool call.</strong> On any
+      given turn, the model can produce a message that's just text, with
+      no <code>tool_use</code> block at all. That's the harness's signal
+      that the model believes there's nothing left to act on — the next
+      most probable output, given the whole history including every
+      prior tool result, is a summary rather than another action. This
+      is the "done" case, and it's a prediction like any other turn, not
+      a separate verified fact — which is exactly why Chapter 3 insists
+      on checking the acceptance criterion yourself rather than trusting
+      the agent's own "done" message at face value.
+    </p>
+    <p>
+      <strong>The hard stop: a turn or step limit.</strong> Every
+      practical agent harness caps how many loop iterations a single
+      task can run before forcing a stop regardless of what the model
+      wants to do next — a safety valve against a loop that keeps
+      calling tools without converging. Hitting this cap isn't the
+      model deciding it's done; it's the harness overriding it. The
+      difference matters for review: a task that stopped because it hit
+      a step cap needs a different kind of scrutiny than one that
+      stopped because the model believed the acceptance criterion was
+      met.
+    </p>
+    <p>
+      <strong>The boundary stop: an explicit rule the human set.</strong>
+      Chapter 2's "stop and ask before touching <code>search/cache/</code>"
+      is implemented, mechanically, as exactly this: something in the
+      conversation (a system instruction, a permission check the harness
+      enforces before letting a tool call through) makes a text-only,
+      question-asking turn the higher-probability — or the only
+      permitted — output instead of the tool call the model might
+      otherwise have made. A good boundary doesn't just hope the model
+      behaves; well-built harnesses can refuse to execute a tool call
+      that violates one, independent of what the model predicted.
+    </p>
+    <p>
+      <strong>The failure stop: an unrecoverable error.</strong> A tool
+      call can fail in a way the model can't route around — a
+      permissions error, a repeatedly failing command, a resource that
+      doesn't exist. What the loop does with that failure (retry
+      forever, give up too early, mistake a failure for success) is
+      exactly the territory Chapter 5 covers as a set of named failure
+      modes. This chapter's job is just naming the mechanism: an error
+      is itself a tool result, read back into context like any other,
+      and what happens next is still the same prediction process,
+      operating on input that now includes a failure.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the relationship between "stop" and context size?</span>
+      Every one of these stop conditions operates on a conversation that
+      has been growing, turn by turn, since the task began — every prior
+      tool call and tool result is still sitting in there unless
+      something actively removes it. A loop that runs long enough can
+      hit a context-size limit before it hits any of the four stops
+      above, forcing a kind of stop none of them describe cleanly. That
+      mechanism — what actually happens as the conversation grows toward
+      that limit, and why an agent seems to "forget" earlier turns well
+      before the limit is technically reached — is Chapter 6's subject
+      in full; this chapter only needs you to know it's a fifth,
+      resource-driven way a loop can end.
+    </p>
+  </section>
+
+  <section id="replanning" class="subtopic">
+    <h2>Planning Once vs. Re-Planning After Every Observation</h2>
+    <p>
+      Chapter 1 described "plan" as picking the next concrete step, not
+      the whole solution up front — worth making explicit now, because
+      it's a real design choice with a real trade-off, not an
+      implementation detail.
+    </p>
+    <p>
+      One approach commits to an explicit, multi-step plan early —
+      the model produces something like a numbered checklist before any
+      tool calls happen, and the loop's job becomes working through that
+      checklist, item by item, only revising it when an observation
+      directly contradicts something the plan assumed. This is
+      predictable and easy for a human to audit mid-task — you can read
+      the checklist and know roughly where the agent is — but it's
+      brittle exactly where Chapter 1's hook needed flexibility: the
+      checklist was written before the agent knew a second
+      header-validation file existed, so either the plan has to bend
+      around a discovery it didn't anticipate, or it proceeds on a
+      now-outdated map of the problem.
+    </p>
+    <p>
+      The other approach — closer to what the rate-limiting example
+      above actually did — never commits to a persisted, multi-step
+      checklist at all. Every single turn, the effective "plan" is just
+      whatever the model predicts is the single best next action given
+      the entire history so far, including the newest tool result. When
+      turn 2's search revealed an existing <code>rate_limit</code>
+      decorator, there was no checklist item to "update" — there was
+      simply a new fact in the input, and the next-turn prediction
+      changed because the input changed. This is more adaptive to
+      genuine discoveries, but harder to audit mid-flight: there's no
+      fixed plan object a human can compare the agent's current action
+      against, only the running history of what it's already done.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">the same discovery, two planning styles</span>
+      </div>
+      <pre><code>Upfront-plan style:
+
+  Plan (written before any tool call):
+    1. Add rate_limit decorator to comments route
+    2. Write config for 5/minute
+    3. Add test for 6th request returning 429
+
+  Turn 2 observation: rate_limit() already exists in
+  billing/middleware.py.
+
+  -- Step 1 above is now wrong as written (it assumed writing
+  -- a new decorator). The loop has to detect the mismatch and
+  -- revise the plan object itself before continuing.
+
+
+Reactive re-planning style (no persisted plan object):
+
+  Turn 1: "next best action, given only the task" -> search
+  Turn 2: "next best action, given the task + search result"
+          -> read billing/middleware.py
+  Turn 3: "next best action, given all of the above" -> apply
+          the existing decorator to the comments route
+
+  -- There was never a step 1 that assumed a new decorator, so
+  -- there's nothing to revise -- each turn's "plan" is simply
+  -- a fresh prediction over a bigger input than the turn before.</code></pre>
+    </div>
+    <p>
+      Most real coding agents run closer to the reactive style by
+      default, sometimes writing an explicit, visible to-do list as an
+      artifact of its own — not because it's structurally required, but
+      because a visible checklist helps a human track a long-running
+      task, and can help the model itself stay oriented across a lot of
+      turns. Either way, the underlying mechanism from the two sections
+      above doesn't change: what looks like "planning" is still turn-by-
+      turn prediction over a growing input, and what looks like
+      "re-planning" is just that same prediction producing a different
+      output because the input genuinely changed. Whether that
+      adaptability degrades gracefully or turns into thrashing —
+      re-deciding the same step over and over, or chasing a discovery
+      down an unproductive path — is exactly what Chapter 5 diagnoses
+      next.
+    </p>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p><strong>Problem:</strong> a developer building intuition for
+      "why did the agent do that" keeps reaching for human-sounding
+      explanations — "it got confused," "it changed its mind," "it
+      noticed" — that don't actually predict what the agent will do
+      next in a new situation.</p>
+      <p><strong>Assumption being made:</strong> that an agent's
+      mid-task behavior comes from something like ongoing awareness or
+      memory of what it's been doing, the way a human working on a task
+      over an afternoon would experience it.</p>
+      <p><strong>What actually distinguishes it:</strong> there is no
+      persistent awareness between turns — only a growing, re-read-
+      from-scratch conversation, and a single stateless prediction on
+      each turn over whatever is currently in that conversation. "It
+      noticed the existing decorator" cashes out to: a tool result
+      containing that decorator's location was appended to the input,
+      and the next prediction was different because the input was
+      different. Nothing about the model "changed its mind" in the way
+      a person would.</p>
+      <p><strong>Why this matters before Chapter 5:</strong> you can't
+      meaningfully diagnose why a loop got stuck, thrashed, or went off
+      the rails (Chapter 5) if your mental model of "why it does
+      anything" is a vague notion of awareness rather than the actual
+      mechanism — a fresh prediction over an input that includes
+      everything so far, tool descriptions constraining what a valid
+      next action even looks like, and a handful of concrete stop
+      conditions. Failure modes are easier to spot as specific,
+      nameable breakdowns in that mechanism once you know what the
+      mechanism actually is.</p>
+      <p><strong>Working definition to carry forward:</strong> one loop
+      iteration is a single stateless prediction, made over the entire
+      conversation so far, that either emits a structured tool call
+      (name plus schema-matched arguments) which the harness actually
+      executes and appends a real result for, or emits plain text with
+      no tool call, which — combined with the harness's own stop rules —
+      is what ends the loop.</p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember</h2>
+      <ul>
+        <li>A tool call is a structured piece of model output — a name
+        plus a JSON object of arguments — produced the same way any
+        text is produced: as the most probable continuation of
+        everything currently in the model's input.</li>
+        <li>A tool result is the genuine return value of a real function
+        call (file contents, test output, an error), serialized and
+        appended to the conversation for the model to read on its next
+        turn — not a summary the model invents about what happened.</li>
+        <li>The model is stateless between turns: every turn re-reads
+        the entire conversation so far and produces exactly one more
+        message. "Observing" is reading a new block of text, not
+        perceiving an event as it happens.</li>
+        <li>Which tool gets called, and with what arguments, is decided
+        by matching the current input against the tool descriptions and
+        schemas the model was given up front — there's no separate
+        router; ambiguous tool descriptions produce ambiguous or wrong
+        calls the same way a vague prompt produces guesswork.</li>
+        <li>The loop ends one of (at least) four ways: a turn with no
+        tool call (the model believes it's done), a harness-enforced
+        step cap, an explicit boundary rule blocking or redirecting a
+        call, or an unrecoverable tool error — plus a fifth,
+        resource-driven case (running out of usable context) that
+        Chapter 6 covers in full.</li>
+        <li>"Planning" and "re-planning" are not a separate reasoning
+        step bolted onto prediction — an upfront checklist has to be
+        explicitly revised when reality contradicts it, while reactive,
+        turn-by-turn planning simply produces a different next
+        prediction because the input changed; most real coding agents
+        lean reactive by default, sometimes with a visible to-do list as
+        an aid, not a structural requirement.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="what-is">
+    <span class="label">Interview questions (4 levels)</span>
+    See <a href="interview-questions.html">Chapter 4 interview questions</a>.
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

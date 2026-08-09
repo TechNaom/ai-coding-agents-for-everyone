@@ -47,7 +47,8 @@ window.ACAFE_MODULES = [
         id: "chapter-04",
         num: 4,
         title: "The Agentic Loop: Plan, Act, Observe, Repeat",
-        description: "The mental model behind every coding agent's behavior."
+        description: "The mental model behind every coding agent's behavior.",
+        path: "chapters/chapter-04-the-agentic-loop-plan-act-observe-repeat/lesson.html"
       },
       {
         id: "chapter-05",

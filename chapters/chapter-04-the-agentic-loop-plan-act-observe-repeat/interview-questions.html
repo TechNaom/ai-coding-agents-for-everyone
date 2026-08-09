@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Agentic Loop: Plan, Act, Observe, Repeat Interview Questions — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interview questions for The Agentic Loop: Plan, Act, Observe, Repeat.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-04">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="practice/index.html">&larr; Back to practice bank</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 4 Interview Questions</span>
+    <span class="reading-time">~15 min</span>
+  </div>
+  <h1>Interview Questions: The Agentic Loop: Plan, Act, Observe, Repeat</h1>
+  <p>Grouped by level. Each includes a strong answer, a red flag, and a follow-up.</p>
+
+  <div class="lesson-card">
+    <h2>1. (Beginner) What is a "tool call," mechanically, and how is it different from the model just writing a sentence?</h2>
+    <p><strong>Strong answer:</strong> A tool call is a structured piece of model output — a tool name plus a JSON object of arguments — produced by exactly the same mechanism as any other text: token-by-token prediction of the most probable continuation given everything currently in the model's input. It only looks different from prose because of its shape. What actually makes it an "action" and not just more text is what happens after: the harness reads it and executes a real function with real side effects, independent of what the model predicted would happen.</p>
+    <p><strong>Red flag:</strong> Describes a tool call as the model "deciding to take an action" via some separate reasoning or planning module distinct from ordinary text generation, as if tool selection were a different kind of computation than producing a sentence.</p>
+    <p><strong>Follow-up:</strong> "If a tool call is produced the same way as any text, what stops the model from hallucinating a tool that doesn't exist?"</p>
+    <p><strong>What this proves:</strong> Understands that "acting" is a data-shape and harness-execution distinction, not a different underlying mechanism inside the model.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>2. (Beginner) Why can't the model "watch" a tool run, and what does it actually experience instead?</h2>
+    <p><strong>Strong answer:</strong> The model is stateless between turns — it has no background process it's aware of while a tool executes. What "observing" actually means is that a new block of text (the tool result) gets appended to the conversation, and on its next turn the model re-reads the entire conversation from scratch, including that new block, and produces one more prediction. The apparent "noticing" of a discovery is just a fresh prediction over an input that now contains new text.</p>
+    <p><strong>Red flag:</strong> Describes the model as having ongoing awareness or memory of a tool "running in the background," or says it perceives the tool result "as it happens" rather than reading it fresh on the next turn.</p>
+    <p><strong>Follow-up:</strong> "Given that, what does it mean for an agent to 'forget' something it read five turns ago?"</p>
+    <p><strong>What this proves:</strong> Has internalized the stateless, re-read-from-scratch nature of each turn rather than a human-memory mental model.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>3. (Intermediate) Two tools do similar things but are described ambiguously to the model. What goes wrong in practice, and why?</h2>
+    <p><strong>Strong answer:</strong> Since tool selection has no separate router — the model predicts a tool-shaped block whose name and arguments match one of the tool descriptions it was given up front — ambiguous descriptions mean the model has to guess which tool the description was pointing at, the same way a vague prompt produces guesswork instead of a targeted answer. The result is the wrong tool getting called, or the right tool getting called with vague or invented arguments, because the model is filling a gap with its best statistical guess rather than looking up a certain fact.</p>
+    <p><strong>Red flag:</strong> Treats tool confusion as a "bug in the model" rather than a predictable consequence of underspecified tool descriptions — the same class of problem as an underspecified prompt.</p>
+    <p><strong>Follow-up:</strong> "What would you change in a tool's description to reduce this kind of confusion, without changing what the tool does?"</p>
+    <p><strong>What this proves:</strong> Connects tool-description quality to Chapter 2's prompting-precision lesson rather than treating it as an unrelated engineering detail.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>4. (Intermediate) Name the (at least) four ways an agent loop can stop, and explain why it matters, during review, which one actually happened.</h2>
+    <p><strong>Strong answer:</strong> A clean stop (a turn with no tool call — the model believes it's done), a hard stop (a harness-enforced step cap overriding the model), a boundary stop (an explicit rule blocking or redirecting a call), and a failure stop (an unrecoverable tool error). It matters because each implies a different kind of scrutiny: a clean stop is a prediction, not a verified fact, so the acceptance criterion still needs independent checking; a step-cap stop means the task may be genuinely incomplete, not "done"; a boundary stop means the harness intervened, not the model choosing correctly; a failure stop means something broke and the model's response to that failure needs its own review.</p>
+    <p><strong>Red flag:</strong> Treats every stop as equivalent to "the agent finished successfully," or can only name one or two of the four without recognizing there's more than one mechanism.</p>
+    <p><strong>Follow-up:</strong> "How would you tell, just from a transcript, which of the four actually happened?"</p>
+    <p><strong>What this proves:</strong> Can distinguish termination mechanisms and connect that distinction to Chapter 3's "don't trust the agent's own 'done' message" review discipline.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>5. (Senior) You're deciding between an upfront-multi-step-plan architecture and a reactive, turn-by-turn architecture for a new coding agent. What's the real trade-off, and how would you decide?</h2>
+    <p><strong>Strong answer:</strong> An upfront plan is predictable and easy for a human to audit mid-task — you can read a checklist and know roughly where the agent is — but it's brittle against genuine discoveries: it has to be explicitly detected as wrong and revised when reality contradicts an assumption baked into it early. A reactive loop, where each turn's plan is simply the best next action given the full history so far, adapts naturally to new information because there's no stale plan object to revise, but it's harder to audit mid-flight since there's no fixed plan to compare the current action against. The decision hinges on how volatile the task's discovery surface is (a lot of unknowns favors reactive) versus how much mid-task human auditability matters (compliance-heavy or long-running tasks favor a visible, even if non-binding, checklist as a hybrid).</p>
+    <p><strong>Red flag:</strong> Declares one approach strictly superior without naming the specific trade-off (auditability vs. adaptability), or claims real agents never use any upfront structure at all.</p>
+    <p><strong>Follow-up:</strong> "How would a visible to-do list, as a non-binding artifact rather than a governing structure, capture some of both approaches' benefits?"</p>
+    <p><strong>What this proves:</strong> Can reason about an architectural trade-off rather than treating "planning" as a single, undifferentiated feature.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>6. (Senior) A teammate says "the agent changed its mind when it saw the existing rate_limit decorator." Rewrite that sentence in terms of the actual mechanism, and explain why the rewrite matters for debugging.</h2>
+    <p><strong>Strong answer:</strong> A tool result containing the decorator's file location was appended to the conversation; on the next turn, the model re-read the entire conversation including that new block and produced a different prediction because the input was different — nothing "changed" inside the model between turns, there's no persisted intention that got revised. This matters for debugging because if you believe the agent has ongoing awareness or intent, you'll look for a bug in "reasoning" when something goes wrong; if you know it's stateless prediction over a growing input, you look at exactly what text was and wasn't in context at the turn in question, which is where the actual answer usually lives.</p>
+    <p><strong>Red flag:</strong> Can't translate the human-sounding sentence into the mechanistic one, or insists the human framing is "basically the same thing, just simpler language" without seeing that it implies a different, wrong debugging strategy.</p>
+    <p><strong>Follow-up:</strong> "Given this, what's the first thing you'd inspect when an agent 'ignores' an instruction from ten turns ago?"</p>
+    <p><strong>What this proves:</strong> Translates folk-psychological descriptions into the mechanism this chapter teaches, and connects that translation to practical debugging habits.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>7. (Architect) Design the stop-condition policy for a coding agent that will run unattended in CI. Which of the four stop types do you need to make maximally strict, and why?</h2>
+    <p><strong>Strong answer:</strong> The hard stop (step cap) and the boundary stop need to be the strictest and most mechanically enforced, since unattended means no human is present to catch a clean stop that's actually a wrong "I'm done" prediction, or a failure stop that got silently misrouted. Concretely: a conservative step cap sized to the task's expected complexity, boundaries enforced by the harness refusing to execute a disallowed tool call (not just a prompt-level instruction the model might override), and every clean stop gated behind an independently-run acceptance check before the pipeline treats the task as actually done — never trusting the model's own no-tool-call turn as proof of completion. Failure stops should fail the pipeline loudly rather than let the loop guess its way past an error.</p>
+    <p><strong>Red flag:</strong> Proposes relying on the model's own judgment for when to stop as sufficient for an unattended CI context, or doesn't distinguish harness-enforced boundaries from prompt-level instructions that a sufficiently determined next-token prediction could route around.</p>
+    <p><strong>Follow-up:</strong> "How does this policy change, if at all, once Chapter 6's context-window limits enter the picture on a long-running CI task?"</p>
+    <p><strong>What this proves:</strong> Designs for the unattended, high-stakes case by hardening exactly the stop conditions a human isn't present to backstop — direct groundwork for Module 5's CI chapter.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>8. (Architect) An agent team wants to move from the upfront-plan architecture to the reactive architecture to improve adaptability, but is worried about losing auditability for compliance reasons. How would you resolve this without picking one extreme?</h2>
+    <p><strong>Strong answer:</strong> Recognize that the visible to-do list most real coding agents already produce is exactly this resolution: it's a non-binding artifact, not a governing plan object, so it doesn't reintroduce the brittleness of a plan the loop is obligated to follow, but it gives a human (or an automated compliance check) something concrete to read against the agent's actual turn-by-turn actions after the fact. The audit trail comes from logging every turn's actual tool call and result — the true record of what happened — with the to-do list as a human-readable index into that log, not a replacement for it.</p>
+    <p><strong>Red flag:</strong> Proposes reverting to a strictly-followed upfront plan purely to satisfy compliance, reintroducing the exact brittleness the team was trying to escape, or dismisses the compliance concern as unimportant.</p>
+    <p><strong>Follow-up:</strong> "What would you log at each turn to make a post-hoc audit possible without slowing down the loop itself?"</p>
+    <p><strong>What this proves:</strong> Resolves an apparent architectural conflict by separating "governing structure" from "audit artifact" — systems-level thinking about how the loop's mechanism interacts with organizational requirements.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="practice/index.html">&larr; Practice Bank</a>
+    <a href="project/index.html">Build the Project &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

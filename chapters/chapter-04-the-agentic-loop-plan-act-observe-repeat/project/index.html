@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Agentic Loop: Plan, Act, Observe, Repeat Project — AI Coding Agents for Everyone</title>
+<meta name="description" content="The Level 2 lab: trace a real agent transcript turn by turn and annotate each loop step against this module's mechanism.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-04">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../interview-questions.html">&larr; Back to interview questions</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 4 Project</span>
+    <span class="reading-time">~20 min to read · 1-2 hours to build</span>
+  </div>
+  <h1>Level 2 Lab: Trace a Real Agent Transcript and Annotate Each Loop Step</h1>
+  <p>
+    Module 1's project asked you to trust the diff less. This lab asks
+    you to stop treating the run that produced it as a black box. You're
+    going to take an actual agent transcript — a real one, from a tool
+    you already have access to, not a hypothetical — and annotate every
+    single turn against the mechanism this chapter just opened up: what
+    was in context at that point, what got predicted, whether it was a
+    tool call or plain text, and which of the four stop conditions
+    eventually ended it.
+  </p>
+
+  <div class="hook">
+    <p>
+      The deliverable is one annotated trace of one real run. "Annotated"
+      means more than pasting the transcript — for every turn, you name
+      the specific new fact that entered context and made that turn's
+      output the most probable next one, the same way the lesson did for
+      the rate-limiting example. A trace with the raw turns but no
+      annotation doesn't demonstrate you understand the mechanism; an
+      annotation with no real transcript underneath it is just
+      restating the chapter's own example back. You need both, on a run
+      that's actually yours.
+    </p>
+  </div>
+
+  <h2>What you'll need</h2>
+  <ul>
+    <li>Any coding agent tool that lets you see (or export) its raw
+    turn-by-turn transcript, not just a chat-style summary view — Claude
+    Code's session transcripts, Cursor's agent-mode step log, GitHub
+    Copilot's agent-mode run view, or an equivalent. Most tools expose
+    this somewhere even if it's not the default view; if yours truly
+    doesn't, running the agent inside a terminal and capturing its full
+    output (including tool calls and results, not just its chat replies)
+    is an acceptable substitute.</li>
+    <li>A small, real task to actually run through the agent — reuse a
+    codebase you already have access to (your own project, or the one
+    you used for Module 1's project). It doesn't need to be new work;
+    re-running a task similar in size to Module 1's project is fine,
+    since the point here is studying the run's mechanism, not shipping
+    a new feature.</li>
+    <li>A way to save two artifacts: the raw transcript (exported file,
+    copied terminal output, or screenshots stitched together in order),
+    and your written annotation.</li>
+  </ul>
+
+  <h2>Step 1 — Run a real task and capture the raw transcript</h2>
+  <p>
+    Pick a task with at least 4-8 tool-using turns before it stops —
+    small enough to run in a few minutes, but not so small that it
+    completes in a single turn (a one-turn run gives you nothing to
+    trace). A good size: a task that requires the agent to search or
+    read at least one file it didn't already know about before writing
+    or changing anything, so there's at least one real "observe changed
+    what happens next" moment to annotate, the way turn 2 changed turn
+    3's action in the lesson's rate-limiting example.
+  </p>
+  <p>
+    Capture the actual data, not a paraphrase: every <code>tool_use</code>
+    block (or your tool's equivalent — some show it as a labeled action
+    like "Read file: x" rather than raw JSON, which is fine as long as
+    the tool name and arguments are visible) and every tool result,
+    including ones that don't look interesting. If your tool only shows
+    you a chat-style summary by default, look for a "show details,"
+    "view raw transcript," "steps," or similar toggle — nearly every
+    real coding agent tool exposes this somewhere, because Chapter 3's
+    review discipline depends on being able to see it.
+  </p>
+
+  <h2>Step 2 — Number every turn</h2>
+  <p>
+    Before annotating, just number the turns in order — this becomes the
+    skeleton your annotation attaches to:
+  </p>
+  <div class="code-window">
+    <div class="code-window-bar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="filename">turn numbering — what counts as one turn</span>
+    </div>
+    <pre><code>Turn N (assistant): text (if any) + tool call (name, arguments)
+  -- or --
+Turn N (assistant): text only, no tool call
+
+Turn N+1 (tool result): what the harness actually returned
+
+A "turn" is one assistant message. A tool result that follows
+it is not its own turn in the plan/act sense -- it's the input
+the *next* assistant turn reads. Number them together in
+sequence so the trace reads top to bottom in real chronological
+order.</code></pre>
+  </div>
+
+  <h2>Step 3 — Annotate each turn against the mechanism</h2>
+  <p>
+    For every assistant turn, answer three questions in your own words —
+    this is the actual graded work, not the transcript itself:
+  </p>
+  <ol>
+    <li><strong>What was new in context right before this turn?</strong>
+    Name the specific fact (a file path that just appeared, a search
+    result, an error message, or "nothing yet — this is turn 1 and only
+    the task description is in context").</li>
+    <li><strong>What did the model produce, and why was it the most
+    probable next output given that new fact?</strong> If it's a tool
+    call, name the tool and say specifically why that tool's
+    description matched the current state better than the other
+    available tools would have. If it's text with no tool call, say
+    what in the history makes "nothing left to act on" the likely
+    read.</li>
+    <li><strong>Is this turn part of a plan the agent stated upfront, or
+    a reactive next-step with no persisted plan?</strong> If your tool
+    showed a to-do list or checklist artifact at any point, note whether
+    this turn matches, revises, or ignores an item on it.</li>
+  </ol>
+  <p>
+    Do this for every turn, including the ones that feel obvious or
+    mechanical — a search that returns exactly what was expected is
+    still worth one sentence, because the point of the exercise is
+    building the habit of seeing the mechanism on ordinary turns, not
+    just interesting ones.
+  </p>
+
+  <h2>Step 4 — Identify the stop condition</h2>
+  <p>
+    Name which of the chapter's stop mechanisms actually ended your run:
+    a clean stop (final turn is text only, no tool call), a hard stop
+    (a step or turn cap was hit), a boundary stop (a tool call was
+    blocked or redirected), or a failure stop (an unrecoverable tool
+    error). If your run is still going or you stopped it manually,
+    that's a fifth, human-initiated case worth naming honestly rather
+    than forcing it into one of the four.
+  </p>
+  <p>
+    If it was a clean stop, apply Chapter 3's discipline here for real:
+    check the task's actual result yourself (run the test, read the
+    file, whatever verifies it) rather than accepting the agent's own
+    "done" message, and record in your annotation whether the model's
+    final claim matched what you independently found.
+  </p>
+
+  <h2>Step 5 — Write the annotated trace</h2>
+  <p>
+    Combine everything into one document, using this structure:
+  </p>
+  <div class="code-window">
+    <div class="code-window-bar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="filename">annotated-trace.md — required sections</span>
+    </div>
+    <pre><code># Annotated Trace: &lt;task name&gt;
+
+## Task
+&lt;the exact task/prompt you gave the agent, verbatim&gt;
+
+## Tool used
+&lt;which coding agent tool, and how you captured the raw
+transcript -- native export, raw view toggle, terminal
+capture, etc.&gt;
+
+## Turn-by-turn trace
+### Turn 1
+&lt;raw content: text + tool call, or text only&gt;
+- New fact in context before this turn: &lt;...&gt;
+- Why this was the most probable next output: &lt;...&gt;
+- Plan style: &lt;upfront-plan item / reactive next-step&gt;
+
+### Turn 2
+&lt;...same three fields, repeated for every turn...&gt;
+
+## Stop condition
+&lt;which of the four (or the fifth, human-initiated) case
+applies, with the specific evidence from the last 1-2 turns
+that shows it&gt;
+
+## Verification
+&lt;what you personally checked to confirm the task's actual
+result, independent of the agent's own final message, and
+whether it matched&gt;
+
+## What surprised you
+&lt;at least one turn where the human-sounding explanation
+("it figured out," "it noticed") and the mechanism-level
+explanation you wrote would have led you to a different
+conclusion about what to do next&gt;</code></pre>
+  </div>
+
+  <h2>What "done" looks like</h2>
+  <ul>
+    <li>A real, complete raw transcript is attached or pasted in —
+    not a chat-style summary, not a reconstruction from memory.</li>
+    <li>Every assistant turn in that transcript has all three annotation
+    fields filled in with real reasoning, not a placeholder like "the
+    model decided to do this."</li>
+    <li>The stop condition is correctly identified and backed by
+    specific evidence from the transcript's final turns, not just
+    asserted.</li>
+    <li>The verification section shows you personally checked the
+    task's actual outcome rather than trusting the agent's closing
+    message.</li>
+    <li>The "what surprised you" section names a real, specific moment
+    from your own run — not a restatement of the lesson's rate-limiting
+    example.</li>
+  </ul>
+
+  <div class="what-is">
+    <span class="label">Where this fits</span>
+    Module 2 — How Coding Agents Actually Work: this chapter opened up
+    the mechanism (tool calls, tool results, stop conditions,
+    plan-vs-reactive), Chapter 5 diagnoses what it looks like when that
+    mechanism goes wrong (looping, stalling, going off the rails), and
+    Chapter 6 covers what happens to it as context grows toward a limit.
+    This lab is the Level 2 lab from the course's curriculum map — "trace
+    a real agent transcript and annotate each loop step" — and it's the
+    skill Chapter 5's failure-diagnosis work assumes you already have:
+    you can't spot a broken loop if you can't first read a working one
+    accurately.
+  </div>
+
+  <div class="points-to-remember">
+    <h2>Why this lab is structured this way</h2>
+    <p>
+      A lab that only asked you to "read about how the loop works" would
+      test recall of this chapter's rate-limiting example, not whether
+      you can apply the mechanism to a run you've never seen before —
+      which is the actual skill. Every real agent transcript has its own
+      specific sequence of tool calls, its own specific new facts
+      landing in context turn by turn, and annotating a transcript that
+      isn't the one from the lesson is what proves you internalized the
+      mechanism rather than memorized one worked example. If this lab
+      only asked for a transcript with no annotation, it would be
+      measuring whether you can operate an agent tool's export feature,
+      which was never the hard part.
+    </p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../interview-questions.html">&larr; Interview Questions</a>
+    <a href="../../../index.html">All Chapters &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>
