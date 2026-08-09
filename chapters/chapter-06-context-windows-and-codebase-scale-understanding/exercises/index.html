@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Windows and Codebase-Scale Understanding Exercises — AI Coding Agents for Everyone</title>
+<meta name="description" content="Hands-on exercises for Context Windows and Codebase-Scale Understanding.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-06">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../quiz.html">&larr; Back to the quiz</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 6 Exercises</span>
+    <span class="reading-time">~30 min</span>
+  </div>
+  <h1>Exercises: Context Windows and Codebase-Scale Understanding</h1>
+  <p>Still conceptual — no SDK or code execution here, that starts in
+  Module 3. Each exercise hands you a transcript excerpt, a session
+  description, or a design problem. The work is reasoning precisely
+  about what was and wasn't in context at a given moment, and why —
+  not just saying "it should have remembered."</p>
+
+  <div class="what-is">
+    <span class="label">Exercise standard</span>
+    Six tasks below. At least three are production-gear: harder,
+    ambiguous, real-world judgment calls rather than clean textbook
+    cases.
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">1</span> Hard limit, or crowding/dilution?</h3>
+    <p>Three scenarios. For each, say whether the described "forgetting"
+    is most likely a hard context-limit event, or crowding/dilution —
+    and name the one piece of evidence that would settle it:</p>
+    <ol type="a">
+      <li>A session that has run for 40 turns, well under any realistic
+      token ceiling for the model in use, contradicts a rule stated on
+      turn 2.</li>
+      <li>A harness log shows an explicit "conversation truncated,
+      oldest turns summarized" event right before the agent asks a
+      question it should already know the answer to.</li>
+      <li>An agent re-derives a fact from scratch (re-reading a file) that
+      was already stated in plain text by a human twelve turns earlier,
+      with nothing else unusual in the log.</li>
+    </ol>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">2</span> Rewrite the padded prompt</h3>
+    <p>A developer's actual prompt to an agent: "Here's our full
+    onboarding doc (4,000 words), our Q3 planning notes, and the last
+    two sprint retros, for background. Also, can you fix the bug where
+    the export button downloads a CSV with the wrong date format in
+    <code>reports/export.py</code>? It should be YYYY-MM-DD." Using this
+    chapter's mechanism (not just "keep it short"), explain specifically
+    what the onboarding doc, planning notes, and retros are doing to
+    every later turn in this session if included, then rewrite the
+    prompt to include only what actually serves locating the file,
+    defining "correct," and stating any real boundary.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">3</span> The eleven-file migration, continued</h3>
+    <p>Recall the lesson's hook: a rule stated on turn 3 (always use
+    <code>InvoiceV2.from_legacy(...)</code>) gets violated on turn 68
+    after ten files' worth of unrelated reads and diffs accumulated in
+    between. Propose two different concrete changes to how this session
+    should have been run — one that reduces how much unrelated material
+    accumulates between the rule and its use, and one that increases the
+    rule's chance of still being influential at turn 68 without changing
+    session structure at all. Explain the specific mechanism each one
+    addresses.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">4</span> (Production-gear) Diagnosing a summarization bug</h3>
+    <p>Your team's harness compacts conversations past 100 turns,
+    replacing the oldest 60 turns with a generated summary. A production
+    incident: an agent working on a payments refactor, past turn 100,
+    confidently states "as established, refunds always go through the
+    v1 gateway" and proceeds to modify code on that basis — but the v1
+    gateway was actually deprecated two months ago, and turn 34 (now
+    inside the summarized region) originally contained a tool result
+    showing exactly that deprecation notice in a code comment. You only
+    have the post-compaction transcript and the summary text itself to
+    work with; the raw turn 34 tool result is gone. (a) Explain how this
+    specific failure could have originated in the summarization step
+    itself rather than anywhere in the raw turns you can still see. (b)
+    Propose one concrete change to what the compaction step is required
+    to preserve that would have caught or prevented this specific
+    class of error, and explain why it would have worked here.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">5</span> (Production-gear) Fresh session vs. keep going: make the call</h3>
+    <p>An agent has been running for three hours on a large dependency
+    upgrade across a monorepo. You're handed the last 15 turns of the
+    transcript (not the whole thing) and asked whether to let it
+    continue or restart with a fresh, tightly-scoped session. The last
+    15 turns show: two files successfully upgraded and tested, one
+    upgrade attempt that failed and was retried with a slightly
+    different approach that also failed, then a third retry
+    functionally identical to the first failed attempt, then a
+    successful upgrade of an unrelated fourth file, then the agent
+    stating "based on the pattern established for the first two files,
+    I'll apply the same approach to the remaining twelve" without having
+    actually resolved the repeated failure. Using this chapter's and
+    Chapter 5's vocabulary together, write the specific recommendation
+    you'd give, citing which named patterns from both chapters you see
+    and which you don't.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">6</span> (Production-gear) Design the "still matters" restatement</h3>
+    <p>Your team scopes a large repo migration into eight separate,
+    fresh agent sessions — one per module — specifically to avoid the
+    crowding problem from exercise 3. Each session starts with zero
+    prior conversation. List the specific, minimum set of facts that
+    should be explicitly restated at the start of every one of the
+    eight sessions (not the whole migration plan, not the whole
+    onboarding doc — the minimum that actually needs to survive the
+    reset), and justify each item against the "what is... enough
+    context" framing from Chapter 2 and the codebase-scale section of
+    this chapter. Then name one fact that's tempting to restate every
+    time but actually shouldn't be, and explain why including it every
+    session would itself become a dilution problem across the eight
+    sessions.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../quiz.html">&larr; Back to Quiz</a>
+    <a href="../practice/index.html">Practice Bank &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

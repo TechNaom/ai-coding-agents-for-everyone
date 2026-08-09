@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Windows and Codebase-Scale Understanding Interview Questions — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interview questions for Context Windows and Codebase-Scale Understanding.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-06">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="practice/index.html">&larr; Back to practice bank</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 6 Interview Questions</span>
+    <span class="reading-time">~15 min</span>
+  </div>
+  <h1>Interview Questions: Context Windows and Codebase-Scale Understanding</h1>
+  <p>Grouped by level. Each includes a strong answer, a red flag, and a follow-up.</p>
+
+  <div class="lesson-card">
+    <h2>1. (Beginner) What is a context window, in plain terms, and why does it matter for a coding agent specifically?</h2>
+    <p><strong>Strong answer:</strong> It's a hard limit on how much text — measured in tokens, not characters or files — a single model call can take as input. It matters for a coding agent specifically because the model is stateless between turns (Chapter 4): every turn re-sends the entire conversation so far, including every prior tool call and tool result, so the context window isn't a one-time budget spent at the start of a task, it's a budget spent again, in full, on every single turn, and it only grows as the task runs longer.</p>
+    <p><strong>Red flag:</strong> Describes it as "how much the AI can remember" without connecting it to tokens as a real, countable resource, or doesn't mention that it's re-spent every turn, not once.</p>
+    <p><strong>Follow-up:</strong> "If a model's context window is much larger than today's, does that make the crowding/dilution problem from this chapter go away?"</p>
+    <p><strong>What this proves:</strong> Understands the context window as a mechanical, per-turn resource constraint, not a vague notion of "memory size."</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>2. (Beginner) An agent is given an instruction on turn 3 of a session and appears to ignore it on turn 68, even though nothing removed that instruction from the conversation. What's the most accurate way to describe what happened?</h2>
+    <p><strong>Strong answer:</strong> The instruction is still technically present in the conversation the model reads on turn 68, so this isn't a hard-limit cutoff or deletion. It's crowding and dilution: sixty-five turns of newer, unrelated material (file reads, diffs, test output) sit between the instruction and the moment it mattered again, and that volume of newer text competes for influence on the next prediction more strongly than one old, unreinforced sentence. The fact didn't disappear — it lost influence relative to everything more recent.</p>
+    <p><strong>Red flag:</strong> Says the instruction "fell out of the context window" or "got deleted" when the conversation was nowhere near the actual token limit — conflating a hard cutoff with graceful degradation.</p>
+    <p><strong>Follow-up:</strong> "What would you actually do differently on turn 3, or turn 60, to prevent this specific outcome?"</p>
+    <p><strong>What this proves:</strong> Correctly distinguishes a hard context-limit failure from the more common, earlier crowding/dilution failure.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>3. (Intermediate) Explain why "just paste the whole design doc into the prompt so the agent has full context" is actively counterproductive, using this chapter's mechanism rather than a general "keep prompts short" rule of thumb.</h2>
+    <p><strong>Strong answer:</strong> Every token pasted in becomes part of the conversation the model re-reads on every subsequent turn for the rest of the session — it's not a one-time cost, it's a standing tax on every later prediction. It also competes for influence against the genuinely relevant instruction the same way any accumulated text does: more volume, most of it irrelevant to any specific step, dilutes the useful signal's share of the total input. The design doc doesn't make the agent "more informed" in a useful sense; it makes the real instruction proportionally harder to find inside a bigger pile, and it accelerates the same crowding effect that eventually buried an old rule in the lesson's turn-68 example, except self-inflicted at turn one instead of accumulated gradually.</p>
+    <p><strong>Red flag:</strong> Gives a vague "it's just noisy" answer without connecting it to the specific crowding/dilution mechanism, or claims a bigger context window would fully solve this.</p>
+    <p><strong>Follow-up:</strong> "Is there ever a legitimate reason to include a large document in a prompt? What would make it worth the cost?"</p>
+    <p><strong>What this proves:</strong> Can explain a practical rule (don't over-paste) as a direct consequence of the mechanism, not just repeat received wisdom.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>4. (Intermediate) Why can't an agent working on a large, unfamiliar repository just "have the whole codebase in mind" the way an experienced human contributor does?</h2>
+    <p><strong>Strong answer:</strong> A real codebase is far larger, in tokens, than any context window — this was never an option for any agent on any repository of real size, independent of how large context windows get. An agent's working understanding at any moment is exactly and only what it has explicitly searched for or read into this specific session's context; it has no standing background familiarity the way a longtime contributor does. That's why a search-first pattern (search before assuming, read before acting on a guess) is the actual working strategy, not an optional nicety — and why the agent can miss a fact a five-year veteran would recall instantly, purely because nothing in this session's searches surfaced it.</p>
+    <p><strong>Red flag:</strong> Answers as if this is a temporary limitation that will disappear once context windows get large enough, without addressing that real codebases scale well past any practical window.</p>
+    <p><strong>Follow-up:</strong> "What would you tell a teammate who assumes the agent 'already knows' a long-standing codebase convention because it's been using this repo all week?"</p>
+    <p><strong>What this proves:</strong> Understands codebase-scale limitation as structural (codebase size vs. window size), not a solvable-by-bigger-numbers problem.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>5. (Senior) Your team's harness starts summarizing/compacting older turns once a session passes a length threshold. What's the specific new risk this introduces, and how would you guard against it?</h2>
+    <p><strong>Strong answer:</strong> Compaction buys real context room, but the summary itself is produced the same way everything else is — a prediction over what mattered — and if it encodes an unverified guess or a subtly wrong conclusion as settled fact, that error is now baked into the compact history that replaces the raw turns, and the original tool result that might have let a later turn catch the mistake is no longer available to re-check. This is the same failure Chapter 5 named as going off the rails, now embedded permanently in the compacted record instead of recoverable from raw context. The guard is treating a compaction summary the way you'd treat a clean stop: don't trust it blindly — spot-check what it kept and dropped against the raw transcript when a decision downstream turns out to matter, and where possible keep raw tool results (like test output or search hits) retrievable rather than fully discarded.</p>
+    <p><strong>Red flag:</strong> Treats compaction as a purely positive, risk-free optimization, or doesn't connect the risk back to the going-off-the-rails mechanism from Chapter 5.</p>
+    <p><strong>Follow-up:</strong> "What specific piece of information would you never want a compaction step to drop, even under length pressure?"</p>
+    <p><strong>What this proves:</strong> Connects a systems-design choice (compaction) to a concrete, previously-named failure mode, and proposes a verifiable mitigation rather than blind trust.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>6. (Senior) A teammate says "the agent has been running for two hours on this refactor, it clearly has way more context on the problem than a fresh session would — let's keep going rather than restart." Evaluate this reasoning.</h2>
+    <p><strong>Strong answer:</strong> More elapsed turns is not the same as more usable signal. A two-hour session has likely accumulated a large amount of now-irrelevant material (files read once and never touched again, superseded diffs, repeated tool-result boilerplate), which crowds and dilutes exactly the facts that still matter — early conventions, constraints stated once near the start, and so on. A fresh session has zero crowding: any fact restated at the top is briefly the highest-signal thing in the whole input, at the real cost of losing genuine continuity and having to re-supply or re-search for anything still needed. The right call depends on reading the actual transcript for whether recent turns show narrowing progress (keep going) or a diluted, wandering pattern with old constraints no longer visibly influencing decisions (a tight restart, with only what still matters explicitly re-stated, likely outperforms).</p>
+    <p><strong>Red flag:</strong> Assumes longer session time is unambiguously better ("more context accumulated = more informed"), without acknowledging the crowding/dilution trade-off.</p>
+    <p><strong>Follow-up:</strong> "What would you look for in the last ten turns specifically to make this call quickly?"</p>
+    <p><strong>What this proves:</strong> Applies the crowding/dilution mechanism to a real operational trade-off decision, not just a textbook definition.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>7. (Architect) Design a policy for a team running long, multi-hour autonomous coding-agent sessions on a large monorepo, addressing both the hard context-limit case and the earlier crowding/dilution case, without a human watching continuously.</h2>
+    <p><strong>Strong answer:</strong> The two failure shapes need different mechanisms. For the hard limit: track token usage against the model's window and force a proactive compaction or session-boundary well before the ceiling, never letting the harness discover the limit mid-tool-call; log what compaction drops so it's auditable after the fact. For crowding/dilution, which produces no error at all: enforce scoped task boundaries (Chapter 2) so any one session doesn't run indefinitely: cap session length by task unit (one module, one ticket) rather than by wall-clock time, and require any standing constraint (a coding convention, a "never do X" rule) to be re-injected at the start of each new scoped session rather than relying on it surviving from an earlier one. Add automated checks — a linter rule, a pre-merge grep — for the specific class of violation a stale instruction is meant to prevent (e.g., flagging direct `InvoiceV2(...)` construction), since that catches a crowded-out constraint's actual consequence even when the constraint itself silently lost influence.</p>
+    <p><strong>Red flag:</strong> Proposes a single fix (e.g., "just increase the context window" or "just add compaction") that only addresses one of the two failure shapes, or doesn't recognize crowding/dilution as needing a structurally different intervention than the hard limit.</p>
+    <p><strong>Follow-up:</strong> "Which of these would you prioritize first if your monorepo sessions are currently averaging four hours unattended?"</p>
+    <p><strong>What this proves:</strong> Designs distinct, mechanism-appropriate safeguards for both the hard-limit and the graceful-degradation failure shapes, and adds an outside-the-model check as a backstop rather than relying on the model's own attention.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>8. (Architect) A junior engineer proposes: "Let's just always use the model with the largest available context window for every agent task, so we never have to think about any of this." Evaluate this proposal.</h2>
+    <p><strong>Strong answer:</strong> A larger window raises the hard ceiling and delays forced truncation or compaction, which is a genuine benefit for tasks that need to hold a lot of genuinely relevant material at once. But it does not fix crowding or dilution — those are about competition for influence among what's present, not about whether something technically fits, and a larger window can make dilution worse in practice if it encourages pasting in more marginal material "since there's room," diluting the useful signal across an even bigger haystack. It also doesn't address the deeper codebase-scale point: real codebases are large enough that even generous windows are still a small fraction of the whole repository, so the search-first, scope-the-task discipline remains necessary regardless of window size. A bigger window is a reasonable default choice for cost/capability reasons, but it's not a substitute for scoping, explicit restatement of what matters, and treating compaction outputs skeptically.</p>
+    <p><strong>Red flag:</strong> Endorses "bigger window solves it" without distinguishing the hard-limit problem (which a bigger window does help) from crowding/dilution and codebase-scale problems (which it doesn't).</p>
+    <p><strong>Follow-up:</strong> "Under what specific circumstance would a bigger context window actually make outcomes worse, not just fail to help?"</p>
+    <p><strong>What this proves:</strong> Separates what a larger context window genuinely fixes from what it doesn't, showing real understanding of the mechanism rather than treating "more context" as a single undifferentiated good.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="practice/index.html">&larr; Practice Bank</a>
+    <a href="project/index.html">Project &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

@@ -61,7 +61,8 @@ window.ACAFE_MODULES = [
         id: "chapter-06",
         num: 6,
         title: "Context Windows and Codebase-Scale Understanding",
-        description: "Why an agent 'forgets' things, and how to work with that."
+        description: "Why an agent 'forgets' things, and how to work with that.",
+        path: "chapters/chapter-06-context-windows-and-codebase-scale-understanding/lesson.html"
       }
     ]
   },

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Windows and Codebase-Scale Understanding Practice Bank — AI Coding Agents for Everyone</title>
+<meta name="description" content="Practice bank for Context Windows and Codebase-Scale Understanding.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-06">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../exercises/index.html">&larr; Back to exercises</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 6 Practice Bank</span>
+    <span class="reading-time">~18 min</span>
+  </div>
+  <h1>Practice Bank: Context Windows and Codebase-Scale Understanding</h1>
+  <p>Short scenarios, one judgment question each — practice spotting
+  context pressure and codebase-scale limits in situations where
+  nothing has technically gone wrong yet.</p>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · "It has plenty of room left"</span>
+    <h3>The token counter says 30% full</h3>
+    <p>A teammate checks a long-running session's token usage against
+    the model's context window: "We're only using 30% of the window,
+    so context definitely isn't the issue with this weird behavior we're
+    seeing." The session has run 90 turns, and an early convention
+    stated once on turn 5 is being violated on turn 85. Is the teammate
+    right that context "isn't the issue" here? Explain using this
+    chapter's distinction.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The "helpful" full-repo dump</span>
+    <h3>"I'll just give it everything so it has full context"</h3>
+    <p>Before assigning a bug fix, a developer pastes the contents of
+    every file in the affected module — twelve files, most unrelated to
+    the actual bug — reasoning that "more context can only help." Only
+    one of the twelve files is where the fix will actually go. Explain
+    what this choice costs for the rest of the session, even if the
+    agent does eventually find the right file.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The onboarding assumption</h3>
+    <h3>"It's been in this repo all week, it should know"</h3>
+    <p>A tech lead is frustrated that an agent, on a fresh session,
+    doesn't know the team's convention of always using the internal
+    <code>Money</code> type instead of raw floats for currency — a
+    convention that's been enforced in code review for months and that
+    every human engineer on the team knows by heart. The agent used a
+    raw float. Explain why "it should know by now" doesn't apply here,
+    and what would have actually gotten that convention in front of the
+    agent for this session.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The compaction that lost the caveat</h3>
+    <h3>The summary that dropped the exception</h3>
+    <p>A harness's auto-generated summary of a long session's early turns
+    reads: "Migrated all API routes to the new auth middleware." The
+    actual early turns, now summarized away, showed one route
+    (<code>/webhooks/stripe</code>) was explicitly and deliberately
+    <em>excluded</em> because it uses a different auth scheme entirely.
+    A later turn, working only from the summary, "fixes" that route to
+    match the others. What specifically went wrong, and where in the
+    pipeline (not "the AI made a mistake") would you look to prevent a
+    repeat?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Restart or push through</h3>
+    <h3>Four hours in, still going</h3>
+    <p>An agent has been working unattended for four hours on a large
+    test-suite migration. It's still making edits and running tests, no
+    errors, no step cap hit. A teammate asks whether you should just
+    let it keep running since "it hasn't failed." What would you
+    actually want to look at in the recent transcript before answering,
+    and why isn't "it hasn't thrown an error" sufficient on its own?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The search that never happened</h3>
+    <h3>Confidently wrong about something searchable</h3>
+    <p>Asked to "add the new discount tier to the pricing logic," an
+    agent immediately writes a new <code>pricing/discounts_v2.py</code>
+    file and implements the tier there, without ever running a search
+    for existing discount-related code. It later turns out
+    <code>pricing/discounts.py</code> already exists with three other
+    tiers implemented, unseen this session. Using this chapter's
+    codebase-scale section, explain precisely why this happened — not
+    "the agent should have known," but what specifically was missing
+    from this session that a search-first step would have supplied.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../exercises/index.html">&larr; Exercises</a>
+    <a href="../interview-questions.html">Interview Questions &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

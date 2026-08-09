@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Windows and Codebase-Scale Understanding Quiz — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interactive quiz for Context Windows and Codebase-Scale Understanding.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-06" data-chapter-id="chapter-06">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="lesson.html">&larr; Back to the lesson</a></p>
+
+  <span class="chapter-badge">Chapter 6 Quiz</span>
+  <h1>Context Windows and Codebase-Scale Understanding</h1>
+  <p>Eight questions. Fill in the blank, then check your answers.</p>
+
+  <div class="quiz-progress-wrap" aria-hidden="true">
+    <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+  </div>
+
+  <form onsubmit="return false;">
+    <div class="quiz-question">
+      <label for="q1"><span class="q-num">1</span> A context window is a hard limit on how much text one model call can take as input, measured in __________ — small chunks of text the model actually operates on.</label>
+      <div class="fib-row">
+        <input type="text" id="q1" class="fib-blank" data-answers="tokens" aria-label="Answer for question 1">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q2"><span class="q-num">2</span> Because the model is stateless between turns, the entire growing conversation gets __________ in full on every single turn, not spent once at the start.</label>
+      <div class="fib-row">
+        <input type="text" id="q2" class="fib-blank" data-answers="re-sent,resent,sent again" aria-label="Answer for question 2">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q3"><span class="q-num">3</span> An old fact isn't deleted from a long conversation; it just gets __________ by newer, unrelated material competing for the same prediction's attention.</label>
+      <div class="fib-row">
+        <input type="text" id="q3" class="fib-blank" data-answers="crowded,crowded out" aria-label="Answer for question 3">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q4"><span class="q-num">4</span> As a conversation accumulates large volumes of mostly-irrelevant content, the useful signal for any given decision becomes a smaller __________ of the total input — this is dilution.</label>
+      <div class="fib-row">
+        <input type="text" id="q4" class="fib-blank" data-answers="fraction,share,ratio,proportion" aria-label="Answer for question 4">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q5"><span class="q-num">5</span> A real codebase is always far __________ than any context window, which is why an agent never has "the whole codebase" in view at once.</label>
+      <div class="fib-row">
+        <input type="text" id="q5" class="fib-blank" data-answers="larger,bigger" aria-label="Answer for question 5">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q6"><span class="q-num">6</span> An agent's working understanding of a codebase, at any given moment, is exactly and only what it has explicitly __________ or read into this session's context.</label>
+      <div class="fib-row">
+        <input type="text" id="q6" class="fib-blank" data-answers="searched for,searched" aria-label="Answer for question 6">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q7"><span class="q-num">7</span> Pasting an entire design doc into a prompt doesn't add useful context — it's a standing __________ on every later prediction for the rest of the session.</label>
+      <div class="fib-row">
+        <input type="text" id="q7" class="fib-blank" data-answers="tax,cost" aria-label="Answer for question 7">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q8"><span class="q-num">8</span> Harness-level summarization or __________ compresses older parts of a long conversation into a shorter account, but a wrong inference baked into that summary is just as hard to catch as one from Chapter 5's going-off-the-rails mechanism.</label>
+      <div class="fib-row">
+        <input type="text" id="q8" class="fib-blank" data-answers="compaction" aria-label="Answer for question 8">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div id="check-all-wrap">
+      <button type="button" id="check-all-btn" class="check-btn">Check All Answers</button>
+      <span id="quiz-score"></span>
+    </div>
+
+    <div class="quiz-celebration" id="quiz-celebration" aria-live="polite">
+      Perfect score. Chapter complete.
+    </div>
+  </form>
+
+  <div class="chapter-nav">
+    <a href="lesson.html">&larr; Back to Lesson</a>
+    <a href="exercises/index.html">Exercises &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/quiz-engine.js"></script>
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

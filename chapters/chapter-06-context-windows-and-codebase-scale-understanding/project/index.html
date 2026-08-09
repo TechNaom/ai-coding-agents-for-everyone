@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Windows and Codebase-Scale Understanding Project — AI Coding Agents for Everyone</title>
+<meta name="description" content="Module 2 is complete. What the module assessment covers, and a preview of Module 3's hands-on build starting at Chapter 7.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-06">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../interview-questions.html">&larr; Back to interview questions</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 6 Project</span>
+    <span class="reading-time">~3 min read</span>
+  </div>
+  <h1>Module 2 Is Complete — Here's What's Next</h1>
+  <p>
+    This chapter doesn't ship its own lab. Module 2's real, gradable lab
+    — "trace a real agent transcript and annotate each loop step" —
+    already shipped on
+    <a href="../../chapter-04-the-agentic-loop-plan-act-observe-repeat/project/index.html">Chapter 4's project page</a>,
+    and Chapter 5 pointed back to it rather than duplicating it. This
+    page does the same, and adds one thing: now that you have all three
+    chapters — the mechanism (4), the failure modes (5), and the
+    context-window constraint underneath both (6) — it's worth a third
+    pass over your own annotated trace, this time watching specifically
+    for where context crowding or dilution might have made a failure
+    mode more likely.
+  </p>
+
+  <div class="what-is">
+    <span class="label">Where this fits</span>
+    Module 2 — How Coding Agents Actually Work: Chapter 4 opened the
+    mechanism and shipped the module's lab, Chapter 5 diagnosed what it
+    looks like when that mechanism breaks down, and this chapter (6)
+    covered the resource constraint — a limited, competitively contested
+    context window, and a codebase that never fits inside it — that
+    makes both harder. That's the full module.
+  </div>
+
+  <h2>Module 2 assessment</h2>
+  <p>
+    Per the course's curriculum map, Module 2's assessment is a
+    <strong>concept quiz plus a failure-diagnosis exercise</strong> —
+    distinct from the per-chapter quizzes and exercises you've already
+    done, and covering all three chapters together (the loop mechanism,
+    the four named failure modes, and this chapter's context-window
+    material). That combined assessment lives under
+    <code>assessments/</code> and is tracked as its own build task,
+    separate from this chapter — it isn't included here so this page
+    doesn't duplicate or pre-empt it.
+  </p>
+
+  <h2>Coming next: Module 3's first hands-on build</h2>
+  <p>
+    Module 2 has been entirely conceptual by design — no SDK, no code
+    execution, just the mechanism itself. That changes starting with
+    Chapter 7, <strong>Build: A Minimal Coding Agent</strong>, the
+    reference chapter for this whole course: you'll use the Claude Agent
+    SDK to build a real, working agent loop from scratch, verified
+    against the SDK's actual API surface rather than assumed from
+    memory. It's pinned to the cheapest available model with a low turn
+    cap, so a real run costs fractions of a cent — stated plainly in
+    that chapter's lesson, not buried. Chapters 8 and 9 then extend that
+    same agent with real file/shell/git tools and MCP-based tools,
+    building toward Module 3's own hands-on labs.
+  </p>
+
+  <div class="points-to-remember">
+    <h2>Why this page stays short</h2>
+    <p>
+      A third, weaker version of Chapter 4's lab here would dilute the
+      one real transcript-tracing skill this module is teaching — which
+      would be a strange way to end a chapter about avoiding diluted
+      signal. This page's job is just closing out the module honestly:
+      pointing you back to the real lab, naming the real assessment
+      that's still coming, and telling you plainly what Module 3 starts
+      with.
+    </p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../interview-questions.html">&larr; Interview Questions</a>
+    <a href="../../../index.html">All Chapters &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

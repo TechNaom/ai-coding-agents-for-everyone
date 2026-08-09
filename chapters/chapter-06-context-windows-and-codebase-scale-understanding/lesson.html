@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Windows and Codebase-Scale Understanding — AI Coding Agents for Everyone</title>
+<meta name="description" content="What a context window actually is, why an agent seems to forget earlier turns long before it runs out of room, and why no agent ever has 'the whole codebase' in view at once.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-06">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 6</span>
+    <span class="badge-difficulty">Intermediate</span>
+    <span class="reading-time">~22 min</span>
+  </div>
+
+  <h1>Context Windows and Codebase-Scale Understanding</h1>
+  <p class="lede">
+    Chapter 4 told you every turn is a fresh, stateless prediction made
+    over the entire conversation so far — and flagged, without
+    explaining, that this "entire conversation" has to fit somewhere,
+    and that running out of room is a fifth way a loop can end. Chapter
+    5 showed you four failure modes that all trace back to what is and
+    isn't sitting in that conversation at the moment a prediction gets
+    made. This chapter is about the resource both of those chapters
+    borrowed against: the context window itself — a hard limit on how
+    much text one model call can hold, what happens well before that
+    limit is reached, and why it means an agent never has "the whole
+    codebase" in view, only whatever it went and looked at this
+    session.
+  </p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#hook">1. The fact that was still there, and got missed anyway</a>
+    <a href="#context-window">2. What a context window actually is</a>
+    <a href="#degradation">3. Why "forgetting" happens long before the hard limit</a>
+    <a href="#codebase-scale">4. Why this specifically limits codebase-scale understanding</a>
+    <a href="#mitigations">5. Living with a limited window: scoping, compaction, and fresh sessions</a>
+    <a href="#thought-process">6. GenAI Builder Thought Process</a>
+    <a href="#recap">7. Points to remember</a>
+  </nav>
+
+  <div class="hook" id="hook">
+    <p>
+      The task, given at the very start of a long refactor session:
+      "Migrate <code>billing/</code> off the old <code>Invoice</code>
+      class onto the new <code>InvoiceV2</code> dataclass, module by
+      module. Acceptance: <code>pytest tests/billing/</code> passes
+      with no references to <code>Invoice</code> left anywhere in
+      <code>billing/</code>."
+    </p>
+    <p>
+      Turn 3, early in the session, the human adds one instruction
+      before any files are touched:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">turn 3 — stated once, near the start</span>
+      </div>
+      <pre><code>{
+  "role": "user",
+  "content": "One rule for this migration: never construct
+  InvoiceV2 directly with InvoiceV2(...). Always go through
+  InvoiceV2.from_legacy(old_invoice) -- it copies three fields
+  (tax_region, rounding_mode, currency) that have no default
+  and are easy to get wrong by hand. This applies to every file
+  you touch in this migration."
+}</code></pre>
+      </div>
+    </div>
+    <p>
+      The agent acknowledges it, and the migration proceeds — module by
+      module, file by file, each one read, converted, and tested. By
+      turn 68, deep into the eleventh file, the conversation contains
+      dozens of tool calls and tool results: file contents, diffs, test
+      output, more file contents. Here's what turn 68 actually does:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">turn 68 — eleventh file, same session</span>
+      </div>
+      <pre><code>{
+  "role": "assistant",
+  "content": [
+    { "type": "text",
+      "text": "Converting billing/refund_processor.py to use
+               InvoiceV2." },
+    { "type": "tool_use",
+      "id": "call_68",
+      "name": "edit_file",
+      "input": {
+        "path": "billing/refund_processor.py",
+        "old": "invoice = Invoice(order_id, amount)",
+        "new": "invoice = InvoiceV2(order_id, amount)"
+      } }
+  ]
+}</code></pre>
+      </div>
+    </div>
+    <p>
+      That's a direct <code>InvoiceV2(...)</code> construction — exactly
+      the pattern turn 3 ruled out, sixty-five turns earlier. Nothing
+      erased turn 3. It's still sitting in the conversation, still
+      technically part of "everything so far" that turn 68's prediction
+      was conditioned on. And yet it didn't win. Ten files' worth of
+      reads, diffs, and test output — most of it far more recent, and
+      none of it about the <code>from_legacy</code> rule — sat between
+      turn 3 and turn 68, and by turn 68 that one instruction was a
+      small, old signal buried in a much larger, much newer pile of
+      text competing for the same prediction. This chapter explains why
+      that happens, mechanically, and what to do about it before it
+      costs you a production incident instead of one caught diff.
+    </p>
+  </div>
+
+  <section id="context-window" class="subtopic">
+    <h2>What a Context Window Actually Is</h2>
+    <p>
+      A context window is a hard ceiling on how much text a single
+      model call can take as input, measured in tokens — small chunks
+      of text, roughly a few characters each in English, that the model
+      actually operates on rather than raw characters or whole words. A
+      model advertised with a large context window (current
+      general-purpose models offer windows in the hundreds of thousands
+      of tokens, with some options extending further) can accept a very
+      large amount of text in one call — but it is still a number, not
+      an unlimited buffer, and every token in that budget has to be
+      spent on something: the system instructions, the original task,
+      every tool call the agent has made, and every tool result that
+      came back.
+    </p>
+    <p>
+      Chapter 4 already established the piece that makes this a growing
+      cost rather than a one-time one: the model is stateless between
+      turns, and every single call re-sends the entire conversation so
+      far. That means the context window isn't spent once, at the start
+      — it's spent again, in full, on every single turn, and the amount
+      being spent only ever grows as a task runs longer. Turn 3's
+      instruction cost some number of tokens the first time it was sent.
+      By turn 68, it's still costing exactly the same number of tokens,
+      every turn, alongside everything else that's accumulated since —
+      it doesn't get cheaper or more efficient just because it's old.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... a token, precisely?</span>
+      A unit of text the model was trained to process — not a character
+      and not quite a word. A common English word might be one token; a
+      longer or less common word might split into two or three; code
+      identifiers, whitespace, and punctuation all consume tokens too.
+      The practical takeaway isn't the exact conversion rate, it's that
+      every part of a growing conversation — including large file
+      contents, verbose test output, and long tool-result blocks — has a
+      real, additive token cost, and that cost is paid on every single
+      turn, not once.
+    </div>
+    <p>
+      Every one of Chapter 4's four stop conditions can fire before a
+      task ever gets close to this ceiling. But a long enough,
+      tool-call-heavy task — like an eleven-file migration accumulating
+      full file contents and test output turn after turn — can
+      genuinely approach it. When a harness gets close to the limit, it
+      has a small number of unattractive options: refuse to continue,
+      truncate something, or compress the conversation down before
+      continuing (more on that in the mitigations section below). None
+      of those options is "just keep going exactly as before" — the
+      hard limit is a real wall, not a suggestion. But as the hook
+      above shows, you don't have to hit that wall for old information
+      to stop functioning the way you'd expect it to. That's a
+      separate, earlier problem, and it's the more common one in
+      practice.
+    </p>
+  </section>
+
+  <section id="degradation" class="subtopic">
+    <h2>Why "Forgetting" Happens Long Before the Hard Limit</h2>
+    <p>
+      Turn 3's instruction was never deleted from the hook's transcript.
+      It's not a hard-limit story — the whole conversation at turn 68
+      was nowhere near overflowing a large context window. What
+      happened is a softer, more common failure: presence isn't the
+      same thing as influence. A fact can be technically included in
+      every single input the model reads and still lose the competition
+      for what shapes the next prediction, once enough other, newer
+      material has piled in around it.
+    </p>
+    <p>
+      Two separate mechanisms produce this, and it's worth naming them
+      separately because they call for different fixes.
+    </p>
+    <p>
+      <strong>Crowding.</strong> A model's attention over a long input
+      isn't perfectly uniform — text nearer the current turn, and text
+      that's been repeated or reinforced, tends to shape the next
+      prediction more strongly than a single old mention surrounded by
+      unrelated, more recent material. Turn 3's rule was stated exactly
+      once, sixty-five turns before it mattered again. Turns 4 through
+      67, meanwhile, are full of file paths, diffs, and test output that
+      have nothing to do with <code>from_legacy</code> — none of it
+      contradicts turn 3, but all of it sits between turn 3 and turn 68,
+      diluting how much that one old instruction stands out relative to
+      everything else now in view.
+    </p>
+    <p>
+      <strong>Dilution by irrelevant volume.</strong> This is the
+      related but distinct problem of sheer ratio: as a conversation
+      accumulates large, mostly-irrelevant-to-any-given-turn content —
+      full file contents most of which aren't touched again, verbose
+      test runner output, repeated tool-result boilerplate — the useful
+      signal for any specific decision becomes a smaller fraction of the
+      total input. Turn 68's actual decision (how to construct an
+      <code>InvoiceV2</code>) needed exactly one fact from sixty-five
+      turns back. It was in there, but it was one relevant sentence
+      inside tens of thousands of tokens of subsequently accumulated,
+      unrelated text.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the difference between this and a hard-limit cutoff?</span>
+      A hard-limit cutoff is binary and mechanical: the conversation no
+      longer fits, so something has to be dropped or compressed, and you
+      can point to exactly when it happened. Crowding and dilution have
+      no such moment — nothing was dropped, nothing errored, the full
+      conversation was available the entire time. The degradation is
+      graceful and probabilistic, not a cliff: an old fact doesn't
+      vanish, it just becomes statistically less likely to be the thing
+      that shapes the next prediction, and that likelihood erodes
+      gradually as more turns accumulate around it, long before storage
+      capacity itself becomes the limiting factor.
+    </div>
+    <p>
+      This connects directly to Chapter 5's mechanism. Chapter 5 said
+      every failure mode there traces back to what is and isn't
+      supplying signal to a given turn's prediction. Crowding and
+      dilution are exactly how an established fact can stop supplying
+      that signal without ever leaving the conversation — which is why
+      a long-running agent doesn't need a hard context-limit crash to
+      start behaving as if it "forgot" something a human, skimming the
+      same transcript with real attention and real judgment, would
+      never have lost track of.
+    </p>
+  </section>
+
+  <section id="codebase-scale" class="subtopic">
+    <h2>Why This Specifically Limits Codebase-Scale Understanding</h2>
+    <p>
+      Everything above is about one conversation, but the same
+      constraint applies with even more force to the codebase itself.
+      A real production repository — hundreds of thousands or millions
+      of lines across hundreds of files — is far larger than any single
+      context window could hold, even a very generous one, even before
+      a single turn of conversation happens. There is no version of
+      "load the whole codebase into context and reason over all of it
+      at once." It has never been an option, for any coding agent, on
+      any repository of real size.
+    </p>
+    <p>
+      That's precisely why Chapter 4's hook opened the way it did: turn
+      1 wasn't reading a file, it was <code>search_codebase("rate
+      limit")</code> — a targeted look before anything else, specifically
+      because the agent started that task with zero of the codebase in
+      view. An agent's working knowledge of a codebase, at any given
+      moment, is exactly and only the set of files, search results, and
+      prior turns it has explicitly pulled into this session's context
+      — nothing more. It doesn't have background familiarity the way a
+      human engineer who's worked in a repo for three years does; it has
+      no access to anything it didn't search for, read, or get told
+      about, this session, in this conversation.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">what a human remembers vs. what an agent has in context</span>
+      </div>
+      <pre><code>A senior engineer, three years on this codebase, asked to add
+a new payment method:
+
+  "Oh -- don't forget, PaymentProcessor.charge() has a legacy
+  currency-rounding quirk for JPY that bit us in an incident
+  two years ago. There's a comment about it, but the real
+  reason is in a Slack thread, not the code."
+
+  This "just comes to mind" -- no search needed, because it
+  was never forgotten between sessions.
+
+An agent, first turn of a fresh session, same task:
+
+  Has read: nothing yet.
+  Knows about the JPY quirk: only if something in *this*
+  session's context -- a file it searches for and reads, a
+  comment it happens across, or a human explicitly stating it
+  -- puts that fact in front of it. If nobody mentions it and
+  the agent's search terms don't surface the file with the
+  comment, the quirk effectively does not exist for this run,
+  no matter how real and well-documented it is elsewhere.</code></pre>
+    </div>
+    <p>
+      This is the real, practical meaning of "codebase-scale
+      understanding" being limited: not that the agent is bad at
+      reasoning once it has the right information, but that getting the
+      right information in front of it, this session, is itself the
+      hard part — and it's a search-and-read problem, not a memory
+      problem, because there was never a "whole codebase in memory" to
+      begin with. An agent can miss something a five-minute-tenure human
+      would also miss if nobody told them either — but it can just as
+      easily miss something a five-year veteran would recall instantly
+      and without effort, purely because that fact never got searched
+      for or surfaced into this particular conversation. Every mitigation
+      in this course that emphasizes precise search terms, reading the
+      right files, and stating important constraints explicitly (rather
+      than assuming the agent "already knows" a codebase convention)
+      exists because of this one structural fact.
+    </p>
+  </section>
+
+  <section id="mitigations" class="subtopic">
+    <h2>Living With a Limited Window: Scoping, Compaction, and Fresh Sessions</h2>
+    <p>
+      Once you accept that context is a real, finite, competitively
+      contested resource — not just a place things get stored — several
+      practices from earlier chapters stop being style preferences and
+      start being direct responses to a mechanical constraint.
+    </p>
+    <p>
+      <strong>Why "just paste everything in" actively hurts.</strong>
+      Chapter 2 warned that pasting a whole design doc and three
+      tickets into a prompt makes the actual instruction harder to
+      find inside the noise. Now you know precisely why: every token of
+      that paste is competing for the same limited attention as your
+      actual instruction, on every single turn from then on, for the
+      rest of the session — it's not a one-time cost, it's a standing
+      tax on every later prediction. It's the exact same mechanism that
+      buried turn 3's rule by turn 68, except self-inflicted at the
+      start instead of accumulated gradually over sixty-five turns.
+      More text is not more context in any useful sense; it's more
+      material for genuinely relevant text to get diluted against.
+    </p>
+    <p>
+      <strong>Keeping tasks scoped.</strong> A narrowly scoped task
+      (Chapter 2) doesn't just reduce the chance of an agent wandering
+      into files it shouldn't touch — it keeps the conversation itself
+      smaller for longer, which directly slows how fast crowding and
+      dilution set in. An eleven-file migration run as one continuous
+      session accumulates ten files' worth of noise before the rule
+      matters an eleventh time; the same migration run as several
+      smaller, scoped sessions — each one re-stating the
+      <code>from_legacy</code> rule at the top — never lets that
+      instruction get sixty-five turns stale in the first place.
+    </p>
+    <p>
+      <strong>Summarization and compaction.</strong> Many real agent
+      harnesses don't wait for the hard limit to force a decision —
+      they proactively compress older parts of a long conversation into
+      a shorter summary once it grows past some threshold, replacing
+      dozens of raw tool calls and results with a condensed account of
+      what happened and what was concluded. This buys real room, but
+      it's a genuine trade, not a free win: a summary is itself
+      produced the same way everything else is, a prediction over what
+      mattered, and if that summary encodes an unverified guess as a
+      settled fact — the identical failure Chapter 5 named in "going off
+      the rails" — that error is now baked into the compact history that
+      replaces the raw turns, with the original tool result that might
+      have let a later turn catch the mistake no longer available to
+      re-check. Compaction should be treated the same way a clean stop
+      is: useful, often necessary, and never something to trust blindly
+      without spot-checking what it kept and what it dropped.
+    </p>
+    <p>
+      <strong>Why a fresh session sometimes beats a long one.</strong>
+      This sounds counterintuitive — surely more accumulated context is
+      strictly more informative? Mechanically, no: a fresh session has
+      zero crowding and zero dilution. Every fact a human states at the
+      top of a new session is, briefly, the least-buried, highest-signal
+      thing in the entire input. The cost is real too — genuine
+      continuity is lost, and anything the agent would need to
+      re-discover (file locations, an established convention, an
+      earlier decision) has to be re-supplied or re-searched-for. The
+      practical judgment call, especially on a long-running task, is
+      recognizing when a session has accumulated enough crowded,
+      low-signal history that starting over with a tight, explicit
+      restatement of what actually still matters will outperform
+      continuing to pile onto an already-diluted conversation — the same
+      trade-off, in miniature, as Chapter 5's step-cap discussion: a run
+      that's stopped converging isn't fixed by adding more of the same.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the connection back to Chapter 5's failure modes?</span>
+      Context crowding doesn't cause looping, stalling, going off the
+      rails, or premature "done" on its own — but it makes all four more
+      likely by starving a turn's prediction of exactly the older,
+      still-true fact that would have prevented it. A stalling agent
+      re-reading a file might be doing so because an earlier read's
+      contents got crowded out and no longer felt "in view" enough to
+      rely on. A going-off-the-rails run compounds an unverified guess
+      partly because nothing forces a re-check against evidence sitting
+      much further back in an increasingly diluted conversation. Context
+      pressure is a background condition that makes Chapter 5's failure
+      modes easier to fall into, not a fifth failure mode in its own
+      right.
+    </div>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p><strong>Problem:</strong> a developer notices an agent
+      contradicting an instruction it was given earlier in the same
+      session and concludes either "it ignored me" or "the context
+      window must be full" — two explanations that point to two very
+      different, and usually wrong, fixes (repeating yourself louder, or
+      immediately assuming you need a bigger context window).</p>
+      <p><strong>Assumption being made:</strong> that context is
+      binary — either a fact is "in" the model's awareness or it's been
+      lost entirely, the same way a file either exists on disk or has
+      been deleted — and that the only failure worth worrying about is
+      running out of room.</p>
+      <p><strong>What actually distinguishes it:</strong> the far more
+      common failure is graceful, probabilistic degradation, not
+      deletion. Turn 3's rule was never gone from the turn-68 hook
+      transcript; it simply stopped being the highest-signal thing
+      shaping that specific prediction, crowded and diluted by sixty-
+      five turns of unrelated, more recent material. That's a different
+      problem than a hard limit, with a different fix: not "get a
+      bigger window" (which wouldn't have stopped the crowding, since
+      the conversation was nowhere near the actual ceiling) but
+      "re-state the constraint closer to where it matters, or keep the
+      session scoped enough that it never gets that stale."</p>
+      <p><strong>Why this matters day to day:</strong> it changes what
+      you actually do when an agent seems to have forgotten something.
+      Reflexively repeating the same instruction once, louder, does
+      nothing structurally different — it's just another statement
+      competing for the same attention. What helps is restating the
+      constraint at the point it's actually about to matter, scoping the
+      session so fewer unrelated turns accumulate between the rule and
+      its application, or starting fresh once a long session has
+      genuinely crowded out what it needs to remember. Diagnosing
+      "which kind of forgetting is this" is a prerequisite to picking
+      the right one.</p>
+      <p><strong>Working definition to carry forward:</strong> a context
+      window is a hard, resent-every-turn token limit, but the practical
+      failure mode most builders hit is softer and earlier than that
+      limit — old, still-present information losing its influence on the
+      next prediction as newer, unrelated material accumulates around
+      it, and a real codebase's working "understanding" by an agent is
+      never more than what this session's searches and reads have
+      actually pulled into that same limited, competitively contested
+      window.</p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember</h2>
+      <ul>
+        <li>A context window is a hard token limit on a single model
+        call — and because the model is stateless between turns
+        (Chapter 4), the entire growing conversation gets re-sent in
+        full on every single turn, not spent once at the start.</li>
+        <li>"Forgetting" usually isn't a hard cutoff — it's graceful
+        degradation. Older content stays technically present but
+        competes for influence against everything newer that's
+        accumulated since (crowding), and a growing pile of mostly
+        irrelevant text shrinks the useful signal's share of the total
+        input (dilution) — both can happen well before any conversation
+        gets close to the actual token ceiling.</li>
+        <li>A real codebase is always far larger than any context
+        window. There is no "whole codebase in view" — an agent's
+        working understanding, at any moment, is exactly and only what
+        it explicitly searched for or read into this session's context,
+        which is why the search-first pattern exists and why an agent
+        can miss something a longtime human contributor would recall
+        without even trying.</li>
+        <li>Pasting everything into a prompt (Chapter 2's padding
+        warning) doesn't add useful context — it's a standing tax on
+        every later prediction for the rest of the session, the same
+        crowding/dilution mechanism that buried an old instruction by
+        turn 68, just self-inflicted on turn one instead of accumulated
+        gradually.</li>
+        <li>Scoped tasks, well-timed re-statement of what still matters,
+        harness-level summarization/compaction (itself worth
+        spot-checking, not trusting blindly), and starting a fresh
+        session are the real levers — each one either keeps the
+        conversation smaller for longer or restores an old fact's
+        signal before it's needed again.</li>
+        <li><strong>Module 2, closed out:</strong> Chapter 4 gave you the
+        mechanism (one stateless prediction per turn over the whole
+        conversation so far). Chapter 5 named the specific ways that
+        mechanism breaks down (looping, stalling, going off the rails,
+        premature "done"). This chapter named the resource constraint
+        underneath a lot of both — a limited, competitively contested
+        context window, and a codebase that never fits inside it. Together
+        they're the full "how coding agents actually work" picture this
+        module promised; Module 3 starts building one.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="what-is">
+    <span class="label">Interview questions (4 levels)</span>
+    See <a href="interview-questions.html">Chapter 6 interview questions</a>.
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>
