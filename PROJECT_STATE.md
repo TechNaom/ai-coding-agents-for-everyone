@@ -159,6 +159,20 @@ production-grade, interview-ready, original content only).
       `scripts/local_check.sh`/`ci.yml` to also run
       `practice/solution.py` files (currently only exercises/project
       solutions run in CI).
+- [x] **Chapter 8 built and live**: "Giving Your Agent File/Shell/Git
+      Tools." Deepens Chapter 7's tool layer without touching its loop:
+      `edit_file` (targeted find-and-replace, refuses ambiguous
+      multi-match edits), `list_directory` (a corrected rebuild of
+      Chapter 7's flawed AI-paired `list_files` tool — deliberate
+      before/after teaching moment), `git_status`/`git_diff` (read-only,
+      list-args `subprocess.run`, no `shell=True`), and a
+      denylist-hardened `run_shell_command`. Deliberately does NOT ship
+      a `git_commit` tool — discussed honestly as unresolved, previewing
+      Chapter 11. Ships Module 3's real L2 project (partial scaffold,
+      one TODO tool for the learner). Every new tool function
+      live-tested directly against a real temp workspace/git repo; full
+      agent-loop generation against Ollama not re-verified this session
+      (same sandbox-wide hang as Chapter 7, disclosed not hidden).
 
 ## Pending / Not Started
 
@@ -238,26 +252,25 @@ scenarios/8 interview questions minimum, tested code before writing).
 
 ## Next Recommended Task
 
-Chapter 7 (reference chapter) is done. Next: Chapter 8 ("Giving Your
-Agent File/Shell/Git Tools," Module 3, Advanced) — go deeper on the
-tool layer specifically (more file operations, real git integration,
-more careful shell-command handling) on top of Chapter 7's already-
-built loop, which doesn't need to change. Continue using
-python-for-everyone's richer per-chapter file pattern (README.md x3,
-`interview-questions.md`, `ai-paired.html` where relevant). Read
-Chapter 7 fully first — its loop, tool-schema shape, and
-`dispatch_tool_call` defensive-handling pattern are the direct
-foundation Chapter 8 extends, not replaces. Chapter 8 is also where
-Module 3's real L2 project ("extend a provided minimal agent with one
-new tool, partial scaffold") should ship, per CURRICULUM_MAP.md — both
-Chapter 7's `project/index.html` and its `ai-paired.html` already
-point forward to this.
+Chapter 8 is done. Module 3's last chapter is next: Chapter 9
+("Connecting Your Agent to MCP Servers," Advanced) — swap some of
+Chapters 7-8's hand-rolled tools for MCP-based ones, reusing
+`mcp-for-everyone`'s verified MCP client/server patterns rather than
+re-discovering them (that course's `mcp[cli]` usage is already
+confirmed working — see that repo's chapters for reference, structure
+and verified code only, not content). Chapter 8's own "GenAI Builder
+Thought Process" section already previews this: the same worst-case
+questions (what does a bad call do, who scopes it) apply whether a
+tool is a local Python function or lives behind an MCP server. Read
+Chapters 7-8 fully first. Chapter 9 completes Module 3 and should
+close its arc similarly to how Chapter 6 closed Module 2.
 
-Before writing any new tool code, re-verify against a live Ollama
-server if one is reachable (Chapter 7's build hit a sandbox-wide
-generation hang partway through — check `ollama ps` / try a plain
-completion first). Also outstanding, not blocking Chapter 8: write the
-Module 1 and Module 2 written exams (assessments/written-exams/), and
-consider extending `scripts/local_check.sh`/`ci.yml` to run
-`practice/solution.py` files too (flagged in Chapter 7's audit, not
-yet done).
+Before writing any new code, check whether Ollama generation is
+actually working (not just `/api/tags` responding) — it hung across
+both Chapter 7 and Chapter 8's build sessions; don't assume it's
+resolved without checking. Also outstanding, not blocking Chapter 9:
+write the Module 1 and Module 2 written exams
+(assessments/written-exams/), re-run Chapter 7's `project/starter.py`/
+`solution.py` live once Ollama is reliably reachable, and consider
+extending `scripts/local_check.sh`/`ci.yml` to run `practice/solution.py`
+files too (flagged in both Chapter 7 and 8's audits, not yet done).

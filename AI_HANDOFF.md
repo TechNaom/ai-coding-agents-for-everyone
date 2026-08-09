@@ -143,45 +143,39 @@ No website root `index.html` yet (Step 9, comes later).
 
 ## Current task
 
-Chapter 7 is done — it's real, running code: a minimal agent using the
-`openai` client pointed at Ollama's local endpoint by default
-(`llama3.2`, tool calling confirmed live), a 3-tool harness-enforced
-loop, and a verified hosted-provider-swap section. Build Chapter 8
-("Giving Your Agent File/Shell/Git Tools," Module 3, Advanced) next —
-go deeper on the tool layer specifically (more file operations, real
-git integration, careful shell-command handling) on top of Chapter 7's
-loop, which does not need to change (Chapter 7's own "GenAI Builder
-Thought Process" section makes this point explicitly — the loop is
-short and stable, the tool layer is where real effort goes). Read
-Chapter 7 fully first — its `TOOLS` schema shape, `_safe_path`
-boundary pattern, and `dispatch_tool_call` defensive-handling (catch
-`JSONDecodeError`/`KeyError`, never let a malformed tool call crash the
-loop) are the direct foundation to extend. Chapter 8 is also where
-Module 3's real L2 project ships ("extend a provided minimal agent
-with one new tool, partial scaffold" — Chapter 7's `project/index.html`
-and `ai-paired.html` both already point forward to this). Continue
-using python-for-everyone's richer per-chapter file pattern. Before
-writing new tool code, check whether a local Ollama server is actually
-reachable and generating (not just responding to `/api/tags`) — Chapter
-7's build hit a sandbox-wide generation hang partway through that
-wasn't a code bug; don't assume it's resolved without checking.
+Chapters 7 and 8 are done. Chapter 8 added `edit_file`, `list_directory`,
+`git_status`/`git_diff`, and a denylist-hardened `run_shell_command` on
+top of Chapter 7's unchanged loop, and shipped Module 3's real L2
+project. Build Chapter 9 ("Connecting Your Agent to MCP Servers,"
+Module 3, Advanced) next — the last chapter of Module 3: swap some of
+Chapters 7-8's hand-rolled tools for MCP-based ones. Reuse
+`mcp-for-everyone`'s verified `mcp[cli]` patterns (structure/verified
+code reference only, not content — same rule as always). Read Chapters
+7-8 fully first; Chapter 8's closing thought-process section already
+frames the transition ("the same worst-case questions apply whether a
+tool is a local Python function or lives behind MCP"). Continue using
+python-for-everyone's richer per-chapter file pattern. Before writing
+new code, check whether Ollama generation is actually working (not
+just `/api/tags` responding) — it hung across both Chapter 7 and
+Chapter 8's build sessions; don't assume resolved without checking.
 
-**Known gap to close when possible, not blocking**: Chapter 7's
+**Known gaps to close when possible, not blocking**: Chapter 7's
 `project/starter.py`/`solution.py` haven't been re-observed live yet
-(disclosed in `quality-audits/chapter-07-audit.md`) — re-run them once
-Ollama is reliably reachable.
+(disclosed in `quality-audits/chapter-07-audit.md`) — re-run once
+Ollama is reliably reachable. Chapter 9 will have the same
+live-verification constraint if Ollama is still down; follow the same
+honest-disclosure pattern both prior audits used rather than blocking
+on it or hiding the gap.
 
 ## Next task after that
 
-Continue module by module per `docs/curriculum/CURRICULUM_MAP.md`
-(Chapter 9 after Chapter 8: MCP tool-connection chapter, reusing
-`mcp-for-everyone`'s verified MCP patterns), validating each with a
-`quality-audits/chapter-0N-audit.md` before moving on. Also write the
-Module 1 and Module 2 written exams (assessments/written-exams/), and
-consider extending `scripts/local_check.sh`/`ci.yml` to run
-`practice/solution.py` files too (currently only exercises/project
-solutions get CI coverage) — both outstanding but not blocking. Don't
-mass-generate ahead of validation.
+Chapter 9 completes Module 3 — validate it, then write Module 1/2/3's
+written exams (assessments/written-exams/, all three now outstanding),
+then move to Module 4 (Chapter 10: detecting hallucinated APIs and
+logical bugs — conceptual again, no live-model dependency). Also
+outstanding: extending `scripts/local_check.sh`/`ci.yml` to run
+`practice/solution.py` files too (flagged in both Chapter 7 and 8's
+audits, not yet done). Don't mass-generate ahead of validation.
 
 ## Important architectural decisions (see PROJECT_STATE.md for full detail)
 
