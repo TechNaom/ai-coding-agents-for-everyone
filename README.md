@@ -40,15 +40,20 @@ open-source model, including connecting it to real tools via MCP.
 
 ## SDK and model versions
 
-This course builds the agent loop directly against **Ollama**'s
-Python client (`pip install ollama`) and its OpenAI-compatible
-tool-calling API, using an open-weight model capable of tool calling
-(current recommendation: Qwen2.5-coder or Llama 3.1 — see
+This course builds the agent loop directly against the **`openai`**
+Python package (`pip install openai`) pointed, by default, at
+**Ollama**'s local OpenAI-compatible endpoint — an open-weight model
+capable of tool calling, running entirely on your machine (current
+recommendation: Qwen2.5-coder or Llama 3.1 — see
 `docs/course-architecture.md` for the exact model and why). There is
 no third-party agent SDK in this course; the loop is built from the
 same plan/act/observe/repeat mechanism Chapter 4 teaches, directly on
-top of the model's chat-completions API, deliberately, so the
-mechanism is never hidden behind a framework's abstraction. The
+top of the provider's chat-completions API, deliberately, so the
+mechanism is never hidden behind a framework's abstraction. Because
+Anthropic, OpenAI, and Google Gemini all expose OpenAI-compatible
+endpoints too, Chapter 7 includes a documented option to point the
+exact same code at a hosted provider instead — a one-parameter change,
+for learners who'd rather trade local hardware for a hosted API. The
 **MCP Python SDK** (`pip install "mcp[cli]"`) is used for the
 tool-connection chapter. Commercial tools (Claude Code, Cursor,
 Copilot) are covered conceptually — their UI details change too fast

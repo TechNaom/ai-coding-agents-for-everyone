@@ -21,30 +21,52 @@ production-grade, interview-ready, original content only).
   assets, templates, `.github/workflows/ci.yml`, and
   `scripts/local_check.sh` were copied from `mcp-for-everyone` and
   rebranded/generalized — see below.
-- **SDK/model policy: REVERSED 2026-08-09.** The prior "Claude Agent
-  SDK + Haiku-only cost mitigation" policy below is **superseded** —
-  the user explicitly rejected any Anthropic-API-dependent design, not
-  just an expensive one. New policy: build the agent loop **from
-  scratch** against **Ollama** (`pip install ollama`), a local,
-  open-source model runner with an OpenAI-compatible tool-calling API
-  (confirmed via research 2026-08-09: `chat(model=..., messages=...,
-  tools=[...])`, tool calls returned as `message.tool_calls`, results
-  sent back as `role: "tool"` messages — see `ollama-python`'s own
-  `examples/tools.py`). No third-party agent-framework SDK is used —
-  the loop is written directly against Chapter 4's plan/act/observe/
-  repeat mechanism and the model's raw tool-calling API, deliberately,
-  so the mechanism stays visible. Recommended model: a tool-calling-
-  capable open-weight model (candidates: Qwen2.5-coder, Llama 3.1) —
-  **re-verify** the current recommendation and exact tool-calling
-  support against Ollama's model library before writing Chapter 7's
-  code; this is not yet re-confirmed at the code level, only at the
-  API-shape level. Zero API cost, zero API key, for every learner — but
-  a real hardware cost (RAM/disk for local model weights) that must be
-  stated explicitly in the lesson text, replacing the old "state the
-  dollar cost" requirement with "state the hardware requirement."
-  MCP Python SDK (`mcp[cli]`) is unaffected by this reversal, still
-  used for the tool-connection chapter (Chapter 9), reusing
-  `mcp-for-everyone`'s verified patterns.
+- **SDK/model policy: REVERSED 2026-08-09, then refined same day.**
+  The prior "Claude Agent SDK + Haiku-only cost mitigation" policy
+  below is **superseded** — the user explicitly rejected any
+  Anthropic-API-dependent design, not just an expensive one. New
+  policy: build the agent loop **from scratch** using the **`openai`
+  Python package** (`pip install openai`) as the HTTP client, pointed
+  by default at **Ollama**'s local OpenAI-compatible endpoint
+  (`base_url="http://localhost:11434/v1"`, `api_key="ollama"` —
+  required but unchecked placeholder) rather than at
+  `api.openai.com`. Confirmed via research 2026-08-09: Ollama serves a
+  genuine `/v1/chat/completions` route with tool-calling support for
+  tool-calling-capable models (`chat.completions.create(model=...,
+  messages=..., tools=[...])`, tool calls on `message.tool_calls`,
+  results sent back as `role: "tool"` messages). No third-party
+  agent-framework SDK is used — the loop is written directly against
+  Chapter 4's plan/act/observe/repeat mechanism and the provider's raw
+  tool-calling API, deliberately, so the mechanism stays visible.
+  Recommended model: a tool-calling-capable open-weight model
+  (candidates: Qwen2.5-coder, Llama 3.1) — **re-verify** the current
+  recommendation and exact tool-calling support against Ollama's model
+  library before writing Chapter 7's code; not yet re-confirmed at the
+  code level, only at the API-shape level. Zero API cost, zero API key,
+  for every learner by default — but a real hardware cost (RAM/disk for
+  local model weights) that must be stated explicitly in the lesson
+  text, replacing the old "state the dollar cost" requirement with
+  "state the hardware requirement." MCP Python SDK (`mcp[cli]`) is
+  unaffected by this reversal, still used for the tool-connection
+  chapter (Chapter 9).
+- **Learner provider-swap option (added 2026-08-09, same day as the
+  reversal):** the course's own build stays open-source/low-price by
+  default (Ollama), but Chapter 7 must give learners an explicit,
+  documented option to point the exact same agent code at a hosted
+  provider instead, if they prefer. Confirmed via research 2026-08-09:
+  Anthropic (since March 2026) and Google Gemini both expose their own
+  OpenAI-compatible `/v1/chat/completions`-style endpoints (Anthropic's
+  is documented as a testing/evaluation layer, not their recommended
+  production path — `platform.claude.com/docs/api/openai-sdk`). Because
+  Ollama, OpenAI, Anthropic, and Gemini all speak the same `openai`
+  client shape, swapping providers is exactly one `base_url`/`api_key`/
+  `model` change — no rewrite. Chapter 7 needs a clearly-marked "use a
+  hosted API instead" section showing this swap for all three
+  alternatives, each verified against that provider's *current*
+  documentation before being written into the lesson — do not assume
+  the March 2026 Anthropic compatibility layer's exact shape (or
+  Gemini's) is still accurate by the time Chapter 7 is actually
+  written; re-check.
 - **Superseded cost policy (for history only — do not follow):** the
   original 2026-08-09 resolution kept the Claude Agent SDK and pinned
   `ClaudeAgentOptions(model="claude-haiku-4-5", max_turns=<low>)` to
@@ -192,19 +214,22 @@ scenarios/8 interview questions minimum, tested code before writing).
 
 ## Next Recommended Task
 
-Modules 1 and 2 (Chapters 1-6) are done. Next: `pip install ollama`
-locally, pull a tool-calling-capable model, and verify the exact
-chat/tool-calling API shape against the real installed package before
-writing any code. Then build Chapter 7 ("Build: A Minimal Coding
-Agent" — the reference chapter, starts Module 3) against Ollama, no
-Anthropic API involved. State the hardware requirement (RAM/disk for
-the model) explicitly in the lesson text, replacing the old dollar-cost
-disclosure. Update `.github/workflows/ci.yml` for Ollama (or a
-graceful-skip pattern if running a local model in CI proves
-impractical) alongside this chapter. Starting with Chapter 7, use
-`python-for-everyone`'s richer per-chapter file pattern (see
-"Structural reference note" above), not the mcp-for-everyone-derived
-pattern Chapters 1-6 used.
+Modules 1 and 2 (Chapters 1-6) are done. Next: install Ollama locally,
+pull a tool-calling-capable model, `pip install openai`, and verify
+the exact chat/tool-calling API shape against Ollama's real local
+`/v1/chat/completions` endpoint before writing any code. Then build
+Chapter 7 ("Build: A Minimal Coding Agent" — the reference chapter,
+starts Module 3) using the `openai` client pointed at Ollama by
+default, with a documented hosted-provider-swap section (OpenAI,
+Anthropic, Gemini — see "Learner provider-swap option" above). State
+the hardware requirement (RAM/disk for the model) explicitly in the
+lesson text, replacing the old dollar-cost disclosure. Update
+`.github/workflows/ci.yml`'s `pip install` line from `ollama` to
+`openai` to match (or a graceful-skip pattern if running a local model
+in CI proves impractical) alongside this chapter. Starting with
+Chapter 7, use `python-for-everyone`'s richer per-chapter file pattern
+(see "Structural reference note" above), not the mcp-for-everyone-
+derived pattern Chapters 1-6 used.
 
 Also outstanding, not blocking Chapter 7: write the Module 1 and
 Module 2 written exams (assessments/written-exams/) — the one piece of

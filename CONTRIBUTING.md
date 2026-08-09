@@ -16,18 +16,20 @@ This rule is inherited from `mcp-for-everyone`, where it caught real,
 non-obvious SDK bugs repeatedly (see that repo's `PROJECT_STATE.md` for
 the full list) — it applies here from day one, not just once it's
 proven itself in this repo too. Every code example in every chapter
-must be installed and run against the real `ollama` client with a real
-local model pulled (or `mcp[cli]` for the tool-connection chapter)
-before being written into a lesson — never written from memory or
-copied from older tutorials. **Do not relax this for any edit, however
-small it seems.** If you're adding or changing a code sample:
+must be installed and run against the real `openai` client pointed at
+a real local Ollama server with a real model pulled (or `mcp[cli]` for
+the tool-connection chapter) before being written into a lesson —
+never written from memory or copied from older tutorials. **Do not
+relax this for any edit, however small it seems.** If you're adding or
+changing a code sample:
 
 ```bash
 python3 -m venv /tmp/acafe-test-env
-/tmp/acafe-test-env/bin/pip install ollama "mcp[cli]"
+/tmp/acafe-test-env/bin/pip install openai "mcp[cli]"
 # ollama pull <model>  -- see PROJECT_STATE.md for the current
 # recommended tool-calling-capable model; requires a running local
-# Ollama server (https://ollama.com), no API key or account needed
+# Ollama server (https://ollama.com), no API key or account needed.
+# The openai client points at it via base_url="http://localhost:11434/v1".
 /tmp/acafe-test-env/bin/python your_new_example.py
 ```
 

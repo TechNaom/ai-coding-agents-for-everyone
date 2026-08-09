@@ -43,17 +43,40 @@ Haiku-only low-cost mitigation — the requirement is genuinely free
 for any learner, ever.
 
 This course builds the "build your own agent" chapters' agent loop
-**from scratch** against **Ollama** (`pip install ollama`), which
-exposes an OpenAI-compatible chat API with tool-calling support over a
-locally-run open-weight model — confirmed via research 2026-08-09
-against `ollama-python`'s own examples (`chat(model=..., messages=...,
-tools=[...])`, tool calls returned as `message.tool_calls`, results
-sent back as `role: "tool"` messages). There is deliberately no
-third-party agent-framework SDK layered on top: the loop is written
-directly against Chapter 4's plan/act/observe/repeat mechanism and the
-model's raw tool-calling API, so the mechanism stays visible rather
-than hidden behind framework abstraction — this is also a better
-teaching fit than adopting a framework like LangGraph would have been.
+**from scratch** using the **`openai` Python package** (`pip install
+openai`) as the HTTP client, pointed at **Ollama**'s local
+OpenAI-compatible endpoint (`base_url="http://localhost:11434/v1"`,
+`api_key="ollama"` — a required-but-unchecked placeholder) rather than
+at `api.openai.com`. Confirmed via research 2026-08-09: Ollama serves
+a genuine `/v1/chat/completions` route with tool-calling support
+(`chat.completions.create(model=..., messages=..., tools=[...])`,
+tool calls returned on `message.tool_calls`, results sent back as
+`role: "tool"` messages) for tool-calling-capable models. There is
+deliberately no third-party agent-framework SDK layered on top: the
+loop is written directly against Chapter 4's plan/act/observe/repeat
+mechanism and the provider's raw tool-calling API, so the mechanism
+stays visible rather than hidden behind framework abstraction — this
+is also a better teaching fit than adopting a framework like LangGraph
+would have been.
+
+**Why the `openai` package specifically, not Ollama's own Python
+client**: per the 2026-08-09 clarification, this course stays
+open-source/low-price by default, but must give learners an explicit,
+documented option to point the same code at a hosted provider if they
+prefer speed/quality over local hardware cost. Confirmed via research
+2026-08-09: Anthropic (since March 2026) and Google Gemini both expose
+their own OpenAI-compatible `/v1/chat/completions`-style endpoints
+(Anthropic's documented as a testing/evaluation layer, not their
+recommended production path — see `platform.claude.com/docs/api/
+openai-sdk`). Because Ollama, OpenAI, Anthropic, and Gemini all speak
+the same `openai` client shape, the agent code in Chapter 7 needs
+exactly one `base_url`/`api_key`/`model` change to point at any of
+them — no rewrite. Chapter 7 must include an explicit, clearly-marked
+"use a hosted API instead" section showing that swap for all three
+alternatives, verified against each provider's current documentation
+before being written into the lesson (don't assume the March 2026
+Anthropic compatibility layer's exact shape is still accurate by the
+time this is written — re-check).
 
 **Model choice**: recommend a tool-calling-capable open-weight model —
 current candidates are Qwen2.5-coder (coding-tuned) or Llama 3.1 —

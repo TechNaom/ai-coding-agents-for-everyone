@@ -83,18 +83,28 @@ don't pad; all content original.
   anthropic either open source or low price api's we should choose."
   Final policy, confirmed via follow-up questions: **fully local,
   open-source model via Ollama**, agent loop **built from scratch**
-  (no third-party agent-framework SDK) against Ollama's
-  OpenAI-compatible tool-calling API. Zero API key, zero API cost, for
-  every learner. See `PROJECT_STATE.md`'s Architecture Decisions for
-  the full reasoning and the confirmed API shape
-  (`ollama-python`'s `chat(model=..., tools=[...])`,
-  `message.tool_calls`, `role: "tool"` result messages). Not yet
-  re-verified: the exact model recommendation and its tool-calling
-  support against Ollama's current model library — do this at the
-  start of Chapter 7, don't assume this note is still current by then.
-  `.github/workflows/ci.yml` still has the old Anthropic-era steps as
-  of this note — updating them is part of Chapter 7's task, not done
-  yet.
+  (no third-party agent-framework SDK) using the **`openai` Python
+  package** as the HTTP client, pointed by default at Ollama's local
+  OpenAI-compatible endpoint (`base_url="http://localhost:11434/v1"`,
+  `api_key="ollama"` placeholder). Zero API key, zero API cost, for
+  every learner by default. See `PROJECT_STATE.md`'s Architecture
+  Decisions for the full reasoning and the confirmed API shape
+  (`chat.completions.create(model=..., tools=[...])`,
+  `message.tool_calls`, `role: "tool"` result messages).
+  **Added same day**: the course itself stays open-source/low-price,
+  but must give learners a documented, explicit option to point the
+  identical code at a hosted provider (OpenAI, Anthropic — which added
+  an OpenAI-compatible endpoint in March 2026 — or Gemini) by changing
+  only `base_url`/`api_key`/`model`, since all four speak the same
+  `openai` client shape. Chapter 7 needs this as a clearly-marked "use
+  a hosted API instead" section, each provider's exact endpoint
+  re-verified against current docs when written, not assumed from this
+  note. Not yet re-verified: the exact model recommendation and its
+  tool-calling support against Ollama's current model library — do
+  this at the start of Chapter 7. `.github/workflows/ci.yml`'s
+  `pip install` line currently installs the `ollama` package, not
+  `openai` — needs updating to match this refined policy as part of
+  Chapter 7's task, not done yet.
 
 No website root `index.html` yet (Step 9, comes later).
 
@@ -133,17 +143,22 @@ No website root `index.html` yet (Step 9, comes later).
 
 ## Current task
 
-`pip install ollama`, pull a tool-calling-capable open-weight model,
-and verify the real chat/tool-calling API shape against the installed
-package first. Then build Chapter 7 ("Build: A Minimal Coding Agent")
-as the reference chapter — the first chapter that actually runs a
-model, built from scratch against Ollama, no Anthropic API involved —
-and the first to use python-for-everyone's richer per-chapter file
-pattern instead of the mcp-for-everyone-derived one Chapters 1-6 used.
-State the hardware requirement in the lesson text. Update
-`.github/workflows/ci.yml` for Ollama (or a graceful-skip pattern if
-running a local model in CI proves impractical) as part of this task.
-Read Chapters 1-6 fully first for continuity/terminology.
+Install Ollama, pull a tool-calling-capable open-weight model,
+`pip install openai`, and verify the real chat/tool-calling API shape
+against Ollama's local `/v1/chat/completions` endpoint first. Then
+build Chapter 7 ("Build: A Minimal Coding Agent") as the reference
+chapter — the first chapter that actually runs a model, built from
+scratch using the `openai` client pointed at Ollama by default, no
+Anthropic API dependency in the primary path — and the first to use
+python-for-everyone's richer per-chapter file pattern instead of the
+mcp-for-everyone-derived one Chapters 1-6 used. Include the
+clearly-marked "use a hosted API instead" section (OpenAI, Anthropic,
+Gemini) per the provider-swap policy above, each endpoint re-verified
+against current docs, not assumed. State the hardware requirement in
+the lesson text. Update `.github/workflows/ci.yml`'s `pip install`
+line from `ollama` to `openai` (or a graceful-skip pattern if running
+a local model in CI proves impractical) as part of this task. Read
+Chapters 1-6 fully first for continuity/terminology.
 
 ## Next task after that
 
