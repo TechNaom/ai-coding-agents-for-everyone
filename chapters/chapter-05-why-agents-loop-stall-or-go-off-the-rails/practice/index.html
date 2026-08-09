@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why Agents Loop, Stall, or Go Off the Rails Practice Bank — AI Coding Agents for Everyone</title>
+<meta name="description" content="Practice bank for Why Agents Loop, Stall, or Go Off the Rails.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-05">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../exercises/index.html">&larr; Back to exercises</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 5 Practice Bank</span>
+    <span class="reading-time">~18 min</span>
+  </div>
+  <h1>Practice Bank: Why Agents Loop, Stall, or Go Off the Rails</h1>
+  <p>Short scenarios, one judgment question each — practice spotting
+  these four failure modes in situations where the transcript looks
+  fine at first glance.</p>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · "It's just being thorough"</span>
+    <h3>The fifth read of the same file</h3>
+    <p>A teammate reviewing a long transcript says: "It's fine, it's
+    just being extra careful — it re-read the config file a few times."
+    You check: the file's contents haven't changed since the first read,
+    and none of the three later reads were preceded by anything else new
+    entering context. Explain why "being careful" isn't the right
+    description here, and name the failure mode along with the one
+    piece of evidence (or lack of it) that settles the question.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · A guess that hardened into fact</span>
+    <h3>"As established earlier..."</h3>
+    <p>On turn 4, an agent writes: "As established earlier, the
+    <code>User</code> model's <code>email</code> field is unique at the
+    database level." Turn 2, the only earlier turn discussing the model,
+    actually said: "The <code>email</code> field is <em>probably</em>
+    unique at the database level, though I haven't checked the schema
+    migration." Explain what changed between turn 2 and turn 4's
+    phrasing, why that change matters even though no new tool call
+    happened in between, and what a reviewer scanning only turn 4 would
+    miss without reading turn 2.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The reassuring final message</span>
+    <h3>"All tests pass" — do they?</h3>
+    <p>An agent's last turn: "I've completed the refactor and all tests
+    pass." The transcript's last <code>run_tests</code> tool call and
+    result appear four turns earlier, before two subsequent
+    <code>edit_file</code> calls that were never followed by another
+    test run. What should a reviewer do before accepting "all tests
+    pass," and why does the specific ordering here (edits after the last
+    real test run) matter more than the wording of the final message?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Retrying with more force</span>
+    <h3>The instruction that didn't help</h3>
+    <p>After watching an agent fail the same way twice, a developer
+    types: "Try harder this time, make sure it actually works." The
+    third attempt fails in the same way as the first two. Using this
+    chapter's mechanism, explain why "try harder" is unlikely to change
+    the outcome on its own, and propose what the developer should have
+    supplied instead to actually break the pattern.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · A boundary that would have helped</span>
+    <h3>The wrong file, confidently edited</h3>
+    <p>An agent tasked with "fix the pricing bug in the checkout service"
+    ends up editing <code>legacy/pricing_v1.py</code> — a file the
+    production service hasn't imported in over a year — because an
+    early, unverified guess about which pricing module was "the" pricing
+    module was never challenged. If the task prompt had included an
+    explicit boundary like "confirm the active pricing module with me
+    before editing any file matching <code>pricing*</code>," would that
+    have prevented the wrong guess, or only limited its damage? Explain
+    the distinction using this chapter's terms.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Reading a stall from the outside</span>
+    <h3>The dashboard shows "in progress" for forty minutes</h3>
+    <p>A CI dashboard shows an unattended agent run still "in progress"
+    well past the time similar tasks usually take. You don't have live
+    access to the transcript yet, only the step count, which is
+    increasing steadily. What two things would you want to check first
+    once you do get transcript access, to tell a genuinely slow-but-
+    productive run apart from a stall, and why would step count alone
+    not answer that question?</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../exercises/index.html">&larr; Exercises</a>
+    <a href="../interview-questions.html">Interview Questions &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

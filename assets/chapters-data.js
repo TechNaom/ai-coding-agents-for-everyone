@@ -54,7 +54,8 @@ window.ACAFE_MODULES = [
         id: "chapter-05",
         num: 5,
         title: "Why Agents Loop, Stall, or Go Off the Rails",
-        description: "Diagnosing the most common agent failure modes."
+        description: "Diagnosing the most common agent failure modes.",
+        path: "chapters/chapter-05-why-agents-loop-stall-or-go-off-the-rails/lesson.html"
       },
       {
         id: "chapter-06",

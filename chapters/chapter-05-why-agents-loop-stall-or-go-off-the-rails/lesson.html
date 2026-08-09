@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why Agents Loop, Stall, or Go Off the Rails — AI Coding Agents for Everyone</title>
+<meta name="description" content="The mechanical reason agents thrash, stall, compound a wrong inference, or declare victory too early — and what a human does about each one.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-05">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 5</span>
+    <span class="badge-difficulty">Intermediate</span>
+    <span class="reading-time">~22 min</span>
+  </div>
+
+  <h1>Why Agents Loop, Stall, or Go Off the Rails</h1>
+  <p class="lede">
+    Chapter 4 gave you the mechanism: one stateless prediction per turn,
+    made over the entire conversation so far, that either emits a tool
+    call or a clean stop. That mechanism doesn't just explain the runs
+    that go well. It explains, with the same precision, the runs that
+    don't — the agent that tries the same broken fix four times in a
+    row, the one that reads the same file for the fifth time without
+    writing anything, the one that builds an entire afternoon of work on
+    top of a fact that was never true, and the one that tells you it's
+    done when it isn't. None of these are the model "getting confused."
+    They're specific, nameable breakdowns in a mechanism you already
+    understand.
+  </p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#hook">1. A transcript that thrashes</a>
+    <a href="#looping">2. Looping and thrashing: the failure becomes part of "normal"</a>
+    <a href="#stalling">3. Stalling: activity with no forward signal</a>
+    <a href="#rails">4. Going off the rails: a wrong inference becomes fact</a>
+    <a href="#premature-done">5. Premature "done": a clean stop that isn't true</a>
+    <a href="#mitigation">6. Mitigation patterns: what the human actually does</a>
+    <a href="#thought-process">7. GenAI Builder Thought Process</a>
+    <a href="#recap">8. Points to remember</a>
+  </nav>
+
+  <div class="hook" id="hook">
+    <p>
+      The task: "Fix the import error in <code>api/reports.py</code>
+      that's breaking CI. Acceptance: <code>pytest tests/api/</code>
+      passes." Here's turns 4 through 7, verbatim in shape, after the
+      agent already read the failing traceback on turn 1 and confirmed
+      <code>format_date</code> is the missing name.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">turns 4-7 — four attempts, one shape</span>
+      </div>
+      <pre><code>Turn 4 (assistant):
+  text: "I'll import format_date from utils directly."
+  tool_use: edit_file(
+    path="api/reports.py",
+    old="from utils import format_date",
+    new="from utils.dates import format_date")
+
+Turn 5 (tool_result):
+  run_tests -> "ModuleNotFoundError: No module named
+  'utils.dates'"
+
+Turn 6 (assistant):
+  text: "Let me try a relative import instead."
+  tool_use: edit_file(
+    path="api/reports.py",
+    old="from utils.dates import format_date",
+    new="from ..utils import format_date")
+
+Turn 7 (tool_result):
+  run_tests -> "ImportError: attempted relative import with
+  no known parent package"
+
+Turn 8 (assistant):
+  text: "I'll go back to importing from utils directly, that
+  should be closer."
+  tool_use: edit_file(
+    path="api/reports.py",
+    old="from ..utils import format_date",
+    new="from utils import format_date")
+
+Turn 9 (tool_result):
+  run_tests -> "ModuleNotFoundError: No module named 'utils'"</code></pre>
+    </div>
+    <p>
+      Turn 8 is turn 4's import, verbatim, arrived at again after two
+      failed detours. Nobody wrote this loop on purpose, and the model
+      didn't "get stuck" the way a jammed gear does. Every one of those
+      four turns was a fresh, independently reasonable-looking
+      prediction — the problem is what each prediction was conditioned
+      on: a conversation that, by turn 8, contained three failed import
+      variants sitting right there as prior context, making "try a
+      fourth variant of the same idea" look like the natural next move,
+      rather than "stop importing anything and check what
+      <code>utils</code> actually resolves to as a package." Nothing in
+      the transcript ever forced that step back. That's the mechanism
+      this chapter names precisely, failure mode by failure mode.
+    </p>
+  </div>
+
+  <section id="looping" class="subtopic">
+    <h2>Looping and Thrashing: the Failure Becomes Part of "Normal"</h2>
+    <p>
+      Chapter 4 established that every turn is a prediction over the
+      <em>entire</em> conversation so far, including every prior tool
+      call and tool result. That's precisely what makes thrashing
+      possible: once a failed attempt is sitting in context, it isn't
+      quarantined as "a mistake to avoid repeating" — it's just more
+      text the next prediction is conditioned on, exactly as valid an
+      influence as anything else in the conversation. A conversation
+      that contains three similar failed attempts doesn't read, to the
+      prediction mechanism, as "clearly the wrong direction" the way it
+      would to a human skimming the same transcript. It reads as
+      established context in which "try another variant of this" is a
+      normal continuation, because nothing about the failures
+      themselves changes what kind of text is likely to come next —
+      only new, different information does that.
+    </p>
+    <p>
+      This is why thrashing tends to have a specific shape: not random
+      flailing, but small variations on the same idea. The turn-4-to-8
+      loop above didn't try editing the test file, or checking
+      <code>sys.path</code>, or reading <code>utils/__init__.py</code> —
+      it stayed inside the "which import syntax is right" space,
+      because every failed attempt still made that same space look like
+      the active, in-progress task. Each retry's prediction is
+      conditioned on a conversation where the failure pattern itself has
+      become part of what looks normal to continue, not a signal to
+      change strategy.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the difference between looping and legitimate iteration?</span>
+      Real, productive work also involves trying something, seeing it
+      fail, and trying something else — that's not automatically
+      thrashing. The tell is whether each attempt is conditioned on a
+      genuinely <em>new</em> fact (a file just read, an error message
+      that narrows the search space) or is a re-shuffling of information
+      that was already fully available before the previous attempt. Turn
+      6's relative-import guess didn't come from anything turn 5's error
+      message actually told it about package structure — it was a
+      guess from the same starting ignorance as turn 4, just phrased
+      differently. Legitimate iteration narrows; thrashing rotates.
+    </div>
+  </section>
+
+  <section id="stalling" class="subtopic">
+    <h2>Stalling: Activity With No Forward Signal</h2>
+    <p>
+      Stalling looks different from thrashing but comes from the same
+      root cause. Instead of repeating a failing <em>action</em>, the
+      agent keeps calling low-value tools — re-reading a file it already
+      read, re-running a search with a nearly identical query, listing a
+      directory it already listed — without making progress toward the
+      acceptance criterion. Nothing is failing loudly the way a test
+      failure does; there's just no forward motion.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">a stall, four turns in</span>
+      </div>
+      <pre><code>Turn 5: read_file("billing/invoice.py")
+Turn 6: text - "Let me check this file's imports again to be sure."
+        read_file("billing/invoice.py")
+Turn 7: text - "I want to double-check the function signature."
+        read_file("billing/invoice.py")
+Turn 8: grep_codebase("calculate_total")
+        -- returns the exact same three hits turn 2 already found</code></pre>
+    </div>
+    <p>
+      Mechanically, this happens for the same reason a stateless
+      predictor can thrash: without a genuinely new fact entering
+      context, there's nothing to make a different, more decisive action
+      the higher-probability next output. Re-reading a file the model
+      already has the contents of in context doesn't add new
+      information — but the tool call itself is still a plausible-
+      looking "next step" on a task where the model hasn't yet
+      identified an action it's confident will move things forward.
+      Where looping repeats a <em>failing</em> action, stalling repeats
+      a <em>non-committal</em> one — both are the same underlying gap:
+      no new signal in the conversation strong enough to break the
+      current pattern and produce a decisive next step.
+    </p>
+    <p>
+      Stalling is often harder to notice than thrashing in a live
+      session, because nothing is throwing errors — the transcript just
+      keeps growing without the task getting any closer to its
+      acceptance criterion, and a step cap (Chapter 4's hard stop) may
+      be the only thing that eventually ends it.
+    </p>
+  </section>
+
+  <section id="rails" class="subtopic">
+    <h2>Going Off the Rails: a Wrong Inference Becomes Fact</h2>
+    <p>
+      The most consequential failure mode isn't a stuck loop at all —
+      it's an early wrong inference that the model treats as settled,
+      after which every later turn is a fresh, individually reasonable
+      prediction built on a premise that was never true. This is worth
+      separating carefully from thrashing: nothing here repeats. The
+      transcript can look calm, confident, and forward-moving the entire
+      time, which is exactly what makes it dangerous.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">one misread search result, three turns later</span>
+      </div>
+      <pre><code>Turn 2 (tool_result): search_codebase("discount") ->
+  "pricing/rules.py:41: def apply_discount(code, cart): ...
+   pricing/rules.py:88: def apply_discount_legacy(code, cart): ..."
+
+Turn 3 (assistant):
+  text: "The discount logic lives in apply_discount_legacy --
+  that's the one being called from checkout."
+  -- nothing in the search result actually says which one is
+  -- called from checkout; the model inferred it from the name.
+  tool_use: read_file("pricing/rules.py")
+
+Turn 4 (assistant):
+  text: "Confirmed, I'll modify apply_discount_legacy to add
+  the new tier."
+  tool_use: edit_file(path="pricing/rules.py", ...)
+
+Turn 5 (assistant):
+  text: "Updating the tests for the legacy discount path to
+  match."
+  tool_use: edit_file(path="tests/test_pricing.py", ...)
+
+Turn 6 (assistant):
+  text: "All changes are consistent with the legacy discount
+  function checkout actually uses. Running the full suite now."</code></pre>
+    </div>
+    <p>
+      Turn 3's claim — "that's the one being called from checkout" —
+      was never verified against anything; it was a guess dressed as a
+      finding, and it became, from turn 4 onward, a fact the model
+      treats as already established. Turn 6 doesn't say "the function I
+      believe is used" — it says "the legacy discount function checkout
+      actually uses," restating the unverified premise as settled truth
+      with more confidence than turn 3 even had. This is the mechanical
+      core of compounding mistakes: the model has no built-in mechanism
+      to independently double back and re-verify something the
+      conversation already treats as established. Each new turn's
+      prediction is conditioned on the <em>whole</em> conversation,
+      including turn 3's confident-sounding but unverified claim, which
+      now reads exactly like a fact the model previously confirmed —
+      because nothing in the text itself marks the difference between
+      "I checked this" and "I'm guessing this." Every later turn
+      compounds the same premise instead of questioning it, for the
+      identical reason turn 8's thrashing loop above never stepped
+      outside the import-syntax space: nothing in the growing
+      conversation supplied a reason to.
+    </p>
+    <p>
+      In this specific example, if <code>apply_discount</code> (not
+      <code>_legacy</code>) is the one actually wired to checkout, the
+      agent will finish, report success, and the acceptance criterion
+      — checkout applying the new discount tier correctly — will
+      silently fail, because the entire multi-turn effort was aimed at
+      the wrong function from turn 3 onward.
+    </p>
+  </section>
+
+  <section id="premature-done" class="subtopic">
+    <h2>Premature "Done": a Clean Stop That Isn't True</h2>
+    <p>
+      Chapter 4 named the clean stop precisely: a turn with no tool
+      call, which the harness reads as "the model believes there's
+      nothing left to act on." Chapter 3 already warned you not to trust
+      that message at face value. Here's why, mechanically, a confident
+      "done" can be wrong in exactly the same way turn 6's confident
+      restatement above was wrong: a clean stop is still just a
+      prediction — the model's best guess, given everything in context,
+      that a text-only summary is now the most probable next output.
+      It is not a separate verification step. Nothing forces the model
+      to actually re-run the acceptance criterion before producing that
+      message unless the harness or the human requires it.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">the last turn, and what it doesn't include</span>
+      </div>
+      <pre><code>Turn 11 (assistant), no tool_use block:
+  "I've added rate limiting to POST /api/comments using the
+  existing rate_limit decorator, capped at 5 requests per
+  minute. This should satisfy the acceptance criterion."
+
+-- there is no turn 10 tool_result showing pytest actually ran
+-- against tests/api/test_comments.py after the final edit. The
+-- last executed test run in this transcript is turn 7, against
+-- an earlier version of the file, before two more edits.</code></pre>
+    </div>
+    <p>
+      "This <em>should</em> satisfy the acceptance criterion" is the
+      tell — it's a prediction about what the code probably does, not a
+      report of a check that was actually run. The model is pattern-
+      matching against what a finished, correct implementation of "add
+      rate limiting" typically looks like in text it has seen, and that
+      pattern is often close enough to be genuinely right. But "usually
+      right" and "verified" are different claims, and a clean stop only
+      ever gives you the first one. Premature "done" is what happens
+      when a task ends on a clean stop whose confidence was never backed
+      by re-running the actual acceptance check after the last edit —
+      which connects directly back to Chapter 3's review discipline:
+      the fix isn't a smarter model, it's a human (or a harness rule)
+      that never treats the agent's own closing message as the
+      verification step.
+    </p>
+  </section>
+
+  <section id="mitigation" class="subtopic">
+    <h2>Mitigation Patterns: What the Human Actually Does</h2>
+    <p>
+      All four failure modes above share one root cause: a fresh
+      prediction each turn, conditioned on whatever the conversation
+      happens to contain, with nothing internal to the model that
+      distinguishes "established fact," "unverified guess," "failed
+      attempt worth abandoning," and "genuinely done." Every practical
+      mitigation either changes what ends up in that conversation, or
+      puts a check outside the model entirely.
+    </p>
+    <p>
+      <strong>Scoping and boundaries (Chapter 2), applied here.</strong>
+      A narrowly scoped task gives the model fewer places to go looking
+      when a first attempt fails, which shrinks the space thrashing and
+      going-off-the-rails have to operate in. A boundary like "don't
+      touch <code>tests/</code> without confirming with me" doesn't
+      prevent a wrong inference, but it limits how far a wrong inference
+      can compound before a human is forced back into the loop.
+    </p>
+    <p>
+      <strong>Explicit, checkable acceptance criteria.</strong> "Fix the
+      bug" gives a clean-stop prediction nothing concrete to fail
+      against. "Acceptance: <code>pytest tests/api/test_comments.py</code>
+      passes, including a new test for the 6th request returning 429"
+      gives the harness something it can actually run and compare — not
+      trust the model's text about, but execute independently. The best
+      version of this runs the check automatically before a task is
+      allowed to be marked complete, so premature "done" gets caught by
+      a process, not by hoping a human remembers to re-check.
+    </p>
+    <p>
+      <strong>Step caps.</strong> Chapter 4's hard stop exists exactly
+      for stalling and thrashing: a loop that isn't converging will,
+      left alone, keep producing turns forever, because there's no
+      internal signal that says "this isn't working, stop." A step cap
+      doesn't fix the underlying cause, but it bounds the cost of not
+      catching it in time, and a run that hits the cap is itself a
+      strong signal worth investigating rather than just re-running with
+      a higher number.
+    </p>
+    <p>
+      <strong>The human reading the transcript, not waiting it out.</strong>
+      This is the mitigation the other three depend on actually being
+      used. A step cap only helps if someone looks at <em>why</em> a run
+      hit it. An acceptance criterion only helps if someone runs it
+      independently rather than accepting a clean stop's word for it. A
+      scoped boundary only helps if someone notices when the agent is
+      circling near its edge. Concretely, that means watching a live or
+      recorded transcript for the specific shapes this chapter named:
+      three-plus attempts that rotate through small variations of the
+      same idea (looping), several turns of reads/searches with no new
+      distinguishing fact and no edit (stalling), a confident claim on
+      turn N that never actually got checked and gets restated as
+      settled fact by turn N+2 (going off the rails), and a "done"
+      message with no corresponding fresh test run right before it
+      (premature done). None of these require reading the model's mind
+      — they're all visible in the raw sequence of tool calls and
+      results, the same raw data Chapter 4's project had you trace.
+    </p>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p><strong>Problem:</strong> a developer watching a struggling
+      agent run reaches for "it's stuck," "it's confused," or "it's
+      being lazy" — descriptions that don't tell you what to actually do
+      next, because they don't point at anything concrete in the
+      transcript.</p>
+      <p><strong>Assumption being made:</strong> that these are
+      different kinds of malfunction requiring different kinds of
+      diagnosis — a "stuck" agent needs a nudge, a "confused" agent
+      needs a clearer instruction, a "lazy" agent needs a stricter
+      prompt — as if the underlying problem changes shape between them.</p>
+      <p><strong>What actually distinguishes it:</strong> all four
+      failure modes in this chapter are the same mechanism (a fresh
+      prediction per turn, conditioned on the whole growing
+      conversation) producing different symptoms depending on what's
+      sitting in that conversation: prior failed attempts read as
+      "normal to continue" (looping), no new distinguishing fact
+      (stalling), an unverified claim that reads exactly like a
+      verified one (going off the rails), or a summary produced without
+      a corresponding fresh check (premature done). The fix in each case
+      is the same category of move — get a genuinely new, forcing fact
+      into the conversation, or put a check outside the model that
+      doesn't rely on its own text at all — not a different kind of
+      diagnosis for each.</p>
+      <p><strong>Why this matters day to day:</strong> once you can name
+      which of these four is happening in a live transcript, you know
+      immediately what kind of intervention actually helps. Telling a
+      thrashing agent to "try harder" just adds another turn conditioned
+      on the same failed context. Telling a stalling agent to "keep
+      going" does nothing, because nothing new entered context. What
+      helps is supplying the missing fact yourself (point it at the
+      actual package structure instead of letting it guess a fifth
+      import), or stopping it and re-scoping, or running the acceptance
+      check yourself instead of trusting a clean stop.</p>
+      <p><strong>Working definition to carry forward:</strong> a failure
+      mode is not a mystery about the model's internal state — it's a
+      specific, visible pattern in what did and didn't enter the
+      conversation across turns, diagnosable from the transcript alone,
+      using exactly the plan/act/observe/repeat mechanism Chapter 4
+      already gave you.</p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember</h2>
+      <ul>
+        <li><strong>Looping/thrashing:</strong> the agent repeats a
+        similar failing action because each retry's prediction is
+        conditioned on a conversation where the failure pattern itself
+        has become part of what looks normal to continue — thrashing
+        rotates through small variations rather than narrowing toward
+        new information.</li>
+        <li><strong>Stalling:</strong> the agent keeps calling low-value
+        tools (re-reading the same file, re-running a near-identical
+        search) without progress toward the acceptance criterion,
+        because no new fact in the conversation is forcing a more
+        decisive next action.</li>
+        <li><strong>Going off the rails / compounding mistakes:</strong>
+        an early, unverified inference gets restated with growing
+        confidence and treated as settled fact, because the model has
+        no built-in way to distinguish "I checked this" from "I'm
+        guessing this" in its own prior text, and no mechanism to
+        independently double back and re-verify something the
+        conversation already treats as established.</li>
+        <li><strong>Premature "done":</strong> a clean stop (Chapter 4's
+        no-tool-call turn) is still just a prediction, not a
+        verification step — a confident closing message with no
+        corresponding fresh acceptance check right before it is a
+        specific, spottable pattern, not proof of completion.</li>
+        <li>All four share one root cause: a stateless prediction per
+        turn with nothing internal that distinguishes established fact
+        from unverified guess, failed attempt from productive one, or
+        genuinely done from merely done-sounding.</li>
+        <li>Mitigation works by changing what's in the conversation
+        (scoping, boundaries, a forcing new fact) or by putting a check
+        outside the model entirely (explicit acceptance criteria run
+        independently, step caps) — and all of it depends on a human
+        actually reading the transcript for these four shapes and
+        intervening, not waiting the run out.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="what-is">
+    <span class="label">Interview questions (4 levels)</span>
+    See <a href="interview-questions.html">Chapter 5 interview questions</a>.
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

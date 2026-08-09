@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why Agents Loop, Stall, or Go Off the Rails Exercises — AI Coding Agents for Everyone</title>
+<meta name="description" content="Hands-on exercises for Why Agents Loop, Stall, or Go Off the Rails.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-05">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../quiz.html">&larr; Back to the quiz</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 5 Exercises</span>
+    <span class="reading-time">~30 min</span>
+  </div>
+  <h1>Exercises: Why Agents Loop, Stall, or Go Off the Rails</h1>
+  <p>Still conceptual — no SDK or code execution here, that starts in
+  Module 3. Each exercise hands you a transcript excerpt. The work is
+  identifying, precisely, which named failure mode is happening and
+  what specific mechanism produced it — not just labeling it "the agent
+  messed up."</p>
+
+  <div class="what-is">
+    <span class="label">Exercise standard</span>
+    Six tasks below. At least three are production-gear: harder,
+    ambiguous, real-world judgment calls rather than clean textbook
+    cases.
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">1</span> Name the failure mode</h3>
+    <p>Four transcript fragments, each showing only the last few turns:</p>
+    <ol type="a">
+      <li>Turns 6, 7, and 8 each call <code>run_shell("npm test")</code>
+      with no edits between them, and the output is identical each
+      time.</li>
+      <li>Turn 4 calls <code>edit_file</code> with a one-character
+      typo fix; turn 6 calls <code>edit_file</code> reverting that exact
+      change; turn 8 calls <code>edit_file</code> reapplying it.</li>
+      <li>The final turn is text only: "Migration complete, all records
+      now use the new schema" — with no tool call showing the migration
+      script was actually executed anywhere in the visible transcript.</li>
+      <li>Turn 2 says "the config is loaded from <code>settings.yaml</code>";
+      turn 5 says "since we've confirmed config comes from
+      <code>settings.yaml</code>, I'll add the new key there," though
+      turn 2 never actually opened or searched for the config-loading
+      code — it was an assumption stated as if verified.</li>
+    </ol>
+    <p>For each, name which of the four failure modes from the lesson it
+    is, and point to the specific detail that identifies it (not just
+    "it seems wrong").</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">2</span> Thrashing or genuine iteration?</h3>
+    <p>Two transcripts, both showing three failed attempts to fix a bug
+    before a fourth succeeds:</p>
+    <p><strong>Transcript A:</strong> attempt 1 fails with "AttributeError:
+    NoneType." Attempt 2 (a different fix) fails with the identical
+    error. Attempt 3 (yet another variant) fails with the identical
+    error again. Attempt 4 finally succeeds after using the identical
+    approach as attempt 1, unchanged.</p>
+    <p><strong>Transcript B:</strong> attempt 1 fails with "AttributeError:
+    NoneType on line 40." The agent reads the surrounding function and
+    finds the value can come from two code paths. Attempt 2 handles path
+    one, fails with a <em>different</em> error pointing at path two.
+    Attempt 3 handles path two and succeeds.</p>
+    <p>Explain, using this chapter's distinction, why A is thrashing and
+    B is not, even though both show three attempts before success.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">3</span> Write the missing forcing fact</h3>
+    <p>Recall the lesson's import-error hook: the agent rotated through
+    <code>utils.dates</code>, a relative import, and back to the
+    original <code>from utils import format_date</code>, three times,
+    without ever checking what <code>utils</code> actually resolves to
+    as a package. Write the single tool call (name and argument) that,
+    if inserted right after the first failure, would most likely have
+    supplied the forcing new fact needed to break the loop — and explain
+    specifically why that fact changes what the next prediction is
+    conditioned on, versus what the three actual retries were
+    conditioned on instead.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">4</span> (Production-gear) The confident diff that ships the wrong fix</h3>
+    <p>A production incident ticket says: "Users report duplicate
+    order-confirmation emails." An agent's transcript: turn 2 finds two
+    places that could plausibly send the email —
+    <code>orders/notify.py:send_confirmation()</code> and a Celery task
+    in <code>tasks/email_tasks.py</code> that also references
+    "confirmation." Turn 3: "The duplicate is coming from
+    <code>send_confirmation()</code> being called twice in the checkout
+    flow — I'll add a guard there." No tool call in turns 1-3 actually
+    traced the checkout flow's call sites to confirm this. Turns 4-9
+    implement and test the guard against <code>send_confirmation()</code>,
+    and the final turn declares the bug fixed. Using this chapter's
+    account of compounding mistakes, explain exactly where the
+    unverified premise entered, why the following six turns couldn't
+    have caught it on their own, and what a reviewer should specifically
+    check before merging this diff (not "review it more carefully" —
+    name the concrete artifact to check).</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">5</span> (Production-gear) Design a stalling detector</h3>
+    <p>Your team runs agents inside a harness that logs every tool call
+    and its arguments. You want an automated check that flags a
+    <em>likely</em> stall (not a certain one — a human still reviews
+    flagged runs) without access to the model's reasoning, only the raw
+    tool-call log. Propose a specific, concrete rule using only tool
+    names, arguments, and results you could compute from the log (for
+    example: "flag if the same tool is called with identical arguments
+    twice within any 5-turn window and no <code>edit_file</code> or
+    <code>run_tests</code> call occurs between them"). Explain why your
+    rule wouldn't also incorrectly flag transcript B from exercise 2
+    above, and name one legitimate pattern your rule risks
+    false-flagging anyway.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">6</span> (Production-gear) The step cap that fired at the worst time</h3>
+    <p>A 30-step cap fires mid-task on a database-migration agent. The
+    last five turns before the cap: turn 26 edits the migration script,
+    turn 27 runs it against a test database, turn 28's result shows a
+    foreign-key constraint failure, turn 29 edits the script to add a
+    deferred constraint, turn 30 (the cap) is a tool call to re-run the
+    migration that never got its result because the harness cut it off
+    first. Using this chapter's and Chapter 4's stop-condition
+    vocabulary together: (a) name which stop condition actually ended
+    this run, (b) argue whether the transcript shows thrashing/stalling
+    that a higher cap would just prolong, or genuine narrowing progress
+    that a higher cap would likely let finish, and (c) state what
+    specific evidence in turns 26-30 supports your answer to (b).</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../quiz.html">&larr; Back to Quiz</a>
+    <a href="../practice/index.html">Practice Bank &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

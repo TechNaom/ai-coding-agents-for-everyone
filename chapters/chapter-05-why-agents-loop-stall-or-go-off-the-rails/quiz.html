@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why Agents Loop, Stall, or Go Off the Rails Quiz — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interactive quiz for Why Agents Loop, Stall, or Go Off the Rails.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-05" data-chapter-id="chapter-05">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="lesson.html">&larr; Back to the lesson</a></p>
+
+  <span class="chapter-badge">Chapter 5 Quiz</span>
+  <h1>Why Agents Loop, Stall, or Go Off the Rails</h1>
+  <p>Eight questions. Fill in the blank, then check your answers.</p>
+
+  <div class="quiz-progress-wrap" aria-hidden="true">
+    <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+  </div>
+
+  <form onsubmit="return false;">
+    <div class="quiz-question">
+      <label for="q1"><span class="q-num">1</span> In thrashing, each retry's prediction is conditioned on a conversation where the failure pattern itself becomes part of what looks __________ to continue, rather than a signal to change strategy.</label>
+      <div class="fib-row">
+        <input type="text" id="q1" class="fib-blank" data-answers="normal" aria-label="Answer for question 1">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q2"><span class="q-num">2</span> Legitimate iteration narrows toward new information; thrashing __________ through small variations of the same idea without adding a genuinely new fact.</label>
+      <div class="fib-row">
+        <input type="text" id="q2" class="fib-blank" data-answers="rotates" aria-label="Answer for question 2">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q3"><span class="q-num">3</span> Stalling is repeating a low-value, non-committal tool call because there is no __________ signal in the conversation strong enough to produce a more decisive next step.</label>
+      <div class="fib-row">
+        <input type="text" id="q3" class="fib-blank" data-answers="forward" aria-label="Answer for question 3">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q4"><span class="q-num">4</span> Going off the rails happens because the model has no built-in way to distinguish "I checked this" from "I'm __________ this" in its own prior text, so an unverified claim reads exactly like a confirmed one.</label>
+      <div class="fib-row">
+        <input type="text" id="q4" class="fib-blank" data-answers="guessing" aria-label="Answer for question 4">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q5"><span class="q-num">5</span> Once an early inference is treated as settled, every later turn __________ the same premise instead of independently re-verifying it, because nothing in the conversation forces a double-check.</label>
+      <div class="fib-row">
+        <input type="text" id="q5" class="fib-blank" data-answers="compounds" aria-label="Answer for question 5">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q6"><span class="q-num">6</span> A clean stop is still just a __________, not a verification step — nothing forces the model to actually re-run the acceptance criterion before declaring the task done.</label>
+      <div class="fib-row">
+        <input type="text" id="q6" class="fib-blank" data-answers="prediction" aria-label="Answer for question 6">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q7"><span class="q-num">7</span> A telltale sign of premature "done" is a confident closing message with no corresponding fresh __________ run right before it.</label>
+      <div class="fib-row">
+        <input type="text" id="q7" class="fib-blank" data-answers="test,acceptance check,check" aria-label="Answer for question 7">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q8"><span class="q-num">8</span> Every mitigation pattern in this chapter either changes what ends up in the conversation, or puts a __________ outside the model entirely, so it doesn't rely on the model's own text.</label>
+      <div class="fib-row">
+        <input type="text" id="q8" class="fib-blank" data-answers="check" aria-label="Answer for question 8">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div id="check-all-wrap">
+      <button type="button" id="check-all-btn" class="check-btn">Check All Answers</button>
+      <span id="quiz-score"></span>
+    </div>
+
+    <div class="quiz-celebration" id="quiz-celebration" aria-live="polite">
+      Perfect score. Chapter complete.
+    </div>
+  </form>
+
+  <div class="chapter-nav">
+    <a href="lesson.html">&larr; Back to Lesson</a>
+    <a href="exercises/index.html">Exercises &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/quiz-engine.js"></script>
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

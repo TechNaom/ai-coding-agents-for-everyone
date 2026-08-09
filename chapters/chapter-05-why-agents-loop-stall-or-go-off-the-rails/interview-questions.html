@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why Agents Loop, Stall, or Go Off the Rails Interview Questions — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interview questions for Why Agents Loop, Stall, or Go Off the Rails.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-05">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="practice/index.html">&larr; Back to practice bank</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 5 Interview Questions</span>
+    <span class="reading-time">~15 min</span>
+  </div>
+  <h1>Interview Questions: Why Agents Loop, Stall, or Go Off the Rails</h1>
+  <p>Grouped by level. Each includes a strong answer, a red flag, and a follow-up.</p>
+
+  <div class="lesson-card">
+    <h2>1. (Beginner) An agent tries the same broken fix, in slightly different forms, four times in a row. What is actually happening, mechanically?</h2>
+    <p><strong>Strong answer:</strong> Each attempt is a fresh, independent prediction, but every one is conditioned on the entire conversation so far — including the prior failed attempts. Because nothing in the model's own text marks a failed attempt as "avoid repeating this," the failure pattern just becomes more context, and a variant of the same idea keeps looking like a reasonable next move. It isn't the model getting stuck like a jammed mechanism — it's four separate, individually plausible predictions that never received a genuinely new fact that would have pointed somewhere else.</p>
+    <p><strong>Red flag:</strong> Describes this as the model "getting confused" or "stuck in a bug," without connecting it to what was and wasn't in context across the four attempts.</p>
+    <p><strong>Follow-up:</strong> "What's the difference between this and an agent that tries four things that each rule out one hypothesis?"</p>
+    <p><strong>What this proves:</strong> Understands thrashing as a consequence of the per-turn prediction mechanism, not a separate malfunction.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>2. (Beginner) An agent calls no tools for three straight turns, just re-reading the same file with slightly different reasoning each time. What failure mode is this, and why does it happen?</h2>
+    <p><strong>Strong answer:</strong> This is stalling — activity without forward progress toward the acceptance criterion. It happens because re-reading a file already in context doesn't add new information, but the tool call itself still looks like a plausible next step when the model hasn't identified an action it's confident will move the task forward. Without a new distinguishing fact entering the conversation, there's nothing to make a more decisive action the higher-probability next output.</p>
+    <p><strong>Red flag:</strong> Says the agent is "being careful" or "thorough" without recognizing that repeated reads of unchanged content add nothing and signal an absence of forward progress.</p>
+    <p><strong>Follow-up:</strong> "How would you tell, from the raw transcript alone, the difference between genuine caution and stalling?"</p>
+    <p><strong>What this proves:</strong> Can distinguish unproductive repetition from productive caution using concrete transcript evidence.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>3. (Intermediate) A transcript shows the agent, on turn 3, guessing which of two similarly-named functions is the one actually used in production — without checking — and by turn 6 referring to that guess as a "confirmed" fact. Name the failure mode and explain the mechanism precisely.</h2>
+    <p><strong>Strong answer:</strong> This is going off the rails via a compounding mistake. The model has no internal marker distinguishing "I verified this" from "I inferred this" once both are just prior text in the conversation — turn 3's unverified guess and a genuinely confirmed fact look identical to a later turn's prediction. Every turn after 3 is conditioned on the full conversation including that guess, so each new turn's most probable continuation treats it as established, and by turn 6 the model's own restatement ("confirmed") is itself now further evidence for turns after it, even though nothing was ever actually checked.</p>
+    <p><strong>Red flag:</strong> Focuses on "the model lied" or "hallucinated," missing that the actual mechanism is an unverified inference being treated identically to a verified one because nothing in the text distinguishes them.</p>
+    <p><strong>Follow-up:</strong> "What one thing, added to turn 3 itself, would have made this much less likely to compound?"</p>
+    <p><strong>What this proves:</strong> Can trace a specific compounding failure back to the exact turn where an unverified claim entered context as if it were fact.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>4. (Intermediate) A task ends with a confident, text-only closing message declaring success. What should a reviewer check before accepting that, and why does the confidence of the wording carry no evidential weight?</h2>
+    <p><strong>Strong answer:</strong> A clean stop is still just a prediction — the model's best guess that a summary is now the most probable next output, not a report of an independently run check. The reviewer should look for a tool result showing the actual acceptance criterion (e.g. the specific test suite) run <em>after</em> the last edit, immediately before the closing message. If the last executed check predates a later edit, or there's no check at all, the "done" claim is unverified regardless of how confidently it's phrased — confident wording is just what a plausible-sounding summary reads like, not evidence the underlying work is correct.</p>
+    <p><strong>Red flag:</strong> Treats confident or detailed phrasing in the closing message as itself evidence of correctness, or accepts "should satisfy the acceptance criterion" as equivalent to "verified."</p>
+    <p><strong>Follow-up:</strong> "How would you change the harness, not just your own review habit, to make this mistake structurally harder to make?"</p>
+    <p><strong>What this proves:</strong> Applies Chapter 3's review discipline concretely to the specific mechanism of a clean stop, rather than trusting tone.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>5. (Senior) You're designing prompts and boundaries for a coding agent used daily by your team. What specific choices reduce the odds of thrashing and going-off-the-rails, and why do they work given the underlying mechanism?</h2>
+    <p><strong>Strong answer:</strong> Narrow scoping (Chapter 2) reduces the space a wrong inference or a failing retry loop can wander into — fewer plausible directions means fewer chances for a bad guess to look reasonable. Explicit boundaries ("don't touch X without confirming") don't prevent a wrong inference, but they cap how far it can compound before a human re-enters the loop. Both work because the mechanism is "prediction conditioned on everything in context" — reducing the scope of what's legitimately in play reduces the space in which a plausible-looking but wrong continuation can arise, and a boundary forces a text-only, confirmation-seeking turn instead of letting a wrong premise propagate through more tool calls.</p>
+    <p><strong>Red flag:</strong> Proposes only "write a better prompt" without naming a mechanism for why it helps, or claims boundaries prevent wrong inferences rather than limiting their blast radius.</p>
+    <p><strong>Follow-up:</strong> "What would you add on top of scoping and boundaries to catch a wrong inference that occurs anyway, inside the scoped area?"</p>
+    <p><strong>What this proves:</strong> Connects earlier chapters' scoping/boundary practices to this chapter's mechanism-level explanation, rather than treating them as unrelated best practices.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>6. (Senior) A step cap stopped a run at 40 turns without reaching a clean stop. How do you decide whether to just re-run with a higher cap, versus treating this as a signal to investigate?</h2>
+    <p><strong>Strong answer:</strong> A step cap is a resource-driven hard stop, not evidence of anything about the task's actual difficulty — the transcript itself has to be read to tell whether the run was making real, narrowing progress that simply needed more turns, or was thrashing/stalling the entire time. Concretely: check whether recent turns before the cap show new, distinguishing facts entering context and actions narrowing toward the acceptance criterion (raise the cap, it may just need more room), or whether they show the rotating-variant pattern of thrashing or the no-new-fact pattern of stalling (raising the cap just delays the same non-convergence, sometimes at real cost if tool calls are expensive). Re-running blindly with a higher cap without reading the transcript risks paying for more of the same failure.</p>
+    <p><strong>Red flag:</strong> Treats "just raise the cap" as a universal fix without reading the transcript for the actual failure pattern first.</p>
+    <p><strong>Follow-up:</strong> "What would you log or surface automatically to make this triage decision faster across many runs, not just one?"</p>
+    <p><strong>What this proves:</strong> Applies the chapter's named failure-mode patterns as a diagnostic tool for a real operational decision, not just a classification exercise.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>7. (Architect) Design a review process for a team that runs coding agents unattended on a batch of tickets overnight. How do you catch each of this chapter's four failure modes without a human watching every run live?</h2>
+    <p><strong>Strong answer:</strong> Each failure mode needs a structurally different, automatable catch, since no one is watching live: thrashing and stalling are caught by a step cap plus a post-hoc scan of the transcript for repeated near-identical tool calls or edits with no diff between attempts, flagged for review rather than silently accepted. Going off the rails is the hardest to catch automatically since nothing "fails" loudly — the practical mitigation is requiring the agent's own confidence claims to be traceable to an actual tool result (a lightweight rule: any claim of the form "X is the function used by Y" should have a corresponding tool call that established it, not just an assertion), plus independent verification of the final diff against the ticket's stated acceptance criteria. Premature done is caught by never trusting the clean-stop message itself — the pipeline re-runs the acceptance check independently and only marks a ticket complete if that check, run outside the model, actually passes.</p>
+    <p><strong>Red flag:</strong> Proposes a single generic safeguard (e.g. "just cap the steps") as sufficient for all four failure modes, without recognizing they need different kinds of automated checks.</p>
+    <p><strong>Follow-up:</strong> "Which of these four would you prioritize hardening first if you could only ship one this sprint, and why?"</p>
+    <p><strong>What this proves:</strong> Designs distinct, mechanism-appropriate automated safeguards for an unattended context, matching each failure mode's actual signature rather than treating them as interchangeable.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>8. (Architect) A junior engineer proposes fixing all four failure modes by telling the model, in the system prompt, "if you're not sure, double-check before proceeding." Evaluate this proposal against the mechanism this chapter describes.</h2>
+    <p><strong>Strong answer:</strong> This instruction competes with everything else in the growing conversation for influence on each turn's prediction, and it can't reliably override the specific pattern of an already-thrashing or already-compounding transcript — the same way it can't retroactively mark a specific piece of earlier text as "uncertain" if the model's own prior turn stated it confidently. It may modestly reduce the frequency of some cases, since "double-check" as a standing instruction is itself part of every turn's context, but it's not a substitute for anything that operates outside the model's own text: an independently run acceptance check, a harness-enforced step cap, or a boundary the harness actually blocks. A system prompt instruction is a probabilistic nudge on the same unreliable channel that produced the original problem, not a guarantee.</p>
+    <p><strong>Red flag:</strong> Endorses the prompt-only fix as sufficient, or doesn't distinguish between influencing the model's predictions and enforcing something outside the model entirely.</p>
+    <p><strong>Follow-up:</strong> "What's one thing this instruction might actually help with, even though it's not a full fix?"</p>
+    <p><strong>What this proves:</strong> Correctly separates prompt-level influence from harness-level enforcement, and can evaluate a well-intentioned but structurally weak proposal against the actual mechanism.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="practice/index.html">&larr; Practice Bank</a>
+    <a href="project/index.html">Project &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>
