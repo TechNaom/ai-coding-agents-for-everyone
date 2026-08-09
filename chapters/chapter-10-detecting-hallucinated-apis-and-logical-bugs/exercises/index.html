@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detecting Hallucinated APIs and Logical Bugs Exercises — AI Coding Agents for Everyone</title>
+<meta name="description" content="Hands-on exercises for Detecting Hallucinated APIs and Logical Bugs.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-10">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../quiz.html">&larr; Back to the quiz</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 10 Exercises</span>
+    <span class="reading-time">~45 min</span>
+  </div>
+  <h1>Exercises: Detecting Hallucinated APIs and Logical Bugs</h1>
+  <p>These exercises don't need pandas, requests, or any network access
+  to verify — <code>starter.py</code> and <code>solution.py</code> in
+  this folder test the same three mechanical checks the lesson teaches
+  against small, self-contained stand-ins, so every exercise below is
+  checkable by running the file directly.</p>
+
+  <div class="what-is">
+    <span class="label">Exercise standard</span>
+    Six tasks below. At least three are production-gear: harder,
+    ambiguous, real-world judgment calls rather than clean textbook
+    cases.
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">1</span> Implement <code>method_actually_exists</code></h3>
+    <p>Open <code>starter.py</code>. Fill in TODO 1: given an object
+    and a method name string, return whether that name actually exists
+    on the object AND is callable, using <code>hasattr()</code> and
+    <code>callable()</code>. Run <code>python3 starter.py</code> and get
+    the first four checks to <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">2</span> Implement <code>safe_call</code></h3>
+    <p>Fill in TODO 2: call a function with the given arguments inside a
+    try/except, returning a structured
+    <code>{"ok": bool, "result"/"error_type"/"error_message": ...}</code>
+    dict instead of letting an exception propagate. Get the next five
+    checks to <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">3</span> Implement <code>has_mutable_default</code></h3>
+    <p>Fill in TODO 3: use <code>inspect.signature()</code> to check
+    whether any of a function's parameters has a mutable (<code>list</code>,
+    <code>dict</code>, or <code>set</code>) default value. Get the
+    remaining three checks to <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">4</span> (Production-gear) Check a real claim you're unsure about</h3>
+    <p>Without looking it up first, write down whether you believe
+    <code>str.removeprefix</code> is a real method on Python strings,
+    and whether <code>list.sort()</code> accepts a keyword argument
+    called <code>unique</code>. Then use
+    <code>method_actually_exists("", "removeprefix")</code> and
+    <code>method_actually_exists([], "sort")</code> plus
+    <code>inspect.signature(list.sort)</code> to actually check both
+    claims against your real, installed Python. Were either of your
+    guesses wrong, and if so, does the wrong one <em>sound</em> more or
+    less plausible than the real answer?</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">5</span> (Production-gear) Trace a boundary case by hand</h3>
+    <p>Given this function:</p>
+    <pre><code>def last_n_items(items, n):
+    """Return the last n items, most recent first."""
+    return items[-n:][::-1]</code></pre>
+    <p>Trace, by hand, what <code>last_n_items([10, 20, 30], 0)</code>
+    actually returns — not what you'd guess, what Python's real slicing
+    semantics produce for <code>items[-0:]</code>. Then run it and
+    confirm. Explain in 2-3 sentences why this specific boundary
+    (<code>n=0</code>) is exactly the kind of case a test suite that
+    only checks "the last 2 of 5 items" would never exercise.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">6</span> (Production-gear) Review a diff for a hallucinated API</h3>
+    <p>A teammate's diff adds this line to a data-cleaning script:</p>
+    <pre><code>-df = df.drop_duplicates(subset=["email"])
++df = df.drop_duplicates(subset=["email"], keep_highest_confidence=True)</code></pre>
+    <p>Using <code>method_actually_exists</code>-style reasoning (not a
+    guess), determine whether <code>keep_highest_confidence</code> is a
+    real <code>pandas.DataFrame.drop_duplicates</code> argument. If you
+    don't have pandas installed, reason from the real, documented
+    parameter list you'd check via <code>help(pd.DataFrame.drop_duplicates)</code>
+    or the official docs — not from how plausible the name sounds. Then
+    write a 2-3 sentence review comment, referencing which of Chapter
+    3's five checklist questions this diff fails and why a green
+    "the script still exits 0" smoke test might not have caught it.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../quiz.html">&larr; Back to Quiz</a>
+    <a href="../practice/index.html">Practice Bank &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

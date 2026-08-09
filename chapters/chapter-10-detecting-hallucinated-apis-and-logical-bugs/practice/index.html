@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detecting Hallucinated APIs and Logical Bugs Practice Bank — AI Coding Agents for Everyone</title>
+<meta name="description" content="Practice bank for Detecting Hallucinated APIs and Logical Bugs.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-10">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../exercises/index.html">&larr; Back to exercises</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 10 Practice Bank</span>
+    <span class="reading-time">~28 min</span>
+  </div>
+  <h1>Practice Bank: Detecting Hallucinated APIs and Logical Bugs</h1>
+  <p>A runnable script (<code>starter.py</code> / <code>solution.py</code>
+  in this folder) hands you six small snippets, each with one
+  deliberate flaw spanning this chapter's categories. Predict, then
+  run, then work through the six scenarios below, which extend the
+  same discipline to situations the script's snippets don't cover.</p>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Untested branch</span>
+    <h3>The hallucinated call in the error-handling path</h3>
+    <p>A diff adds a new <code>except</code> block that calls
+    <code>logger.warn_and_continue(message)</code> when a network
+    request fails. Every existing test passes, because none of them
+    actually trigger a network failure. Using this chapter's mechanical
+    checks, how would you verify whether <code>warn_and_continue</code>
+    is real without waiting for a production outage to find out?
+    (Python's real <code>logging.Logger</code> has <code>warning()</code>
+    — note the different name — but no <code>warn_and_continue</code>.)</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The confident docstring</span>
+    <h3>A docstring that explains a method that doesn't exist</h3>
+    <p>A function's docstring reads: "Uses <code>Path.copy_into(dest)</code>
+    to move the file efficiently, avoiding a full read into memory."
+    The explanation is detailed and sounds like it understands
+    filesystem performance well. <code>pathlib.Path</code> has no
+    <code>copy_into</code> method. Why does a detailed, technically-
+    literate-sounding explanation NOT make this more likely to be
+    real, and what specifically should you check instead of reading
+    the explanation again more carefully?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Version drift</span>
+    <h3>The API that used to exist</h3>
+    <p>A diff calls <code>collections.Counter.most_common_unique(n)</code>.
+    A teammate says "that's real, I've used it before" and is
+    genuinely not lying — they're thinking of a similar-sounding
+    helper from a different library they used on a past project. What
+    does this scenario suggest about relying on a human teammate's
+    memory as a substitute for the mechanical check this chapter
+    teaches, given that a confident human can be wrong in the exact
+    same shape a model can?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Passes on the happy path</span>
+    <h3>The discount function that only gets tested with round numbers</h3>
+    <p>A function computing a loyalty discount is tested with orders of
+    $100 and $200, and both produce correct-looking results. The
+    function contains <code>discount = price * 0.1 if price &gt; 100 else 0</code>
+    where the intended rule was "10% off orders of $100 or more."
+    Using a boundary-tracing approach (not a guess), what does this
+    function actually return for an order of exactly $100, and why do
+    round test numbers like $100 and $200 make this kind of
+    off-by-a-comparison-operator bug easy to miss?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Over-flagging</span>
+    <h3>The line that looks suspicious but is actually fine</h3>
+    <p>A reviewer flags <code>total = round(subtotal + tax, 2)</code>
+    in a currency-formatting function as "probably an agent trying to
+    hide a bug," recalling Chapter 3's rounding-bug hook. But this
+    particular function is the LAST step before writing a value to a
+    UI label meant to display two decimal places, with the actual
+    monetary calculation and storage happening earlier in
+    <code>Decimal</code> arithmetic elsewhere in the file. Is the
+    reviewer's pattern-match justified here? What's the cost of
+    treating every use of a pattern that was once part of a real bug
+    as automatically suspicious?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Two flaws, one diff</span>
+    <h3>When a hallucinated API AND a logical bug show up in the same three lines</h3>
+    <p>A three-line diff both calls a nonexistent
+    <code>list.unique()</code> method (real Python has no built-in
+    dedup method on <code>list</code> at all — you'd use
+    <code>set()</code> or a comprehension) AND, in the next line, uses
+    <code>&gt;=</code> where the stated intent needed <code>&gt;</code>.
+    Which of the two would you expect a reviewer relying only on
+    "does it run" to catch, and which would survive that check
+    entirely? What does this suggest about needing BOTH of this
+    chapter's checks on every diff, not just one or the other?</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../exercises/index.html">&larr; Exercises</a>
+    <a href="../interview-questions.html">Interview Questions &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

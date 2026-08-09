@@ -97,13 +97,14 @@ window.ACAFE_MODULES = [
   {
     title: "Module 4 — Reviewing AI-Generated Code Critically",
     summary: "The human half of \"AI proposes, human reviews.\"",
-    examPath: null,
+    examPath: "assessments/written-exams/module-4-exam.md",
     chapters: [
       {
         id: "chapter-10",
         num: 10,
         title: "Detecting Hallucinated APIs and Logical Bugs",
-        description: "Building the habit of validating before trusting."
+        description: "Building the habit of validating before trusting.",
+        path: "chapters/chapter-10-detecting-hallucinated-apis-and-logical-bugs/lesson.html"
       }
     ]
   },

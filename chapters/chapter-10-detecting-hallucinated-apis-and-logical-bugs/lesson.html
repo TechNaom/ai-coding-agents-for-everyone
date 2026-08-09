@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detecting Hallucinated APIs and Logical Bugs — AI Coding Agents for Everyone</title>
+<meta name="description" content="Why a model calls a function that doesn't exist, how to catch it mechanically, and why syntactically-correct logical bugs are a harder, separate problem review has to catch too.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-10">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 10</span>
+    <span class="badge-difficulty">Advanced</span>
+    <span class="reading-time">~26 min</span>
+  </div>
+
+  <h1>Detecting Hallucinated APIs and Logical Bugs</h1>
+  <p class="lede">
+    Module 3 built an agent. Everything before that taught you how to
+    drive one well. This chapter is Module 4 on its own — the entire
+    module, per the curriculum map — and it's about the specific,
+    mechanical skill that sits underneath Chapter 3's five-question
+    checklist and Chapter 5's warning about compounding mistakes: how
+    do you actually tell, line by line, that a piece of agent-written
+    code calls something that doesn't exist, or does something that
+    isn't what it claims? Not "does this feel right" — a checkable,
+    repeatable answer.
+  </p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#hook">1. A diff that imports cleanly and is still broken</a>
+    <a href="#hallucinated-apis">2. Hallucinated APIs: a plausible call that isn't real</a>
+    <a href="#catching-hallucinations">3. Catching a hallucinated API, mechanically</a>
+    <a href="#logical-bugs">4. Logical bugs: correct API, wrong logic</a>
+    <a href="#habit">5. Building the validate-before-trust habit</a>
+    <a href="#thought-process">6. GenAI Builder Thought Process</a>
+    <a href="#recap">7. Points to remember</a>
+  </nav>
+
+  <div class="hook" id="hook">
+    <p>
+      The ticket: "Sort the customer export by signup date, most
+      recent first. Customers with no recorded signup date should sort
+      last, not first or crash the export. Fix in
+      <code>reports/customers.py</code>. Acceptance:
+      <code>pytest tests/reports/test_customers.py</code> passes." A
+      clean, well-scoped prompt by Chapter 2's standard. The agent
+      reports success. Here's the diff.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">reports/customers.py — agent's diff</span>
+      </div>
+      <pre><code>--- a/reports/customers.py
++++ b/reports/customers.py
+@@
+ def export_customers(df):
+-    df = df.sort_values(by="signup_date", ascending=False)
++    df = df.sort_values(
++        by="signup_date", ascending=False,
++        na_position="last", ignore_na=True,
++    )
+     return df.to_csv(index=False)</code></pre>
+    </div>
+    <p>
+      This reads exactly like a correct, minimal fix. <code>na_position="last"</code>
+      is real — that's the actual pandas keyword for controlling where
+      missing values sort to. <code>ignore_na=True</code> sits right
+      next to it, formatted identically, explained by nothing more than
+      its own plausible name. It does not exist. <code>DataFrame.sort_values</code>
+      has no <code>ignore_na</code> parameter — calling it live raises
+      <code>TypeError: DataFrame.sort_values() got an unexpected
+      keyword argument 'ignore_na'. Did you mean 'ignore_index'?</code>
+      the instant this line actually runs — pandas's own error even
+      names the real, similarly-spelled parameter the hallucination was
+      probably drifting toward. If the
+      agent's own "acceptance check passed" claim was taken at face
+      value without anyone actually running the export path the test
+      suite happens not to cover, this ships broken and nobody notices
+      until a customer export crashes in production.
+    </p>
+    <p>
+      Notice what didn't fail: the diff format. The code style. The
+      argument name's plausibility — <code>ignore_na</code> sounds
+      exactly like something a well-designed sorting function should
+      have, and other libraries genuinely do have arguments shaped
+      like it (<code>Series.mean(skipna=True)</code> is real pandas
+      API, just not on this function). The only thing that actually
+      catches this is running the line and watching it raise. That's
+      the whole first half of this chapter, made concrete before any
+      explanation of why it happens.
+    </p>
+  </div>
+
+  <section id="hallucinated-apis" class="subtopic">
+    <h2>Hallucinated APIs: a Plausible Call That Isn't Real</h2>
+    <p>
+      A hallucinated API is a function, method, or argument that a
+      model calls with complete syntactic confidence, formatted
+      identically to a real call, that does not actually exist in the
+      library or module being used. Not a typo — a typo looks broken.
+      A hallucination looks exactly like the real thing, because it was
+      generated the same way the real thing would have been: as
+      plausible-sounding text.
+    </p>
+    <p>
+      Chapter 4 established the mechanism this chapter now applies to
+      a specific failure: every token a model produces, including a
+      method name inside a tool call's arguments, is the most probable
+      continuation given everything in its context — not a lookup
+      against a live copy of the library's actual source. A model has
+      no built-in mechanism that checks "does <code>ignore_na</code>
+      actually appear in pandas's real parameter list" before emitting
+      it; it only has "how often, across everything this model was
+      trained on, does text shaped like this tend to appear next to
+      text shaped like <code>na_position='last'</code>." For a
+      structurally plausible argument on a widely-used function, that
+      probability can be high even when the argument is entirely
+      invented — especially in three recurring situations:
+    </p>
+    <p>
+      <strong>Less common libraries and less-seen call shapes.</strong>
+      A model has seen thousands of real <code>requests.get(url,
+      timeout=5)</code> calls and far fewer examples of a smaller,
+      less-documented library's exact method surface. Where training
+      data is thin, "what's plausible" and "what's real" diverge more
+      often, because there's less real signal pulling the prediction
+      toward the actual API.
+    </p>
+    <p>
+      <strong>APIs that changed after the model's training data.</strong>
+      A method deprecated, renamed, or removed in a newer library
+      version can still be exactly what a model predicts, because that
+      call shape was genuinely common in the text it learned from —
+      the model has no way to know the library moved on since then.
+    </p>
+    <p>
+      <strong>Structural similarity to a more common library.</strong>
+      This is the hook's exact mechanism. Chaining calls is common and
+      idiomatic in libraries like pandas (<code>df.dropna().reset_index()</code>)
+      and in many JavaScript APIs — so a model reaching for a stdlib
+      call that <em>looks</em> like it should chain the same way can
+      confidently produce a chain that the actual library never
+      supports:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">a chained call that assumes a fluent API that doesn't exist</span>
+      </div>
+      <pre><code>from email.message import EmailMessage
+
+msg = EmailMessage()
+msg.set_content("See attached report.").add_attachment(
+    csv_bytes, maintype="text", subtype="csv", filename="report.csv"
+)
+# AttributeError: 'NoneType' object has no attribute 'add_attachment'
+# -- EmailMessage.set_content() mutates msg in place and returns None,
+# it isn't a fluent/chainable API the way this call assumes.</code></pre>
+    </div>
+    <p>
+      Every one of these is the same underlying event: a highly
+      probable piece of text that happens not to correspond to
+      anything real. It is not the model "lying" and it is not
+      "making a mistake" in the way a person forgetting a detail
+      makes a mistake — it's the mechanism from Chapter 4, applied to
+      the one place its output has to be literally, exactly correct to
+      work at all: a name that either exists in a library's real
+      surface or doesn't.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... a hallucinated API, precisely?</span>
+      Any function name, method name, module attribute, class, or
+      keyword argument that a piece of generated code references as if
+      it exists, but that the actual library, module, or standard
+      library being called does not define — regardless of how
+      plausible, well-formatted, or confidently explained the call
+      looks. The three usual shapes: a wrong-but-close name (<code>DictWriter.write_all</code>
+      instead of the real <code>writerows</code>), a nonexistent
+      argument on a real function (<code>ignore_na</code> on
+      <code>sort_values</code>), or a wrong assumption about what a
+      real call returns (assuming a mutating, <code>None</code>-returning
+      method is chainable).
+    </div>
+  </section>
+
+  <section id="catching-hallucinations" class="subtopic">
+    <h2>Catching a Hallucinated API, Mechanically</h2>
+    <p>
+      "Does this look right" is exactly the check a hallucinated API
+      is built to survive — the whole reason it's dangerous is that it
+      looks right. Catching one requires a check that doesn't depend
+      on how a line of code reads. Three checks actually work, in
+      order of cost:
+    </p>
+    <p>
+      <strong>1. Does the name actually appear in the library, via
+      introspection or real documentation — not memory?</strong> This
+      is cheap and immediate: <code>dir(obj)</code>,
+      <code>hasattr(obj, "method_name")</code>, or
+      <code>help(SomeClass.method)</code> tell you, directly from the
+      installed package on your machine, whether a name is real. This
+      is strictly better than trusting your own memory of the library
+      or the model's own confident explanation of it — both can be
+      wrong in the same direction a hallucination is wrong, because
+      both are pattern-matching against "what usually goes here," not
+      checking the actual installed version.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">a two-line introspection check, before trusting a claimed call</span>
+      </div>
+      <pre><code>&gt;&gt;&gt; import csv
+&gt;&gt;&gt; hasattr(csv.DictWriter, "write_all")
+False
+&gt;&gt;&gt; hasattr(csv.DictWriter, "writerows")
+True</code></pre>
+    </div>
+    <p>
+      <strong>2. Does it actually import and run — the full call, with
+      real or realistic arguments, not just the module?</strong> This
+      is this course's own build discipline, stated plainly:
+      <code>PROJECT_STATE.md</code> and every chapter's quality audit
+      in this repository record, explicitly, that no code example was
+      written into a lesson without first being run against the
+      actually-installed package — Chapter 9's audit describes
+      installing the real <code>mcp</code> package and inspecting its
+      real function signatures with <code>inspect.signature()</code>
+      before trusting any claim about its API, specifically because
+      trusting memory or a plausible-looking call is exactly the
+      failure this chapter is about. The same discipline applies to
+      any code an agent hands you: importing a module cleanly proves
+      the module exists, nothing more — only actually calling the
+      specific method with real arguments proves that call is real.
+      <code>hasattr()</code> catches a wrong name; running the call
+      also catches a wrong argument, because Python raises
+      <code>TypeError</code> immediately for a keyword argument a
+      function's real signature doesn't define.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the gap between "it imports" and "it runs correctly"?</span>
+      Importing <code>pandas</code> only proves the package is
+      installed. Calling <code>df.sort_values(...)</code> with the
+      exact arguments the diff uses is the only thing that proves
+      those specific arguments are real — and it has to be the exact
+      call, on realistic data, not a simplified stand-in, because a
+      hallucinated argument on a rarely-exercised branch (a specific
+      <code>error-handling</code> path, a specific input shape) can sit
+      unnoticed through a shallow "does the script run at all" smoke
+      test that never actually reaches that line. This is the same gap
+      Chapter 3's checklist question 1 named for logic bugs — passing a
+      check is not the same claim as being correct — applied here to a
+      single line's API surface instead of a whole feature's behavior.
+    </p>
+    <p>
+      <strong>3. Is there a suspiciously confident comment explaining
+      "why" the call works?</strong> This is a softer signal, but a
+      real one: a comment like <code># simplified — pass through
+      directly</code> or <code># ignore_na skips missing-date rows
+      cleanly</code> attached to a hallucinated call is not evidence
+      the call is correct — it's often the model's own plausible-
+      sounding gloss on a plausible-sounding call, generated by the
+      exact same mechanism that generated the call itself. A comment
+      explaining <em>why</em> a line does something is not
+      independent verification that it actually does that thing; it's
+      more text from the same source, conditioned on the same
+      probability distribution. Treat a suspiciously tidy explanation
+      as a reason to check harder, not as the check itself.
+    </p>
+    <p>
+      All three of these are variations on one move: stop reading the
+      code as prose and start treating it as a claim to be tested
+      against the actual, installed, real thing it references. That's
+      strictly cheaper than it sounds — <code>hasattr()</code> and a
+      real function call both take seconds, and both are unambiguous
+      in a way "does this look right" never is.
+    </p>
+  </section>
+
+  <section id="logical-bugs" class="subtopic">
+    <h2>Logical Bugs: Correct API, Wrong Logic</h2>
+    <p>
+      Not every wrong line is a hallucination. A logical bug uses
+      real, correctly-spelled, correctly-called functions and methods
+      — every name checks out against <code>dir()</code>, every call
+      runs without raising — and is still wrong, because the reasoning
+      connecting those correct calls together is broken. This is, in
+      a specific sense, harder to catch than a hallucinated API:
+      there is no dictionary lookup, no <code>hasattr()</code> check,
+      no import error that surfaces it. Catching a logical bug requires
+      actually tracing what the code does with real values, not
+      checking whether the code is allowed to exist.
+    </p>
+    <p>
+      <strong>Off-by-one and boundary errors.</strong> A function
+      documented as excluding today's date includes it anyway, because
+      a comparison operator is one character off from what the
+      docstring promises:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">a boundary that contradicts its own docstring</span>
+      </div>
+      <pre><code>def week_range(as_of):
+    """Return the 7 days strictly before as_of -- not including
+    as_of itself, since today's numbers are still accumulating."""
+    start = as_of - timedelta(days=7)
+    return start, as_of
+
+def filter_week(records, as_of):
+    start, end = week_range(as_of)
+    return [r for r in records if start &lt;= r["date"] &lt;= end]
+    #                                  ^^                  ^^
+    # both bounds inclusive -- pulls in 8 days, not 7, and
+    # includes as_of itself despite the docstring's own promise</code></pre>
+    </div>
+    <p>
+      Every function name here is real. <code>timedelta</code>,
+      list comprehension, comparison chaining — nothing here would
+      fail a <code>hasattr()</code> check or raise on import. The only
+      way to catch this is to compute what it actually returns for a
+      specific, concrete <code>as_of</code> and compare against what
+      the function's own stated contract promises.
+    </p>
+    <p>
+      <strong>Inverted or wrong boolean logic.</strong> A condition
+      that reads almost right, checked against exactly one case that
+      happens to pass:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">a condition that's backwards for the case that matters</span>
+      </div>
+      <pre><code>def is_eligible_for_discount(customer):
+    # Eligible if NOT a first-time buyer and account is in good standing
+    return customer.is_first_purchase or not customer.account_in_good_standing
+    # should be: not customer.is_first_purchase and customer.account_in_good_standing
+    # -- as written, first-time buyers get the discount (backwards),
+    # and it ALSO grants it to accounts in bad standing (backwards again)</code></pre>
+    </div>
+    <p>
+      This runs cleanly, returns a real boolean, and will pass any
+      test that only checks a returning customer in good standing —
+      because that specific case happens to evaluate correctly by
+      coincidence, not because the logic is right. Read the comment
+      above the code and the code disagree with each other in exactly
+      the way a hallucinated API's confident comment can disagree with
+      what a call actually does; the difference is that here, both the
+      comment and the code are individually sensible-sounding, and
+      only comparing them against each other and against a boundary
+      case (a first-time buyer in good standing) surfaces the bug.
+    </p>
+    <p>
+      <strong>Mutating a shared object nobody intended to share.</strong>
+      Python's mutable-default-argument gotcha, still common in
+      agent-generated code because it's a plausible, common pattern
+      that happens to be wrong:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">a default argument that leaks state across calls</span>
+      </div>
+      <pre><code>def build_message(csv_path, recipients, headers={}):
+    # headers defaults to {} per call -- looks safe
+    for k, v in DEFAULT_HEADERS.items():
+        headers.setdefault(k, v)
+    headers["X-Report-Sent"] = "true"
+    return headers
+# {} is evaluated ONCE, at function definition time, not per call --
+# every call that doesn't pass its own headers mutates and shares
+# the SAME dict object. The second call sees "X-Report-Sent" already
+# set from the first call, before it has actually sent anything.</code></pre>
+    </div>
+    <p>
+      Nothing here is a hallucinated call — <code>dict.setdefault</code>
+      is real, correctly used. The bug is a specific, well-known
+      mismatch between what the syntax <em>looks</em> like it does
+      (a fresh empty dict every call) and what Python's actual
+      evaluation-order semantics do (one dict, created once, reused
+      and mutated across every call that hits the default). It's
+      exactly the kind of thing that survives a single-call smoke
+      test and only shows up once the function has been called more
+      than once in the same process.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... wrong operator precedence, as a fourth category?</span>
+      A related, equally invisible-to-import-checks bug: writing
+      <code>if user.is_admin or user.is_owner and resource.is_shared:</code>
+      when the intent was "an admin, or an owner of a shared resource"
+      — but <code>and</code> binds tighter than <code>or</code> in
+      Python (and in most languages), so this actually parses as
+      <code>user.is_admin or (user.is_owner and resource.is_shared)</code>,
+      which happens to be what was intended <em>here</em>, but is a
+      trap the instant someone reorders the clauses without adding
+      parentheses. Precedence bugs are dangerous specifically because
+      the code is completely valid, runs without error, and is
+      sometimes accidentally correct — which is worse than being
+      reliably wrong, because it survives testing until the one input
+      combination that exposes the difference finally shows up.
+    </div>
+  </section>
+
+  <section id="habit" class="subtopic">
+    <h2>Building the Validate-Before-Trust Habit</h2>
+    <p>
+      This chapter isn't a sixth and seventh checklist question
+      bolted onto Chapter 3's five — it's Chapter 3's questions 1 and
+      5, applied with more mechanical precision to exactly the
+      failure modes this chapter names. Question 1 ("does it actually
+      match the acceptance criterion, not just pass it") is precisely
+      what the hook's <code>ignore_na</code> diff and the mutable-
+      default-argument example both defeat: a test suite that doesn't
+      happen to exercise the exact line or the exact second call where
+      the bug lives will report green regardless. Question 5 ("could
+      this be a symptom fix instead of a root-cause fix") applies
+      directly to the boolean-inversion example — a test written
+      against the one case that happens to work is a symptom-level
+      check, not a root-cause one, the same distinction Chapter 3 drew
+      for the invoice-rounding bug.
+    </p>
+    <p>
+      What this chapter adds isn't a new question — it's a specific,
+      practiced answer to "how do I actually check this," for the two
+      failure shapes a checklist question alone doesn't tell you how
+      to catch: run the exact call against the real library
+      (hallucinated APIs), and trace the exact values through the
+      exact logic for a boundary case, not just the obvious case
+      (logical bugs).
+    </p>
+    <p>
+      The stakes connect directly to Chapter 5's central warning. A
+      hallucinated API accepted as real, or a logical bug accepted as
+      correct because "the code looks confident and the test passed,"
+      becomes exactly the kind of settled-but-unverified fact Chapter
+      5 described going off the rails: once <code>ignore_na=True</code>
+      is treated as a real, working argument, every later turn — and
+      every later reviewer, including a future you — inherits that
+      false premise without re-checking it. Nothing in a clean diff,
+      a passing test, or a confident commit message marks the
+      difference between "this was actually verified" and "this looks
+      like something that was verified." That's true for the model
+      producing the code and equally true for a human skimming it
+      afterward. The fix in both cases is the same: get an
+      independent, mechanical fact into the loop — <code>hasattr()</code>,
+      a real function call, a traced boundary case — before treating
+      anything as settled.
+    </p>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p><strong>Problem:</strong> a reviewer approves a diff because
+      "it's well-formatted, uses real-sounding library calls, and the
+      named test passed," then the code raises an exception, or
+      silently misbehaves, the first time it runs against a code path
+      the test didn't cover.</p>
+      <p><strong>Assumption being made:</strong> that code which looks
+      like it was written by someone who knows the library well is
+      evidence the calls in it are real, and that a passing test
+      proves every line in the diff was actually exercised and
+      correct — rather than evidence that the specific lines the test
+      happens to touch behaved as expected.</p>
+      <p><strong>What actually distinguishes a genuinely validated
+      diff:</strong> not confidence of tone, not code style, not
+      whether the reviewer personally recognizes the library — whether
+      every claimed API call was checked against the real, installed
+      library (<code>hasattr()</code>, an actual call with real
+      arguments) and whether the actual logic was traced through a
+      boundary case, not just the case the test happens to cover.</p>
+      <p><strong>Why this matters for Module 4's project below:</strong>
+      the flawed PR you're about to review was built specifically so
+      that a fast, surface-level read — "the file list matches the
+      task, the code looks like real pandas/csv/email code, there's a
+      docstring explaining the intent" — passes cleanly, while every
+      one of its planted flaws only surfaces under the two checks this
+      chapter actually teaches: run the exact call, and trace the
+      exact boundary.</p>
+      <p><strong>Working definition to carry forward:</strong>
+      detecting a hallucinated API or a logical bug means treating
+      every unfamiliar or load-bearing line of an agent's diff as an
+      unverified claim, and closing that claim with a mechanical check
+      — introspection or an actual run for API existence, a traced
+      concrete value for logic — before trusting it, exactly the
+      discipline this course's own build process has applied to every
+      code example in every prior chapter.</p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember</h2>
+      <ul>
+        <li>A hallucinated API is a call, method, or argument that
+        looks exactly as plausible as a real one because it was
+        generated by the same "most probable continuation" mechanism
+        Chapter 4 described — not a typo, and not correlated with how
+        confident the surrounding code or comments sound.</li>
+        <li>Hallucinations cluster around less-common libraries,
+        APIs that changed after training data, and calls that borrow
+        a chaining/fluent pattern from a more commonly-seen library
+        that the actual one doesn't support.</li>
+        <li>Catch a hallucinated API mechanically: check the name
+        against the real library with <code>hasattr()</code>/<code>dir()</code>,
+        actually run the exact call with real arguments rather than
+        just importing the module, and treat a suspiciously confident
+        explanatory comment as a reason to check harder, not as
+        verification.</li>
+        <li>A logical bug uses entirely real, correctly-spelled,
+        correctly-called APIs and is still wrong — off-by-one/boundary
+        errors, inverted boolean logic, and mutable-default-argument
+        state leaks all run cleanly and can pass a test that doesn't
+        happen to exercise the exact wrong path.</li>
+        <li>Logical bugs are harder to catch than hallucinated APIs
+        precisely because there's no dictionary lookup that catches
+        them — only tracing actual values through the actual logic,
+        for a boundary case, not just the obvious one.</li>
+        <li>This chapter is Chapter 3's questions 1 and 5, made
+        mechanically specific to API and logic correctness — and a
+        hallucinated call or wrong logic accepted as "it must work, it
+        looks confident" is exactly the settled-but-unverified premise
+        Chapter 5 warned compounds silently once later work builds on
+        top of it.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="what-is">
+    <span class="label">Interview questions (4 levels)</span>
+    See <a href="interview-questions.html">Chapter 10 interview questions</a>.
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

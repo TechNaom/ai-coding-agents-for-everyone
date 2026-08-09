@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detecting Hallucinated APIs and Logical Bugs Project — AI Coding Agents for Everyone</title>
+<meta name="description" content="Module 4's real lab: review a deliberately-flawed, three-file AI-generated PR, using the mechanical checks this chapter teaches instead of a surface-level read.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-10">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../interview-questions.html">&larr; Back to interview questions</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 10 Project</span>
+    <span class="reading-time">~40 min · <span class="badge-difficulty">Module 4 Lab</span></span>
+  </div>
+  <h1>Project: Review a Deliberately-Flawed AI-Generated PR</h1>
+
+  <div class="hook">
+    <p>
+      Per <code>docs/curriculum/CURRICULUM_MAP.md</code>, Module 4's
+      lab is "a deliberately-flawed AI-generated PR to review and
+      fix." Since Module 4 is a single chapter carrying the whole
+      module, this project is built to match: a real, three-file PR
+      (<a href="flawed_pr/aggregate.py"><code>flawed_pr/aggregate.py</code></a>,
+      <a href="flawed_pr/export_csv.py"><code>flawed_pr/export_csv.py</code></a>,
+      <a href="flawed_pr/notify.py"><code>flawed_pr/notify.py</code></a>)
+      implementing a plausible small
+      feature — a weekly sales report, exported to CSV and emailed to
+      a distribution list — with five deliberate flaws planted across
+      it, plus one line that's deliberately fine. Read
+      <a href="README.md">README.md</a> first for the full story,
+      including exactly what the agent claimed it tested before
+      handing this PR over.
+    </p>
+  </div>
+
+  <h2>What's provided</h2>
+  <p>
+    The three files linked above are the PR itself, as delivered —
+    short, plausible-looking, and
+    not obviously broken on a quick read. <a href="starter.py"><code>starter.py</code></a>
+    is a review harness with four functions left as <code>TODO</code>s
+    — the same mechanical checks this chapter's lesson and exercises
+    taught, built into a runnable script against the real files instead
+    of small fakes.
+  </p>
+
+  <h2>Your task</h2>
+  <p>
+    Two parts, in this order:
+  </p>
+  <p>
+    <strong>1. Review by hand first.</strong> Read all three files in
+    <code>flawed_pr/</code>. For every call you're not 100% sure is
+    real, check it — <code>hasattr()</code>, <code>dir()</code>, or an
+    actual real call, not memory. For every function with a boundary,
+    a default argument, or a condition, trace a concrete case. Write
+    down what you find, and for each item: is it a hallucinated API or
+    a logical bug, and which of Chapter 3's five review questions would
+    catch it.
+  </p>
+  <p>
+    <strong>2. Then fill in and run the harness.</strong> Implement
+    <code>method_exists</code>, <code>try_run</code>,
+    <code>trace_week_boundary</code>, and
+    <code>trace_mutable_default_leak</code> in <code>starter.py</code>
+    (full spec in each function's docstring), then run it against the
+    real <code>flawed_pr/</code> files. Compare what it surfaces
+    against your own by-hand review from step 1.
+  </p>
+
+  <div class="what-is">
+    <span class="label">What "done" looks like</span>
+    Your review (by hand and via the harness together) should identify
+    5 real flaws — 3 hallucinated API calls (one a wrong method name
+    that always crashes, one a wrong assumption about a method's
+    return value that always crashes, one a wrong module-function name
+    that only crashes on a code path the agent's own smoke test never
+    reached) and 2 logical bugs (an off-by-one boundary that
+    contradicts its own docstring, and a mutable-default-argument leak
+    that a single-call smoke test structurally cannot see) — plus 1
+    line that resembles Chapter 3's rounding-bug hook but is actually
+    fine, to test whether you over-flag on pattern-match alone.
+    <a href="solution.py"><code>solution.py</code></a> is the harness
+    fully filled in; <a href="review_answer_key.md"><code>review_answer_key.md</code></a>
+    is the complete, file-by-file explanation of every item, including
+    why a quick read tends to miss each one — read it only after your
+    own pass.
+  </div>
+
+  <div class="points-to-remember">
+    <h2>Why this is the right project for right now</h2>
+    <p>
+      Every prior module in this course ended with something you
+      built. This one ends with something you catch. Module 3 gave
+      you a working agent; this project hands you exactly the kind of
+      output that agent — or any agent — can produce: clean-looking,
+      well-formatted, individually plausible code that is nonetheless
+      wrong in five separate, specific, catchable ways. The skill
+      Module 4 is teaching isn't "read more carefully" — it's knowing
+      which two mechanical checks (does the call actually exist, does
+      the logic actually do what its own contract claims) to run, and
+      running them, instead of trusting how confident and tidy a diff
+      looks.
+    </p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../interview-questions.html">&larr; Interview Questions</a>
+    <a href="../../../index.html">All Chapters &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>
