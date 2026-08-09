@@ -44,6 +44,7 @@ jobs:
       - name: Check every live chapter has a matching quality audit
         run: |
           echo "Checking chapters with a path in chapters-data.js have an audit..."
+          shopt -s nullglob
           for dir in chapters/chapter-*/; do
             num=$(basename "$dir" | grep -oE '^chapter-[0-9]+' | grep -oE '[0-9]+')
             audit="quality-audits/chapter-${num}-audit.md"
