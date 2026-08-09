@@ -92,7 +92,7 @@ jobs:
           python -m py_compile "${FILES[@]}"
           echo "All chapter Python files compile cleanly."
 
-      - name: Run every exercises/solution.py and project/solution.py
+      - name: Run every exercises/solution.py, project/solution.py, and practice/solution.py
         run: |
           set -e
           FAIL=0
@@ -106,7 +106,7 @@ jobs:
           # (relative to the repo root) -- CI starts that server first, runs
           # the check, and tears it down by PID afterward. Every other
           # solution.py is a one-shot script expected to complete and exit 0.
-          for f in chapters/*/exercises/solution.py chapters/*/project/solution.py; do
+          for f in chapters/*/exercises/solution.py chapters/*/project/solution.py chapters/*/practice/solution.py; do
             [ -f "$f" ] || continue
             dir=$(dirname "$f")
             echo "--- Running $f ---"

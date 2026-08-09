@@ -44,12 +44,12 @@ else
 fi
 
 echo ""
-echo "== 4. Running every exercises/solution.py and project/solution.py =="
+echo "== 4. Running every exercises/solution.py, project/solution.py, and practice/solution.py =="
 echo "(this requires the course's SDK installed in your active environment)"
 FAIL=0
 # See ci.yml for the full explanation of the CI: LONG_RUNNING_SERVER and
 # CI: NEEDS_LIVE_SERVER=<path> marker-comment convention.
-for f in chapters/*/exercises/solution.py chapters/*/project/solution.py; do
+for f in chapters/*/exercises/solution.py chapters/*/project/solution.py chapters/*/practice/solution.py; do
   [ -f "$f" ] || continue
   dir=$(dirname "$f")
 
