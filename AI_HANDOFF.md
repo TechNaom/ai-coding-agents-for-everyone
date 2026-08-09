@@ -21,7 +21,7 @@ EVALUATE → SECURE → OPTIMIZE → SCALE → ARCHITECT progression; layered
 depth for 5 personas; story-first; no shallow tutorials; 13 chapters,
 don't pad; all content original.
 
-## Current state (as of 2026-08-09, Modules 1-2 complete, Chapter 7 built)
+## Current state (as of 2026-08-09, Modules 1-3 complete, homepage live)
 
 **Read `PROJECT_STATE.md` for the authoritative, up-to-date status.**
 
@@ -143,39 +143,58 @@ No website root `index.html` yet (Step 9, comes later).
 
 ## Current task
 
-Chapters 7 and 8 are done. Chapter 8 added `edit_file`, `list_directory`,
-`git_status`/`git_diff`, and a denylist-hardened `run_shell_command` on
-top of Chapter 7's unchanged loop, and shipped Module 3's real L2
-project. Build Chapter 9 ("Connecting Your Agent to MCP Servers,"
-Module 3, Advanced) next — the last chapter of Module 3: swap some of
-Chapters 7-8's hand-rolled tools for MCP-based ones. Reuse
-`mcp-for-everyone`'s verified `mcp[cli]` patterns (structure/verified
-code reference only, not content — same rule as always). Read Chapters
-7-8 fully first; Chapter 8's closing thought-process section already
-frames the transition ("the same worst-case questions apply whether a
-tool is a local Python function or lives behind MCP"). Continue using
-python-for-everyone's richer per-chapter file pattern. Before writing
-new code, check whether Ollama generation is actually working (not
-just `/api/tags` responding) — it hung across both Chapter 7 and
-Chapter 8's build sessions; don't assume resolved without checking.
+**Modules 1-3 (Chapters 1-9) are all built and live.** Chapter 9
+closed Module 3 by swapping Chapter 8's `git_status`/`git_diff` for
+MCP-based versions without touching the loop — read
+`quality-audits/chapter-09-audit.md` for the real `anyio` bug it found
+and fixed. The homepage (`index.html`) and roadmap
+(`docs/curriculum/index.html`) are also live now — the course had 8
+live chapters with no landing page before this session, which the user
+flagged directly ("im not seeing UI"). Module 1/2 written exams are
+built. Next: Module 4, Chapter 10 ("Detecting Hallucinated APIs and
+Logical Bugs," Advanced) — conceptual, no live-model dependency. Reads
+directly on Chapter 3's diff-review checklist and Chapter 5's failure
+modes, now focused on spotting a plausible-but-wrong API call or a
+subtly incorrect logic change. Module 4 has only this one chapter per
+CURRICULUM_MAP.md, and its assessment is "a deliberately-flawed
+AI-generated PR to review and fix" — build that as a substantial
+artifact in the practice/exercises, not a short scenario list. Read
+Chapters 3, 5, and 7-9 first for the terminology/discipline to build
+on. Check whether Module 3 actually needs a written exam file before
+writing one — its assessment is the code-review checklist already
+embedded in Chapter 9's practice bank, per CURRICULUM_MAP.md, which may
+mean no separate exam file is required (verify against the curriculum
+map, don't assume).
+
+**Speed note**: the user asked to speed up the build by running
+independent work in parallel. Chapter 9's build and the Module 1/2
+exams' build ran concurrently as two background agents — worked
+cleanly because the exams agent was instructed to touch
+`chapters-data.js` last, minimally, after re-reading its current
+state, avoiding a conflict with the chapter-9 agent's own edit to the
+same file. Reuse this pattern (parallel background agents for
+genuinely independent tasks, sequenced/careful shared-file edits) for
+future work — but each chapter build still takes 10-50 minutes of real
+work (multi-file authoring, live code testing against a real
+installed package), so parallelizing saves wall-clock time on
+independent tasks, it doesn't make any single chapter build faster.
 
 **Known gaps to close when possible, not blocking**: Chapter 7's
-`project/starter.py`/`solution.py` haven't been re-observed live yet
-(disclosed in `quality-audits/chapter-07-audit.md`) — re-run once
-Ollama is reliably reachable. Chapter 9 will have the same
-live-verification constraint if Ollama is still down; follow the same
-honest-disclosure pattern both prior audits used rather than blocking
-on it or hiding the gap.
+`project/starter.py`/`solution.py` and Chapter 9's full agent-loop
+path against a live model haven't been re-observed live yet (disclosed
+in their respective quality-audits) — re-run once Ollama is reliably
+reachable; it hung across all three Module 3 build sessions so far
+(check `ollama ps` / try a plain completion first, every time, don't
+assume resolved).
 
 ## Next task after that
 
-Chapter 9 completes Module 3 — validate it, then write Module 1/2/3's
-written exams (assessments/written-exams/, all three now outstanding),
-then move to Module 4 (Chapter 10: detecting hallucinated APIs and
-logical bugs — conceptual again, no live-model dependency). Also
-outstanding: extending `scripts/local_check.sh`/`ci.yml` to run
-`practice/solution.py` files too (flagged in both Chapter 7 and 8's
-audits, not yet done). Don't mass-generate ahead of validation.
+Continue module by module: Module 4 (Chapter 10) then Module 5
+(Chapters 11-12: security/sandboxing, putting an agent in CI) then
+Module 6 (Chapter 13: capstone). Also outstanding: extending
+`scripts/local_check.sh`/`ci.yml` to run `practice/solution.py` files
+too (flagged in Chapters 7-9's audits, not yet done). Don't
+mass-generate ahead of validation.
 
 ## Important architectural decisions (see PROJECT_STATE.md for full detail)
 

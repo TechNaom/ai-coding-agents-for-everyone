@@ -173,6 +173,50 @@ production-grade, interview-ready, original content only).
       live-tested directly against a real temp workspace/git repo; full
       agent-loop generation against Ollama not re-verified this session
       (same sandbox-wide hang as Chapter 7, disclosed not hidden).
+- [x] **Chapter 9 built and live — closes Module 3**: "Connecting Your
+      Agent to MCP Servers." Swaps Chapter 8's hand-rolled
+      `git_status`/`git_diff` for MCP-based versions without touching
+      `run_agent`'s loop. `connect_git_tools()` translates MCP tool
+      metadata into this course's `TOOLS` schema (stripping/re-injecting
+      a harness-controlled `workspace` arg the model never sees);
+      `MCPBridge` runs one persistent MCP client connection on a
+      background thread's event loop so the async MCP client API can be
+      called synchronously. Found and fixed a real `anyio` cancel-scope
+      bug during testing. States honest trade-offs (server/connection/
+      latency/failure-mode cost vs. reuse) without overselling MCP.
+      Module 3's assessment (a working code review checklist, per
+      CURRICULUM_MAP.md) is built into the practice bank: find the
+      deliberate flaw in a tool-integration diff. Full live-tested MCP
+      client-server round trip (real subprocess, real stdio transport,
+      real git repo); full agent-loop generation against a live model
+      not re-verified (same sandbox-wide Ollama hang as Ch7-8).
+      **Module 3 (Chapters 7-9) is now fully built and live.**
+- [x] **Homepage + roadmap page shipped (Step 9)**: root `index.html`
+      and `docs/curriculum/index.html`, adapted from `mcp-for-everyone`'s
+      proven pattern. The course had 8 live chapters with no landing
+      page before this — every URL required knowing the exact chapter
+      path by hand. Hero states the zero-cost/zero-API-key default
+      plainly; roadmap lists all 13 chapters with live/coming-soon
+      status kept in sync with `chapters-data.js` by hand.
+- [x] **Module 1 and 2 written exams built**:
+      `assessments/written-exams/module-1-exam.md` (11 questions: MC,
+      concept, scenario/judgment, full diff-review-checklist
+      application) and `module-2-exam.md` (11 questions, including a
+      3-scenario failure-diagnosis exercise), matching each module's
+      stated assessment type in `docs/curriculum/CURRICULUM_MAP.md`.
+      Registered in `chapters-data.js`'s `examPath` fields.
+- [x] **Parallelized chapter-build workflow validated**: Chapter 9's
+      build and the Module 1/2 exams' build ran as two concurrent
+      background agents (previously always run sequentially to avoid
+      `chapters-data.js` edit conflicts). Worked cleanly because the
+      exams task was instructed to touch `chapters-data.js` last,
+      minimally, after re-reading current state. Worth reusing this
+      pattern for future independent work (e.g. a chapter build + an
+      exam/assessment build, or two chapters in different modules) to
+      cut wall-clock time — each chapter build takes 10-50 minutes of
+      real work (multi-file authoring, live code testing) regardless of
+      parallelization, so speedup only comes from running genuinely
+      independent tasks concurrently, not from rushing any single one.
 
 ## Pending / Not Started
 
@@ -252,25 +296,37 @@ scenarios/8 interview questions minimum, tested code before writing).
 
 ## Next Recommended Task
 
-Chapter 8 is done. Module 3's last chapter is next: Chapter 9
-("Connecting Your Agent to MCP Servers," Advanced) — swap some of
-Chapters 7-8's hand-rolled tools for MCP-based ones, reusing
-`mcp-for-everyone`'s verified MCP client/server patterns rather than
-re-discovering them (that course's `mcp[cli]` usage is already
-confirmed working — see that repo's chapters for reference, structure
-and verified code only, not content). Chapter 8's own "GenAI Builder
-Thought Process" section already previews this: the same worst-case
-questions (what does a bad call do, who scopes it) apply whether a
-tool is a local Python function or lives behind an MCP server. Read
-Chapters 7-8 fully first. Chapter 9 completes Module 3 and should
-close its arc similarly to how Chapter 6 closed Module 2.
+**Modules 1-3 (Chapters 1-9) are all built and live.** The homepage,
+roadmap page, and Module 1/2 written exams are also done. Next: Module
+4 — Chapter 10 ("Detecting Hallucinated APIs and Logical Bugs,"
+Advanced), conceptual, no live-model dependency (like Modules 1-2).
+This is the human half of "AI proposes, human reviews" — builds
+directly on Chapter 3's diff-review checklist and Chapter 5's failure
+modes, now focused specifically on spotting a plausible-looking but
+wrong API call or a subtly incorrect logic change. Read Chapters 3, 5,
+7-9 first for the review-discipline and tool-layer terminology to
+build on. Module 4 has only one chapter (per CURRICULUM_MAP.md), so
+this chapter alone should feel complete/weighty, and its own
+practice/exercises are Module 4's assessment ("a deliberately-flawed
+AI-generated PR to review and fix," per the curriculum map) — consider
+building that as a substantial reviewable-PR artifact, not just a
+short scenario list.
 
-Before writing any new code, check whether Ollama generation is
-actually working (not just `/api/tags` responding) — it hung across
-both Chapter 7 and Chapter 8's build sessions; don't assume it's
-resolved without checking. Also outstanding, not blocking Chapter 9:
-write the Module 1 and Module 2 written exams
-(assessments/written-exams/), re-run Chapter 7's `project/starter.py`/
-`solution.py` live once Ollama is reliably reachable, and consider
+Consider parallelizing again where genuinely independent: e.g. Chapter
+10's build alongside the Module 3 written exam (assessments/
+written-exams/module-3-exam.md — Module 3's own assessment is the code
+review checklist embedded in Chapter 9's practice bank, not a separate
+written exam per CURRICULUM_MAP.md, so this may not be needed — check
+the curriculum map before assuming one is required), or alongside
 extending `scripts/local_check.sh`/`ci.yml` to run `practice/solution.py`
-files too (flagged in both Chapter 7 and 8's audits, not yet done).
+files (flagged in Chapters 7-9's audits, still not done). Follow the
+same file-conflict-avoidance pattern used for Chapter 9 + the exams:
+have any parallel task avoid `chapters-data.js` until last, or don't
+touch it at all if avoidable.
+
+Also outstanding, not blocking: re-run Chapter 7's `project/starter.py`/
+`solution.py` and Chapter 9's full agent-loop-against-a-live-model path
+once Ollama is reliably reachable (both disclosed as not-live-verified
+due to a persistent sandbox-wide generation hang across three build
+sessions now — check `ollama ps` / try a plain completion before
+assuming it's resolved, every time).
