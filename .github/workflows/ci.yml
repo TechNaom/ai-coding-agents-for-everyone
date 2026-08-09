@@ -1,0 +1,218 @@
+name: CI Checks
+
+# Runs on every push and PR to main, plus manual trigger from the Actions tab.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # ---------------------------------------------------------------
+  # 1. Validate that the repo's folder structure stays consistent.
+  # ---------------------------------------------------------------
+  structure-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required top-level folders exist
+        run: |
+          for dir in chapters docs assets assessments quality-audits templates; do
+            if [ ! -d "$dir" ]; then
+              echo "::error::Missing required folder: $dir"
+              exit 1
+            fi
+          done
+          echo "All required top-level folders present."
+
+      - name: Check for placeholder/leftover text
+        run: |
+          set -e
+          echo "Scanning content files for placeholder text..."
+          if grep -rniE "lorem ipsum|\[insert[^]]*\]|\bTODO\(fill\)|\bFIXME\b|xxx{2,}" \
+              --include="*.html" --include="*.md" chapters/ docs/ assessments/ 2>/dev/null; then
+            echo "::error::Found placeholder/leftover text above. Fix before merging."
+            exit 1
+          fi
+          echo "No placeholder text found."
+          echo "Note: bare 'TODO' is allowed in chapters/*/exercises and */project"
+          echo "starter.py files -- those TODOs are intentional learner tasks, not"
+          echo "leftover placeholders. This check only flags TODO(fill) and similar."
+
+      - name: Check every live chapter has a matching quality audit
+        run: |
+          echo "Checking chapters with a path in chapters-data.js have an audit..."
+          for dir in chapters/chapter-*/; do
+            num=$(basename "$dir" | grep -oE '^chapter-[0-9]+' | grep -oE '[0-9]+')
+            audit="quality-audits/chapter-${num}-audit.md"
+            if [ ! -f "$audit" ]; then
+              echo "::warning::No quality audit found for $dir (expected $audit)"
+            fi
+          done
+
+  # ---------------------------------------------------------------
+  # 2. Every chapter's Python must compile AND actually run without
+  #    a traceback -- this is the discipline every chapter in this
+  #    course was built with; CI now enforces it automatically.
+  # ---------------------------------------------------------------
+  python-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install the Claude Agent SDK and mcp
+        run: pip install claude-agent-sdk "mcp[cli]" --quiet
+
+      - name: Set ANTHROPIC_API_KEY from repo secret (if configured)
+        run: echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> "$GITHUB_ENV"
+        # Chapters that actually invoke the Claude Agent SDK's model calls
+        # need a real API key -- unlike mcp-for-everyone, this course can't
+        # be fully tested for free. If ANTHROPIC_API_KEY isn't set as a repo
+        # secret, those specific solution.py files should detect its
+        # absence and skip gracefully (print a clear message, exit 0)
+        # rather than fail CI -- see CONTRIBUTING.md.
+
+      - name: Check all chapter Python files compile (syntax check)
+        run: |
+          shopt -s globstar nullglob
+          FILES=(chapters/**/*.py)
+          if [ ${#FILES[@]} -eq 0 ]; then
+            echo "No Python files yet -- skipping."
+            exit 0
+          fi
+          python -m py_compile "${FILES[@]}"
+          echo "All chapter Python files compile cleanly."
+
+      - name: Run every exercises/solution.py and project/solution.py
+        run: |
+          set -e
+          FAIL=0
+          # Some chapters' solution.py files are long-running processes by
+          # design (a server that never exits on its own) rather than
+          # one-shot scripts. Mark those with a `# CI: LONG_RUNNING_SERVER`
+          # comment anywhere in the file; CI then checks for a traceback
+          # instead of a clean exit code, since a timeout there is expected,
+          # not a bug. A paired healthcheck-style script that needs a live
+          # target can be marked `# CI: NEEDS_LIVE_SERVER=<path-to-server>`
+          # (relative to the repo root) -- CI starts that server first, runs
+          # the check, and tears it down by PID afterward. Every other
+          # solution.py is a one-shot script expected to complete and exit 0.
+          for f in chapters/*/exercises/solution.py chapters/*/project/solution.py; do
+            [ -f "$f" ] || continue
+            dir=$(dirname "$f")
+            echo "--- Running $f ---"
+
+            if grep -q "# CI: LONG_RUNNING_SERVER" "$f"; then
+              OUT=$(cd "$dir" && timeout 5 python solution.py 2>&1 || true)
+              if echo "$OUT" | grep -q "Traceback"; then
+                echo "$OUT"
+                echo "::error::$f raised an unhandled exception (see above)"
+                FAIL=1
+              else
+                echo "OK (long-running server, timed out as expected)"
+              fi
+            elif grep -q "# CI: NEEDS_LIVE_SERVER=" "$f"; then
+              SERVER_REL=$(grep -oP '# CI: NEEDS_LIVE_SERVER=\K\S+' "$f")
+              (cd "$(dirname "$SERVER_REL")" && nohup python "$(basename "$SERVER_REL")" > /tmp/ci-server.log 2>&1 &
+               echo $! > /tmp/ci-server.pid)
+              sleep 2
+              OUT=$(cd "$dir" && timeout 10 python solution.py 2>&1)
+              echo "$OUT"
+              if echo "$OUT" | grep -q "Traceback"; then
+                echo "::error::$f raised an unhandled exception (see above)"
+                FAIL=1
+              fi
+              kill "$(cat /tmp/ci-server.pid)" 2>/dev/null || true
+              rm -f /tmp/ci-server.pid /tmp/ci-server.log
+            elif grep -q "sys.stdin" "$f"; then
+              # CLI-style scripts read from stdin -- feed "quit" and move on.
+              if ! (cd "$dir" && printf 'quit\n' | timeout 20 python solution.py); then
+                echo "::error::$f failed"
+                FAIL=1
+              fi
+            else
+              if ! (cd "$dir" && timeout 20 python solution.py); then
+                echo "::error::$f failed"
+                FAIL=1
+              fi
+            fi
+          done
+          # Clean up any files a solution.py wrote during its run (e.g. bookmarks.json)
+          find chapters -name "bookmarks.json" -delete
+          if [ "$FAIL" -ne 0 ]; then
+            echo "::error::One or more solution.py files failed. See log above."
+            exit 1
+          fi
+          echo "Every solution.py ran without a traceback."
+
+  # ---------------------------------------------------------------
+  # 3. Front-end JS/JSON sanity check.
+  # ---------------------------------------------------------------
+  frontend-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Syntax-check all JS assets
+        run: |
+          for f in assets/*.js; do
+            node --check "$f"
+          done
+          echo "All JS assets are syntactically valid."
+
+      - name: Check every chapter with a `path` in chapters-data.js actually exists
+        run: |
+          node -e '
+            global.window = {};
+            require("./assets/chapters-data.js");
+            const fs = require("fs");
+            let missing = 0;
+            for (const mod of window.ACAFE_MODULES) {
+              for (const ch of mod.chapters) {
+                if (ch.path && !fs.existsSync(ch.path)) {
+                  console.error("Broken chapter path:", ch.path);
+                  missing++;
+                }
+              }
+              if (mod.examPath && !fs.existsSync(mod.examPath)) {
+                console.error("Broken examPath:", mod.examPath);
+                missing++;
+              }
+            }
+            if (missing > 0) {
+              console.error(missing + " broken path(s) found -- see above.");
+              process.exit(1);
+            }
+            console.log("Every chapter path and examPath in chapters-data.js resolves to a real file.");
+          '
+
+  # ---------------------------------------------------------------
+  # 4. Secret scan.
+  # ---------------------------------------------------------------
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan for likely committed secrets
+        run: |
+          PATTERN='sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|api[_-]?key\s*=\s*["\047][A-Za-z0-9]{16,}'
+          if grep -rniE "$PATTERN" \
+              --include="*.py" --include="*.md" --include="*.json" --include="*.yml" --include="*.yaml" --include="*.html" \
+              --exclude-dir=".git" . 2>/dev/null; then
+            echo "::error::Possible secret detected above -- remove before merging."
+            exit 1
+          fi
+          echo "No likely secrets found."

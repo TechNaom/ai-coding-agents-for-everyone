@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{CHAPTER_TITLE}} — AI Coding Agents for Everyone</title>
+<meta name="description" content="{{CHAPTER_DESCRIPTION}}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="{{CHAPTER_ID}}">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter {{CHAPTER_NUMBER}}</span>
+    <span class="badge-difficulty">{{DIFFICULTY}}</span>
+    <span class="reading-time">{{READING_TIME}}</span>
+  </div>
+
+  <h1>{{CHAPTER_TITLE}}</h1>
+  <p class="lede">{{CHAPTER_LEDE}}</p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#section-1">1. {{SECTION_1_TITLE}}</a>
+    <a href="#section-2">2. {{SECTION_2_TITLE}}</a>
+    <a href="#section-3">3. {{SECTION_3_TITLE}}</a>
+    <a href="#thought-process">4. GenAI builder thought process</a>
+    <a href="#recap">5. Points to remember</a>
+  </nav>
+
+  <div class="hook">
+    {{CONVERSATIONAL_HOOK}}
+  </div>
+
+  <section id="section-1" class="subtopic">
+    <h2>{{SECTION_1_TITLE}}</h2>
+    <p>{{SECTION_1_BODY}}</p>
+    <div class="what-is">
+      <span class="label">What is... {{KEY_TERM}}?</span>
+      {{KEY_TERM_EXPLANATION}}
+    </div>
+  </section>
+
+  <section id="section-2" class="subtopic">
+    <h2>{{SECTION_2_TITLE}}</h2>
+    <p>{{SECTION_2_BODY}}</p>
+    <figure class="diagram-figure">
+      <img src="diagrams/architecture.svg" alt="{{DIAGRAM_ALT_TEXT}}">
+      <figcaption>{{DIAGRAM_CAPTION}}</figcaption>
+    </figure>
+  </section>
+
+  <section id="section-3" class="subtopic">
+    <h2>{{SECTION_3_TITLE}}</h2>
+    <p>{{SECTION_3_BODY}}</p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">{{EXAMPLE_FILENAME}}</span>
+      </div>
+      <pre><code>{{EXAMPLE_SNIPPET}}</code></pre>
+    </div>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p>{{THOUGHT_PROCESS_PROMPT}}</p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember</h2>
+      <ul>
+        <li>{{POINT_1}}</li>
+        <li>{{POINT_2}}</li>
+        <li>{{POINT_3}}</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>
+
