@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giving Your Agent File/Shell/Git Tools Practice Bank — AI Coding Agents for Everyone</title>
+<meta name="description" content="Practice bank for Giving Your Agent File/Shell/Git Tools.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-08">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../exercises/index.html">&larr; Back to exercises</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 8 Practice Bank</span>
+    <span class="reading-time">~24 min</span>
+  </div>
+  <h1>Practice Bank: Giving Your Agent File/Shell/Git Tools</h1>
+  <p>Short scenarios, one judgment question each — plus a small runnable
+  script (<code>starter.py</code> / <code>solution.py</code> in this
+  folder) that runs the same eight shell commands through both a
+  denylist checker and an allowlist checker, so you can see this
+  chapter's central trade-off concretely instead of just reading about
+  it. Predict, then run, then work through the scenarios below.</p>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Trusting the wrong thing</span>
+    <h3>The confident summary</h3>
+    <p>An agent runs <code>write_file</code> to update a 300-line
+    config file, then confidently reports "updated the timeout value,
+    everything else preserved." What's the one tool call you'd want
+    this agent to make next before you trust that sentence, and why
+    does that connect directly to this chapter's <code>edit_file</code>
+    section?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Review</span>
+    <h3>The silently-successful list_files</h3>
+    <p>A coworker's <code>list_directory</code> implementation passes
+    every manual test they tried — it correctly lists workspace
+    subdirectories every time. It also, on one call during your review,
+    happily returns the contents of <code>/</code> when a teammate
+    passed <code>"/"</code> as the path by mistake. What does that tell
+    you about the difference between "passed every test I tried" and
+    "actually safe," and what's the one-line fix?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The ambiguous edit</span>
+    <h3>Which "return None" did you mean?</h3>
+    <p>An agent is asked to "fix the bug where the function returns
+    None instead of the result" in a file with three functions, two of
+    which correctly and intentionally return <code>None</code>. It
+    calls <code>edit_file</code> with <code>find="return None"</code>.
+    Walk through exactly what happens with this chapter's
+    <code>edit_file</code> implementation, and explain why that outcome
+    is actually the safe one, even though it doesn't fix the bug on the
+    first try.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Shell hardening</span>
+    <h3>The command that technically isn't on the list</h3>
+    <p>A teammate tests the denylist by running
+    <code>rm -rf /</code> (blocked, as expected) and then declares the
+    denylist "proven safe." What's a single different command — not
+    identical to anything in <code>SHELL_DENYLIST</code>, but just as
+    capable of doing real damage inside the workspace — that would
+    sail straight through unblocked? What does that prove about what
+    "tested" actually means for a denylist specifically?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The git_commit pitch</span>
+    <h3>"It's just a commit, we can always revert"</h3>
+    <p>A teammate wants to add an autonomous <code>git_commit</code>
+    tool, arguing that since <code>git revert</code> exists, nothing is
+    really at risk. Using this chapter's distinction between
+    "recoverable" and "reviewed before it happens," explain what
+    actually gets lost even in a fully revertible autonomous commit,
+    and why that's a different question from whether the change itself
+    was technically correct.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Choosing the right checker</span>
+    <h3>General-purpose agent vs. narrow CI runner</h3>
+    <p>This chapter's reference agent uses a denylist for
+    <code>run_shell_command</code>. A CI-troubleshooting agent that only
+    ever needs to run <code>pytest</code>, <code>git status</code>, and
+    a handful of known linters is being designed separately. Which
+    checker — denylist or allowlist — fits the CI agent better, and
+    what specifically about its task (not just "it's for CI") makes
+    that the right call, using this chapter's own reasoning rather than
+    a general "allowlists are always safer" claim?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Scoping a task</span>
+    <h3>The vague cleanup task, revisited</h3>
+    <p>Same setup as Chapter 7's practice bank: a learner passes the
+    task <code>"clean up the workspace"</code> to this chapter's
+    extended agent, which now also has <code>edit_file</code> and
+    <code>git_status</code> available. Does having those extra tools
+    make the vague task safer, riskier, or unchanged compared to
+    Chapter 7's three-tool version — and why, specifically?</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../exercises/index.html">&larr; Exercises</a>
+    <a href="../interview-questions.html">Interview Questions &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

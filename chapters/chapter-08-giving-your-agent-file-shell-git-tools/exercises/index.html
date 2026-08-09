@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giving Your Agent File/Shell/Git Tools Exercises — AI Coding Agents for Everyone</title>
+<meta name="description" content="Hands-on exercises for Giving Your Agent File/Shell/Git Tools.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-08">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../quiz.html">&larr; Back to the quiz</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 8 Exercises</span>
+    <span class="reading-time">~40 min</span>
+  </div>
+  <h1>Exercises: Giving Your Agent File/Shell/Git Tools</h1>
+  <p>This chapter's exercises don't need a running Ollama server to
+  verify — <code>starter.py</code> and <code>solution.py</code> in this
+  folder test <code>edit_file</code>'s ambiguous-match-refusal logic and
+  <code>run_shell_command</code>'s denylist check against an in-memory
+  fake filesystem and a set of scripted commands, so every exercise
+  below is checkable by running the file directly.</p>
+
+  <div class="what-is">
+    <span class="label">Exercise standard</span>
+    Six tasks below. At least three are production-gear: harder,
+    ambiguous, real-world judgment calls rather than clean textbook
+    cases.
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">1</span> Implement <code>edit_file_stub</code></h3>
+    <p>Open <code>starter.py</code>. Fill in TODOs 1 through 4 inside
+    <code>edit_file_stub</code>: reject a missing file, reject a
+    zero-match find string, reject an ambiguous (more than one match)
+    find string, and otherwise perform the replacement. Run
+    <code>python3 starter.py</code> and get the first five checks to
+    <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">2</span> Implement <code>is_command_blocked</code></h3>
+    <p>Fill in TODOs 1 through 3 inside <code>is_command_blocked</code>:
+    check a command string against every pattern in <code>DENYLIST</code>
+    and return the matching reason, or <code>None</code> if nothing
+    matches. Get the remaining four checks to <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">3</span> Trace a real failure by hand</h3>
+    <p>Without running any code, write out step by step what
+    <code>edit_file_stub("dup.py", "return None", "return 0")</code>
+    actually returns and why — name each line of your implementation
+    that gets triggered, in order, including what <code>count</code>
+    equals at the point the ambiguous-match branch fires. Then run it
+    and confirm your trace was right.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">4</span> (Production-gear) Add a new denylist pattern without touching the checking logic</h3>
+    <p>A real incident: someone ran <code>chmod -R 777 .</code> inside
+    a shared workspace, making every file world-writable. Add a new
+    <code>(pattern, reason)</code> pair to <code>DENYLIST</code> in
+    <code>starter.py</code> that would have blocked this exact command,
+    plus two new test cases in <code>main()</code> — one that confirms
+    the dangerous form is blocked, and one that confirms an unrelated,
+    legitimate <code>chmod</code> call (e.g. <code>chmod +x script.sh</code>)
+    is NOT blocked by your new pattern. If your pattern is too broad and
+    blocks the legitimate case too, that's exactly the false-positive
+    cost the lesson's allowlist-vs-denylist discussion warned about —
+    tighten it until both cases pass.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">5</span> (Production-gear) Construct a find string that's ambiguous by exactly one character</h3>
+    <p>Add a new entry to <code>FAKE_DISK</code> and pick a
+    <code>find</code> string such that it matches exactly twice in your
+    new file's content, but a one-character-longer version of the same
+    string (more surrounding context) matches exactly once. Write both
+    calls to <code>edit_file_stub</code>, predict both outcomes before
+    running, then verify. This mirrors a genuinely common real mistake:
+    a find string that's technically correct but too short to be
+    unique.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">6</span> (Production-gear) Review a hypothetical git_commit design</h3>
+    <p>A coworker proposes this: <code>git_commit(message)</code> is
+    added as a tool, and the harness code (not the model) always passes
+    a hardcoded, harness-controlled <code>message</code> prefix like
+    <code>"[agent] "</code> before whatever the model wrote, arguing
+    this makes autonomous commits "traceable and therefore safe." Using
+    this chapter's distinction between what the model controls and what
+    the harness enforces, explain in 2-3 sentences why traceability
+    (knowing which commits came from the agent) is a different property
+    from safety (preventing a bad commit from happening at all), and
+    what's still missing from this design even with the prefix in
+    place.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../quiz.html">&larr; Back to Quiz</a>
+    <a href="../practice/index.html">Practice Bank &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

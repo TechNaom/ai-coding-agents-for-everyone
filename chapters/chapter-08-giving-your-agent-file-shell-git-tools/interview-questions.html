@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giving Your Agent File/Shell/Git Tools Interview Questions — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interview questions for Giving Your Agent File/Shell/Git Tools.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-08">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="practice/index.html">&larr; Back to practice bank</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 8 Interview Questions</span>
+    <span class="reading-time">~16 min</span>
+  </div>
+  <h1>Interview Questions: Giving Your Agent File/Shell/Git Tools</h1>
+  <p>Grouped by level. Each includes a strong answer, a red flag, and a follow-up. A plain-markdown mirror of these same eight questions is available at <a href="interview-questions.md">interview-questions.md</a>.</p>
+
+  <div class="lesson-card">
+    <h2>1. (Beginner) What's the real difference between <code>write_file</code> and <code>edit_file</code>, and when would you use each?</h2>
+    <p><strong>Strong answer:</strong> <code>write_file</code> replaces a file's entire contents; it's the right tool for a brand-new file or a genuine full rewrite. <code>edit_file</code> replaces one exact, unambiguous occurrence of text inside an existing file, leaving everything else untouched — the right tool when only part of a file needs to change, because it doesn't ask the model to correctly reproduce content it isn't actually changing.</p>
+    <p><strong>Red flag:</strong> Says one tool is simply "better" than the other, without naming the actual trade-off (overwrite risk vs. a new class of ambiguous-match failure) or a concrete scenario where each is the right call.</p>
+    <p><strong>Follow-up:</strong> "What does edit_file do if the text you're searching for appears three times in the file?"</p>
+    <p><strong>What this proves:</strong> Understands that different tools exist because they have different failure modes, not because one is a strictly improved version of the other.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>2. (Beginner) Why does <code>list_directory</code> need to distinguish "no such directory" from "that path is a file, not a directory," instead of just one generic error?</h2>
+    <p><strong>Strong answer:</strong> They're different, genuinely actionable situations for the model's next turn: "no such directory" means the path is wrong and the model should try a different one or ask; "not a directory" means the path exists but the model chose the wrong tool for it (it should call <code>read_file</code> instead). One generic error message collapses two different next actions into one, forcing the model to guess which correction actually applies.</p>
+    <p><strong>Red flag:</strong> Treats both as "just an error" with no difference in what the model should do next, or thinks the distinction is only about cleaner logging.</p>
+    <p><strong>Follow-up:</strong> "How does this connect to Chapter 4's point about vague tool descriptions producing wrong tool calls?"</p>
+    <p><strong>What this proves:</strong> Connects error-message design to the loop's actual mechanism (the model reads the result fresh and decides its next action from it), not just code style.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>3. (Intermediate) <code>git_status</code> and <code>git_diff</code> call <code>subprocess.run</code> with a Python list of arguments, while <code>run_shell_command</code> still uses <code>shell=True</code> with a raw string. Why the difference, and could <code>run_shell_command</code> be rewritten the same safer way?</h2>
+    <p><strong>Strong answer:</strong> A list of arguments to <code>subprocess.run</code> is never passed through a shell interpreter, so shell metacharacters like <code>;</code>, <code>&amp;&amp;</code>, or backticks in an argument can't be used to inject a second command — that's why <code>git_status</code>/<code>git_diff</code> are structurally safer by construction. <code>run_shell_command</code> can't be rewritten the same way without losing its entire point: its whole job is to run an arbitrary command string the model composes itself (pipes, redirects, chained commands), which fundamentally requires shell interpretation. That's exactly why it needs a different mitigation (the denylist) instead of just "also use a list."</p>
+    <p><strong>Red flag:</strong> Suggests switching <code>run_shell_command</code> to a list of arguments as a simple fix, without recognizing that would remove the tool's actual purpose (running arbitrary shell syntax, not one fixed command).</p>
+    <p><strong>Follow-up:</strong> "If a task only ever needed to run one of five known commands, would you build it as run_shell_command or something more restricted?"</p>
+    <p><strong>What this proves:</strong> Understands that "safer" isn't one universal technique — the right mitigation depends on what the tool actually needs to be able to do.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>4. (Intermediate) A teammate adds <code>SHELL_DENYLIST</code> and says "great, now run_shell_command is safe." How do you respond?</h2>
+    <p><strong>Strong answer:</strong> Not fully, and saying so isn't pedantry — it changes what you tell a stakeholder about actual risk. The denylist meaningfully reduces the chance that an off-course or confused model call does something obviously destructive by accident (the realistic day-to-day risk for a coding agent you're directing yourself), but it can only block patterns someone thought to write ahead of time — a differently-phrased equivalent command, string concatenation, or a project-specific destructive command (like <code>git clean -fdx</code> wiping wanted untracked files) can still get through. It's a real, honest mitigation, not solved security; real isolation is a sandboxing/permissions problem, covered later in this course.</p>
+    <p><strong>Red flag:</strong> Agrees it's "safe" without qualification, or can't name a concrete way the denylist could still be bypassed.</p>
+    <p><strong>Follow-up:</strong> "What would you add on top of the denylist if this agent were about to run against a real, non-throwaway codebase?"</p>
+    <p><strong>What this proves:</strong> Can state a mitigation's real coverage honestly instead of overselling a partial fix as a complete one — the same discipline the chapter itself models.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>5. (Senior) Design review: a colleague wants to add a <code>git_commit</code> tool with a <code>confirm: bool</code> argument, arguing that's sufficient guardrail. What's your assessment?</h2>
+    <p><strong>Strong answer:</strong> It's not sufficient on its own, and the reason generalizes past this one tool: a flag the model itself supplies as part of its own tool call isn't a real guardrail, because nothing stops the model from simply setting <code>confirm=true</code> every time — it's the same category of mistake as trusting a system-prompt instruction over a harness-enforced check (Chapter 7's <code>_safe_path</code> lesson, applied to a write-capable git tool instead of a file path). A real guardrail needs something outside the model's own turn: a human confirmation step the harness pauses for, a permission scope set before the agent runs at all, or simply not exposing commit/push as a tool and having a human run them after reviewing the diff.</p>
+    <p><strong>Red flag:</strong> Accepts a model-settable flag as adequate protection, or doesn't distinguish "the model can decide this" from "the harness enforces this regardless of what the model decides."</p>
+    <p><strong>Follow-up:</strong> "What would an actually-safe version of a confirmation step look like, mechanically?"</p>
+    <p><strong>What this proves:</strong> Applies the harness-vs-model-trusted distinction to a new, higher-stakes tool instead of only recognizing it in the one example (<code>_safe_path</code>) it was originally taught with.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>6. (Senior) Someone argues the agent should just always use <code>write_file</code> for every change, since <code>edit_file</code> adds complexity for what's "just a simpler case." How do you push back, concretely?</h2>
+    <p><strong>Strong answer:</strong> On a small file for a small change, <code>write_file</code>-only might genuinely be fine. The concrete failure it invites is on larger files: the model has to correctly reproduce every unchanged line to use <code>write_file</code> safely, and a wrong reproduction — a dropped comment, a subtly reformatted block, a truncated section — produces a diff that silently touches far more than intended, with no error at all; the tool call "succeeds." <code>edit_file</code> converts that into a much smaller, more reviewable diff and fails loudly (a clear "text not found" or "ambiguous match" error) exactly in the situations where <code>write_file</code> would otherwise fail silently. The "added complexity" is real, but it's complexity that turns a silent, hard-to-review failure mode into a loud, recoverable one — a trade worth making past a certain file size or change granularity.</p>
+    <p><strong>Red flag:</strong> Argues purely from "fewer tools is simpler" without engaging with the specific silent-failure risk write_file-only creates on larger files.</p>
+    <p><strong>Follow-up:</strong> "At what point — file size, kind of task — would you say the trade-off tips toward needing edit_file?"</p>
+    <p><strong>What this proves:</strong> Can argue a design trade-off from a concrete failure scenario, not just an abstract preference for fewer tools.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>7. (Architect) You're scoping tool access for three different internal agents: one that only reads code for documentation generation, one that edits code in a scratch branch, and one that's allowed to run CI locally. How would tool selection differ across the three, and why?</h2>
+    <p><strong>Strong answer:</strong> The documentation agent should get read-only tools only — <code>read_file</code>, <code>list_directory</code>, maybe <code>git_diff</code> for context — and explicitly no <code>write_file</code>/<code>edit_file</code>/<code>run_shell_command</code> at all, because its job never requires state changes and the safest tool is one that structurally cannot cause the harm you're worried about, not one that's merely discouraged from it. The scratch-branch editor needs <code>write_file</code>/<code>edit_file</code> and probably <code>git_status</code>/<code>git_diff</code> to self-check, but still shouldn't get <code>git_commit</code> or <code>git push</code> unscoped — the "scratch branch" framing reduces blast radius but doesn't eliminate the review-bypass problem discussed in this chapter. The CI-runner agent needs <code>run_shell_command</code> but scoped much more tightly than this chapter's general denylist — realistically an allowlist of the specific CI commands it's meant to run, since its command surface is known and narrow, which is exactly the situation where an allowlist's restrictiveness stops being a real cost.</p>
+    <p><strong>Red flag:</strong> Gives all three agents the same toolset "to keep things simple," or can't articulate why the CI-runner's narrower, more predictable task makes an allowlist the right call there specifically, even though a denylist was the right call for this chapter's general-purpose agent.</p>
+    <p><strong>Follow-up:</strong> "Which of these three would you be most comfortable running fully autonomously, unsupervised, and why?"</p>
+    <p><strong>What this proves:</strong> Architect-level judgment: tool scoping isn't a single fixed policy, it's a decision that should track each agent's actual job and blast radius — directly anticipating Module 5's permission-scoping material.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>8. (Architect) How would you explain to a non-technical stakeholder why "the agent has more tools now" is not, by itself, either good or bad news?</h2>
+    <p><strong>Strong answer:</strong> Every tool this chapter added changed the honest risk profile in a different, specific direction — <code>git_status</code>/<code>git_diff</code> are read-only and net-positive for safety (they let the agent and a human verify its own work); <code>edit_file</code> reduces one specific silent-failure risk while adding a different, loud one; the hardened <code>run_shell_command</code> is meaningfully less risky than Chapter 7's version but still not "safe" in any complete sense. "More tools" tells you nothing about direction until you ask, tool by tool: is this read or write, what's the worst-case bad call, and is that worst case loud/recoverable or silent/permanent? The stakeholder-facing answer isn't "we added capability" or "we added risk" — it's a specific accounting of both, tool by tool, the same discipline this chapter's own "GenAI Builder Thought Process" section names directly.</p>
+    <p><strong>Red flag:</strong> Answers only in terms of total capability ("the agent can now do more") without breaking down the actual safety direction of each individual addition.</p>
+    <p><strong>Follow-up:</strong> "If you had to cut this chapter's toolset down to just two tools for a first production rollout, which two, and why those?"</p>
+    <p><strong>What this proves:</strong> Can translate a set of engineering decisions into a risk-literate explanation a stakeholder can actually use to make a go/no-go call, not just a capability list.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="practice/index.html">&larr; Practice Bank</a>
+    <a href="project/index.html">Project &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

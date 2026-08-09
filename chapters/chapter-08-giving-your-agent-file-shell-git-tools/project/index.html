@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giving Your Agent File/Shell/Git Tools Project — AI Coding Agents for Everyone</title>
+<meta name="description" content="Module 3's real Level 2 (Assisted) project: extend a provided minimal agent with one new tool of your own, from a partial scaffold.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-08">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../interview-questions.html">&larr; Back to interview questions</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 8 Project</span>
+    <span class="reading-time">~30 min · <span class="badge-difficulty">Level 2 — Assisted</span></span>
+  </div>
+  <h1>Project: Extend the Agent With One New Tool of Your Own</h1>
+
+  <div class="hook">
+    <p>
+      This is the real thing — Module 3's Level 2 (Assisted) project,
+      the one both of Chapter 7's project pages pointed forward to:
+      "extend a provided minimal agent with one new tool, partial
+      scaffold," per <code>docs/curriculum/CURRICULUM_MAP.md</code>. It
+      waited for this chapter on purpose. Shipping it before Chapter 8
+      would have meant asking you to design a new tool's safety
+      boundaries before you'd actually seen what those boundaries need
+      to guard against — the exact reasoning Chapter 7's own preview
+      page gave. Now you have: <code>edit_file</code>'s
+      ambiguous-match refusal, <code>list_directory</code>'s
+      type-distinguishing errors, <code>git_status</code>/<code>git_diff</code>'s
+      read-only-by-construction safety, and <code>run_shell_command</code>'s
+      honest, partial denylist. This project asks you to apply that
+      same discipline to a tool you design and build yourself.
+    </p>
+  </div>
+
+  <h2>What's provided</h2>
+  <p>
+    <a href="starter.py"><code>starter.py</code></a> is Chapter 7's
+    reference agent — the loop, <code>dispatch_tool_call</code>'s
+    defensive handling, none of it changed — extended with everything
+    this chapter built: <code>edit_file</code>, <code>run_shell_command</code>
+    hardened with a denylist, and the read-only <code>git_status</code>/
+    <code>git_diff</code> pair. All five of those tools are fully
+    implemented, tested, and not your job to touch.
+  </p>
+
+  <h2>Your task</h2>
+  <p>
+    Add <strong>one new tool of your own choosing</strong>, following
+    the exact four-step pattern every tool in <code>starter.py</code>
+    already uses (a schema entry, a <code>_safe_path()</code>-routed
+    function, clean <code>"error: ..."</code> strings for expected
+    failures, a <code>TOOL_FUNCTIONS</code> registration). Two
+    <code># TODO</code> markers in <code>starter.py</code> show you
+    exactly where. The module docstring at the top of the file has five
+    concrete ideas if you want a starting point — but picking your own
+    is genuinely fine, and arguably better practice than following a
+    suggested list.
+  </p>
+
+  <div class="what-is">
+    <span class="label">What "done" looks like</span>
+    A new tool that (1) has a schema entry with a description precise
+    enough to distinguish it from every other tool in the file — the
+    same precision this chapter's <code>list_directory</code> section
+    discussed at length — (2) routes any path argument through
+    <code>_safe_path()</code> with no exceptions, (3) returns a clean,
+    descriptive error string for every expected failure case instead of
+    letting an exception fall through to <code>dispatch_tool_call</code>'s
+    generic handler, and (4) is registered in <code>TOOL_FUNCTIONS</code>.
+    <a href="solution.py"><code>solution.py</code></a> shows one fully
+    worked example (<code>list_directory</code>) if you want a reference
+    — see <a href="README.md">README.md</a> for exactly how to verify
+    your own tool works, both by calling your function directly (no
+    live model needed) and by running the full agent against a real
+    local model.
+  </div>
+
+  <h2>Then: review your own diff</h2>
+  <p>
+    Before calling it finished, apply Chapter 3's five-question checklist
+    to your own change — specifically question 2 (did it touch anything
+    outside the stated boundary?) and question 4 (is it consistent with
+    the rest of the file's patterns?). Those are exactly the two
+    questions Chapter 7's AI-paired <code>list_files</code> tool failed,
+    and exactly the two this project is designed to test whether you
+    now catch in code you wrote yourself, not just code you're
+    critiquing.
+  </p>
+
+  <div class="points-to-remember">
+    <h2>Why this is the right project for right now</h2>
+    <p>
+      You've now seen four different tools get built with real,
+      specific care about failure modes — an ambiguous edit refused
+      instead of guessed, a missing directory distinguished from a
+      wrong-type path, two read-only git tools made structurally safe
+      by how they call <code>subprocess</code>, and a shell tool with an
+      honestly-limited denylist instead of an oversold "safe" claim.
+      This project isn't asking you to invent that discipline from
+      nothing — it's asking you to apply a pattern you just watched
+      built four times, on a fifth tool that's entirely yours.
+    </p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../interview-questions.html">&larr; Interview Questions</a>
+    <a href="../../../index.html">All Chapters &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

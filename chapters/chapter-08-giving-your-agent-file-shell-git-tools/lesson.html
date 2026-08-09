@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giving Your Agent File/Shell/Git Tools — AI Coding Agents for Everyone</title>
+<meta name="description" content="Go deeper on the tool layer: a safer targeted-edit tool, read-only git integration, and a hardened, honestly-limited approach to shell command execution -- built on Chapter 7's exact agent loop.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-08">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 8</span>
+    <span class="badge-difficulty">Advanced</span>
+    <span class="reading-time">~35 min</span>
+  </div>
+
+  <h1>Giving Your Agent File/Shell/Git Tools</h1>
+  <p class="lede">
+    Chapter 7 built the loop and kept the toolset to exactly three
+    tools on purpose — enough to prove the mechanism worked, not so
+    many that the tool layer itself became the subject. This chapter
+    is where the tool layer becomes the subject. The loop you built
+    doesn't change at all; every addition below is a new entry in
+    <code>TOOLS</code> and <code>TOOL_FUNCTIONS</code>, exactly the
+    shape Chapter 7's own closing section predicted.
+  </p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#hook">1. Three tools were never going to be enough</a>
+    <a href="#edit-file">2. A safer edit tool: overwrite vs. targeted edit</a>
+    <a href="#list-directory">3. list_directory: letting the agent see before it guesses</a>
+    <a href="#git-tools">4. Git as a tool: git_status, git_diff, and the git_commit question</a>
+    <a href="#shell-hardening">5. Hardening run_shell_command, honestly</a>
+    <a href="#assembled">6. The extended dispatch table, assembled</a>
+    <a href="#thought-process">7. GenAI Builder Thought Process</a>
+    <a href="#recap">8. Points to remember</a>
+  </nav>
+
+  <div class="hook" id="hook">
+    <p>
+      Here's a task that would break Chapter 7's agent in an
+      unsatisfying way: "In <code>config.py</code>, change the
+      <code>timeout</code> value from <code>30</code> to
+      <code>60</code> — don't touch anything else in the file." With
+      only <code>read_file</code> and <code>write_file</code>, the
+      model's only option is to read the whole file, produce the whole
+      file back with one number changed, and call
+      <code>write_file</code> with the entire new contents. That works
+      — right up until the file is 400 lines long and the model's
+      reproduction of the other 399 subtly drops a comment, reformats
+      a docstring, or (worse, and directly observed in real small-model
+      behavior) truncates a section it decided wasn't relevant to
+      restate. Nothing in Chapter 7's tools makes that failure visible
+      until a human — or a later tool call — notices the file changed
+      more than it should have.
+    </p>
+    <p>
+      That's not a hypothetical edge case; it's the direct, predictable
+      consequence of only having one way to change a file: overwrite
+      the whole thing. This chapter builds a second way — a targeted
+      edit tool — plus a way for the agent to look before it writes
+      (<code>list_directory</code>), a way to check its own work after
+      it writes (<code>git_status</code>, <code>git_diff</code>), and
+      an honest, partial answer to the much harder question Chapter 7's
+      <code>run_shell_command</code> left completely open: what happens
+      when a coding agent can run <em>any</em> shell command at all.
+    </p>
+  </div>
+
+  <section id="edit-file" class="subtopic">
+    <h2>A Safer Edit Tool: Overwrite vs. Targeted Edit</h2>
+    <p>
+      Chapter 7's <code>write_file</code> has exactly one behavior:
+      replace the entire file. That's simple to implement, simple to
+      reason about, and genuinely the right tool for a brand-new file
+      or a full rewrite. It's also a blunt instrument for the far more
+      common case — the agent needs to change three lines of a file it
+      didn't write and doesn't need to fully reproduce. Two real risks
+      follow directly from that: the model's reproduction of the
+      "unchanged" parts can be wrong (Chapter 5's premature-done and
+      going-off-the-rails failure modes generalize here — confident
+      output isn't necessarily correct output), and even when it's
+      right, a diff that touches an entire file makes Chapter 3's
+      review job — "does this diff only touch what it needs to
+      touch?" — much harder than it should be for a three-line change.
+    </p>
+    <p>
+      The alternative this chapter builds is a find-and-replace style
+      <code>edit_file</code> tool: it takes an exact string to find and
+      a string to replace it with, and it does exactly one thing —
+      replace that one occurrence — instead of asking the model to
+      restate anything it isn't actually changing.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">edit_file -- a targeted alternative to write_file</span>
+      </div>
+      <pre><code>def edit_file(path, find, replace):
+    full = _safe_path(path)
+    try:
+        with open(full) as f:
+            content = f.read()
+    except FileNotFoundError:
+        return f"error: no such file: {path}"
+
+    count = content.count(find)
+    if count == 0:
+        return f"error: text not found in {path}: {find!r}"
+    if count &gt; 1:
+        return (
+            f"error: text {find!r} appears {count} times in {path} -- "
+            "edit_file only replaces an exact, unambiguous match; include "
+            "more surrounding context to make it unique"
+        )
+
+    new_content = content.replace(find, replace, 1)
+    with open(full, "w") as f:
+        f.write(new_content)
+    return f"replaced 1 occurrence in {path} ({len(new_content)} bytes now)"</code></pre>
+    </div>
+    <p>
+      Notice what the <code>count &gt; 1</code> branch does: it refuses
+      to guess. If <code>find</code> matches more than once, a real
+      possibility for a short string like <code>"return None"</code> in
+      a longer file, silently replacing "the first one" or "all of
+      them" is exactly the kind of quiet, wrong behavior Chapter 3's
+      review checklist exists to catch — so this tool doesn't produce
+      that behavior in the first place. It fails loudly, with a message
+      the model can act on next turn (ask for more context to make the
+      match unique), the same self-correcting dynamic Chapter 4
+      described for any other tool result.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the real trade-off here, honestly stated?</span>
+      <code>write_file</code> is simple: one code path, one thing that
+      can go wrong (the model's reproduction is wrong), and it's the
+      only option that works for a file that doesn't exist yet.
+      <code>edit_file</code> is safer against the "wiped unrelated
+      content" failure specifically, but it isn't free: it requires
+      more careful schema design (what happens on zero matches? on
+      multiple matches? Chapter 8's version above picks "fail loudly"
+      for both), and it gives a small model more ways to be subtly
+      wrong — a <code>find</code> string with a stray whitespace
+      difference, a copy-paste that's almost-but-not-quite what's in
+      the file, produces a clean, unambiguous <code>"text not found"</code>
+      error rather than a crash, but it's still a new failure surface
+      <code>write_file</code> didn't have. Neither tool is strictly
+      better; a well-equipped agent has both and the system prompt
+      says when to prefer which (this chapter's reference agent's
+      system prompt does exactly that — see the assembled file below).
+    </div>
+  </section>
+
+  <section id="list-directory" class="subtopic">
+    <h2>list_directory: Letting the Agent See Before It Guesses</h2>
+    <p>
+      Chapter 7's agent has no way to discover what files exist — it
+      can only read a path it (or the human) already knows. That's fine
+      for a task like "write hello.txt," where the target path is given
+      outright. It falls apart for a task like "find the config file
+      and update the timeout," where the agent has to guess a filename
+      before it can call <code>read_file</code> at all — and Chapter 4
+      already established what a model does when a task under-specifies
+      something it needs: it fills the gap with a guess, sometimes a
+      wrong one.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">list_directory -- discovery before action</span>
+      </div>
+      <pre><code>def list_directory(path):
+    full = _safe_path(path)
+    if not os.path.exists(full):
+        return f"error: no such directory: {path}"
+    if not os.path.isdir(full):
+        return f"error: not a directory: {path}"
+    return json.dumps(sorted(os.listdir(full)))</code></pre>
+    </div>
+    <p>
+      This is a deliberate rebuild, done correctly, of a tool Chapter 7
+      already showed you going wrong: <code>project/solution.py</code>'s
+      AI-paired <code>list_files</code> tool skipped <code>_safe_path()</code>
+      entirely (a real boundary escape) and let a missing directory's
+      exception fall straight through to <code>dispatch_tool_call</code>'s
+      generic handler instead of returning a clean, file-consistent
+      error string. This version fixes both: every path goes through
+      <code>_safe_path()</code> like every other tool in this chapter,
+      and it distinguishes "doesn't exist" from "exists but isn't a
+      directory" with two separate, specific error messages — because a
+      model that gets back <code>"error: not a directory: notes.txt"</code>
+      has a real chance to recover (try <code>read_file</code>
+      instead), while a generic Python traceback string does not.
+    </p>
+    <p>
+      The tool's <em>description</em> matters just as much as its code
+      here — Chapter 4's core point about tool descriptions applies
+      directly. "List a directory's contents" (the literal wording
+      Chapter 7's flawed AI-paired version used) doesn't distinguish
+      itself from <code>read_file</code>'s "read a text file" clearly
+      enough for a small model to reliably tell them apart on an
+      ambiguous request. This chapter's version is explicit: <em>"List
+      the names of files and subdirectories directly inside a directory
+      (not a file)..."</em> — naming the type distinction directly,
+      because the failure it's preventing (the model calling
+      <code>list_directory</code> on a file path, or <code>read_file</code>
+      on a directory path) is a real, observed class of tool-selection
+      confusion, not a theoretical one.
+    </p>
+  </section>
+
+  <section id="git-tools" class="subtopic">
+    <h2>Git as a Tool: git_status, git_diff, and the git_commit Question</h2>
+    <p>
+      An agent that can write and edit files but has no way to see what
+      it actually changed is flying blind in a specific, avoidable way:
+      it has to trust its own memory of what it wrote instead of
+      checking. Git already tracks exactly this, so wrapping two
+      read-only git commands as tools gives the agent (and you, reading
+      the transcript afterward) a ground-truth check that doesn't
+      depend on the model's own narration being accurate:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">two read-only git tools -- safe by construction</span>
+      </div>
+      <pre><code>def git_status():
+    result = subprocess.run(
+        ["git", "status", "--porcelain"], cwd=WORKSPACE,
+        capture_output=True, text=True, timeout=15
+    )
+    if result.returncode != 0:
+        return f"error: git status failed: {result.stderr.strip()}"
+    return result.stdout or "(clean -- no changes)"
+
+def git_diff(path=None):
+    cmd = ["git", "diff"]
+    if path:
+        cmd += ["--", path]
+    result = subprocess.run(cmd, cwd=WORKSPACE, capture_output=True, text=True, timeout=15)
+    if result.returncode != 0:
+        return f"error: git diff failed: {result.stderr.strip()}"
+    return result.stdout or "(no changes)"</code></pre>
+    </div>
+    <p>
+      Look closely at how these two are built, because it's different
+      from every tool so far: they use <code>subprocess.run</code> with
+      a real Python <em>list</em> of arguments (<code>["git", "status",
+      "--porcelain"]</code>), not a shell string with
+      <code>shell=True</code>. That's not a style choice — a list of
+      arguments is never interpreted by a shell, so there's no shell
+      metacharacter (<code>;</code>, <code>&amp;&amp;</code>,
+      backticks) for anything to inject in the first place. These two
+      tools are read-only (they change nothing) and structurally safer
+      by how they're called, which is exactly why they're the easy,
+      low-risk half of "git integration as a tool."
+    </p>
+    <p>
+      The hard half is the question this section deliberately does
+      <strong>not</strong> resolve: should an agent be able to call
+      <code>git_commit</code> at all?
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the actual risk with a write-capable git tool?</span>
+      It's tempting to think a commit is low-risk because
+      <code>git revert</code> exists — nothing is "truly" destroyed the
+      way an unrecoverable <code>rm -rf</code> is. But a commit made
+      autonomously, with a message the model itself wrote, skips the
+      one checkpoint this entire course has built toward since Chapter
+      3: a human reading the diff before it becomes part of the
+      project's real history. A plausible-looking commit message
+      doesn't guarantee a correct diff underneath it — the same gap
+      between "looks right" and "is right" Chapter 3 opened with. Once
+      it's committed, it's discoverable by every other tool, every
+      teammate, and (if pushed) every CI run downstream, whether or not
+      anyone reviewed it first.
+    </div>
+    <p>
+      Here's a sketch of what a write-capable version might look like —
+      shown for the design discussion, deliberately <strong>not</strong>
+      wired into this chapter's reference agent's <code>TOOLS</code>
+      list or <code>TOOL_FUNCTIONS</code>:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">NOT part of this chapter's reference agent -- discussion only</span>
+      </div>
+      <pre><code># A guarded sketch, not shipped code: even something like this still
+# leaves the real decision (should the agent be allowed to commit at
+# all, ever, unsupervised) unanswered -- that's Chapter 11's job.
+def git_commit(message, confirm=False):
+    if not confirm:
+        return (
+            "error: git_commit requires confirm=true -- this chapter's "
+            "agent does not set that automatically for any task"
+        )
+    # ... subprocess.run(["git", "commit", "-m", message], ...) would go here</code></pre>
+    </div>
+    <p>
+      Notice that even a <code>confirm</code> flag doesn't actually
+      solve anything by itself — nothing stops a model from simply
+      passing <code>confirm=true</code> on its own, the same way
+      nothing in Chapter 7 stopped a model from asking for a path
+      outside the workspace; <code>_safe_path()</code> had to be a
+      harness-enforced check, not a request. A real answer needs
+      something the model can't set for itself: a human-in-the-loop
+      confirmation step outside the model's own turn, a permission
+      scope decided before the agent runs at all, or simply leaving
+      commit/push out of the toolset entirely and having a human run
+      those commands after reviewing the diff the agent produced. This
+      is precisely Module 5's subject (Chapter 11: sandboxing,
+      permissions, destructive commands) — this chapter names the
+      question honestly and leaves it there on purpose, the same way
+      Chapter 7's <code>_safe_path</code> section previewed Module 5
+      without fully covering it.
+    </p>
+  </section>
+
+  <section id="shell-hardening" class="subtopic">
+    <h2>Hardening run_shell_command, Honestly</h2>
+    <p>
+      Chapter 7's <code>run_shell_command</code> runs literally
+      anything, via <code>subprocess.run(command, shell=True, ...)</code>.
+      That's not a bug in Chapter 7 — it was named there as a
+      deliberately minimal starting point — but it deserves to be named
+      as what it actually is: arbitrary command execution, gated by
+      nothing except whatever the model happens to decide to run. A
+      15-second timeout (already present in Chapter 7) stops a hang; it
+      does nothing at all to stop a command that completes in under a
+      second and deletes something.
+    </p>
+    <p>
+      This chapter adds one concrete, honest mitigation: a
+      <strong>denylist</strong> — a small, named set of patterns for
+      commands that are almost never what a coding-task agent should be
+      running unsupervised, checked before anything runs.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">a denylist, checked before execution</span>
+      </div>
+      <pre><code>SHELL_DENYLIST = [
+    (r"rm\s+-rf\s+/(\s|$)", "recursive delete of the filesystem root"),
+    (r"rm\s+-rf\s+~", "recursive delete of the home directory"),
+    (r"\bsudo\b", "privilege escalation"),
+    (r"git\s+push\b.*--force", "force-push (can destroy remote history)"),
+    (r"&gt;\s*/dev/sd[a-z]", "writing directly to a raw disk device"),
+    (r":\(\)\s*\{\s*:\|:", "fork bomb"),
+    (r"\bmkfs\b", "filesystem-formatting command"),
+    (r"\bshutdown\b|\breboot\b", "shutting down or rebooting the host"),
+]
+
+def _blocked_reason(command):
+    for pattern, reason in SHELL_DENYLIST:
+        if re.search(pattern, command):
+            return reason
+    return None
+
+def run_shell_command(command):
+    reason = _blocked_reason(command)
+    if reason:
+        return f"error: command blocked ({reason}): {command!r}"
+    result = subprocess.run(
+        command, shell=True, cwd=WORKSPACE, capture_output=True, text=True, timeout=15
+    )
+    return json.dumps({"stdout": result.stdout, "stderr": result.stderr, "exit_code": result.returncode})</code></pre>
+    </div>
+    <p>
+      Read the blocked reason back to the model the same way every
+      other tool result gets read back — that's Chapter 4's mechanism
+      again, not a special case. A rejected command becomes one more
+      observation the model reads on its next turn, the same as a
+      successful one.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the denylist-vs-allowlist trade-off, stated without overselling either?</span>
+      A <strong>denylist</strong> (block a named list of dangerous
+      patterns, allow everything else) is what this chapter ships,
+      because it stays out of the way for the huge majority of
+      legitimate coding tasks — running tests, listing files, checking
+      versions — without the agent's designer having to predict every
+      command a real task might need in advance. Its honest weakness:
+      it can only block what someone thought to write a pattern for.
+      <code>rm -rf /</code> is blocked; <code>rm -rf $HOME/../</code>,
+      a base64-encoded command piped to <code>sh</code>, or a
+      perfectly ordinary-looking command that happens to be destructive
+      in this specific repository's context (like <code>git clean
+      -fdx</code> in a workspace with untracked work someone actually
+      wanted) sail straight through. An <strong>allowlist</strong>
+      (permit only a named list of known-safe commands, block
+      everything else by default) inverts that trade-off: genuinely
+      safer by construction, because the default is deny, not allow —
+      but it's also far more restrictive, and a real coding task
+      (running an unfamiliar project's build tool, a linter with a
+      name the allowlist author never anticipated) will get blocked
+      constantly unless someone maintains the list actively. Neither
+      one is "solved" security; both are mitigations a minimal agent
+      can actually apply without becoming a full sandboxing solution.
+      Real isolation — a container, a VM, a filesystem genuinely
+      inaccessible outside the workspace regardless of what command
+      runs inside it — is Chapter 11's subject, not this chapter's.
+    </div>
+    <p>
+      One more thing worth being honest about: this denylist runs on
+      the exact string the model produced, matched with regular
+      expressions. A sufficiently motivated adversarial input (this
+      chapter isn't claiming that's the primary threat model for a
+      coding agent you're directing yourself, but it's a real category
+      worth naming) can construct a command that means the same thing
+      but doesn't match any pattern — string concatenation, variable
+      indirection, an alias defined earlier in the same command. The
+      mitigations in this section reduce the chance an off-course or
+      confused model call does something destructive by accident; they
+      are not a claim that no command could ever slip through. Treating
+      a denylist as "solved" instead of "meaningfully reduced risk" is
+      exactly the kind of overselling this chapter is trying not to do.
+    </p>
+  </section>
+
+  <section id="assembled" class="subtopic">
+    <h2>The Extended Dispatch Table, Assembled</h2>
+    <p>
+      Every new tool above plugs into <code>TOOL_FUNCTIONS</code> and
+      <code>TOOLS</code> exactly the way Chapter 7 predicted — nothing
+      about <code>dispatch_tool_call</code> or <code>run_agent</code>
+      changes at all:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">TOOL_FUNCTIONS -- the only thing that grew</span>
+      </div>
+      <pre><code>TOOL_FUNCTIONS = {
+    "read_file": read_file,
+    "write_file": write_file,
+    "edit_file": edit_file,
+    "run_shell_command": run_shell_command,
+    "git_status": git_status,
+    "git_diff": git_diff,
+}
+
+# dispatch_tool_call is copy-pasted from Chapter 7, unchanged:
+def dispatch_tool_call(tc):
+    name = tc.function.name
+    try:
+        args = json.loads(tc.function.arguments)
+    except json.JSONDecodeError:
+        return f"error: invalid JSON arguments: {tc.function.arguments!r}"
+    if name not in TOOL_FUNCTIONS:
+        return f"error: unknown tool: {name}"
+    try:
+        return TOOL_FUNCTIONS[name](**args)
+    except KeyError as e:
+        return f"error: missing required argument {e} for {name}"
+    except Exception as e:
+        return f"error: tool {name} failed: {e}"</code></pre>
+    </div>
+    <p>
+      The full, real, runnable file — every tool from this chapter plus
+      Chapter 7's unchanged loop — is
+      <a href="project/starter.py"><code>project/starter.py</code></a>.
+      It's also the L2 project's scaffold: it's missing exactly one
+      tool on purpose, marked with <code># TODO</code>, for you to add
+      yourself following this chapter's pattern. See
+      <a href="project/index.html">the project page</a> for the full
+      task.
+    </p>
+    <p>
+      A note on verification, in the same spirit of honesty Chapter 7's
+      reliability section modeled: every tool function above was
+      tested directly in this chapter's build — write/read/edit
+      round-trips, the ambiguous-match refusal, the missing-directory
+      and wrong-type cases for <code>list_directory</code>, the
+      denylist blocking real dangerous strings while letting an
+      ordinary <code>ls</code> through, and <code>_safe_path</code>
+      correctly rejecting a workspace-escaping path — but not by
+      running the full agent loop against a live model this session; a
+      local generation hang made that impossible here (the same
+      sandbox-wide issue disclosed in this chapter's own quality
+      audit). The tool logic itself doesn't depend on the model being
+      reachable to verify, which is exactly the point Chapter 7's
+      exercises made about testing dispatch logic independent of a live
+      model — this chapter leans on that same discipline for its own
+      new tools.
+    </p>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p><strong>Problem:</strong> a developer extending Chapter 7's
+      agent reaches for "add more tools" as the obvious next step and
+      starts writing <code>write_file</code>-shaped functions for
+      everything — editing, listing, git operations — without
+      questioning whether "overwrite the whole thing" is even the
+      right shape for the new capability.</p>
+      <p><strong>Assumption being made:</strong> that a tool's safety
+      is mostly about whether <code>_safe_path()</code> gets called,
+      and that the tool's <em>behavior</em> (overwrite vs. targeted,
+      read vs. write, what happens on an ambiguous or missing input) is
+      a secondary implementation detail.</p>
+      <p><strong>What actually distinguishes it:</strong> this chapter's
+      tools that turned out safest by construction —
+      <code>git_status</code>, <code>git_diff</code> — are safe
+      specifically because they're read-only; nothing about their
+      design has to defend against a bad write, because there is no
+      write. The tools that needed real design care —
+      <code>edit_file</code>'s ambiguous-match refusal,
+      <code>run_shell_command</code>'s denylist — needed it because
+      they can change state, and "change state" is where a small
+      model's occasional bad call actually costs something. The
+      question worth asking before adding any new tool isn't just "does
+      it use <code>_safe_path()</code>," it's "what's the worst thing
+      this tool does if the model calls it with a slightly wrong
+      argument, and does the tool's own code make that worst case loud
+      and recoverable, or silent and permanent?"</p>
+      <p><strong>Why this matters before Chapter 9:</strong> Chapter 9
+      swaps some of these hand-rolled tools for MCP-based ones — a
+      different mechanism for exposing a tool to the model, but the
+      same underlying questions (what does this tool actually do on a
+      bad call, who's responsible for scoping it) don't go away just
+      because the tool now lives behind a protocol instead of a local
+      Python function. The habit of asking "what's the worst case, and
+      is it loud or silent" travels with you.</p>
+      <p><strong>Working definition to carry forward:</strong> a tool
+      layer isn't safe because every function happens to call
+      <code>_safe_path()</code> — it's safe because someone thought
+      through each tool's worst-case bad call and made the failure
+      loud, recoverable, and scoped, the same discipline whether the
+      tool reads a file, edits one, runs a shell command, or reaches
+      into git history.</p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember</h2>
+      <ul>
+        <li><code>edit_file</code> is a targeted, find-and-replace
+        alternative to <code>write_file</code>: safer against silently
+        losing unrelated content, but it requires careful schema
+        design (what happens on zero or multiple matches — this
+        chapter's version fails loudly on both instead of guessing)
+        and gives a small model a new, different way to be subtly
+        wrong. Neither tool is strictly better than the other.</li>
+        <li><code>list_directory</code> lets the agent discover what
+        exists before guessing a path — rebuilt correctly here from
+        Chapter 7's own AI-paired <code>list_files</code>, which
+        skipped <code>_safe_path()</code> and had an inconsistent
+        error pattern; this version fixes both and gives the model two
+        distinct, actionable error messages instead of one generic
+        exception.</li>
+        <li><code>git_status</code> and <code>git_diff</code> are
+        read-only and structurally safer by how they're called — a
+        Python list of arguments to <code>subprocess.run</code>, never
+        interpreted by a shell, so there's no shell metacharacter for
+        anything to inject.</li>
+        <li>Whether to expose a write-capable git tool
+        (<code>git_commit</code>) at all is a genuinely hard, unresolved
+        question, not a coding problem — a <code>confirm</code> flag
+        alone doesn't solve it, because nothing stops a model from
+        setting it itself; a real answer needs a check the model can't
+        make for itself, which is Chapter 11's subject.</li>
+        <li>Chapter 7's <code>run_shell_command</code> ran literally
+        anything; this chapter adds a named denylist of destructive
+        patterns as a real, honest, partial mitigation — not a claim of
+        solved security. Denylists stay usable but can only block what
+        someone thought to write a pattern for; allowlists are safer by
+        default-deny construction but far more restrictive. Real
+        isolation (containers, VMs, filesystem-level confinement
+        regardless of the command run) is Chapter 11's job, not a
+        minimal agent's.</li>
+        <li>None of this changed Chapter 7's loop or
+        <code>dispatch_tool_call</code>'s shape at all — every addition
+        above is a new <code>TOOLS</code> schema entry and a new
+        <code>TOOL_FUNCTIONS</code> entry, exactly the separation
+        Chapter 7's own closing thought-process section predicted.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="what-is">
+    <span class="label">Interview questions (4 levels)</span>
+    See <a href="interview-questions.html">Chapter 8 interview questions</a>.
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

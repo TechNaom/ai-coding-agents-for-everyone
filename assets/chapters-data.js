@@ -82,7 +82,8 @@ window.ACAFE_MODULES = [
         id: "chapter-08",
         num: 8,
         title: "Giving Your Agent File/Shell/Git Tools",
-        description: "Extending the minimal agent with real tool access."
+        description: "Extending the minimal agent with real tool access.",
+        path: "chapters/chapter-08-giving-your-agent-file-shell-git-tools/lesson.html"
       },
       {
         id: "chapter-09",

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giving Your Agent File/Shell/Git Tools Quiz — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interactive quiz for Giving Your Agent File/Shell/Git Tools.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-08" data-chapter-id="chapter-08">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="lesson.html">&larr; Back to the lesson</a></p>
+
+  <span class="chapter-badge">Chapter 8 Quiz</span>
+  <h1>Giving Your Agent File/Shell/Git Tools</h1>
+  <p>Eight questions. Fill in the blank, then check your answers.</p>
+
+  <div class="quiz-progress-wrap" aria-hidden="true">
+    <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+  </div>
+
+  <form onsubmit="return false;">
+    <div class="quiz-question">
+      <label for="q1"><span class="q-num">1</span> <code>edit_file</code> refuses to replace text that appears more than once in a file, instead returning an __________ error rather than guessing which occurrence was meant.</label>
+      <div class="fib-row">
+        <input type="text" id="q1" class="fib-blank" data-answers="ambiguous" aria-label="Answer for question 1">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q2"><span class="q-num">2</span> Chapter 7's <code>list_files</code> tool had two real flaws: it skipped <code>_safe_path()</code> and let a missing-directory exception fall through to the generic handler. This chapter's <code>list_directory</code> fixes both by also distinguishing "doesn't exist" from "exists but isn't a __________."</label>
+      <div class="fib-row">
+        <input type="text" id="q2" class="fib-blank" data-answers="directory" aria-label="Answer for question 2">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q3"><span class="q-num">3</span> <code>git_status</code> and <code>git_diff</code> call <code>subprocess.run</code> with a Python __________ of arguments instead of a shell string, so there's no shell metacharacter for anything to inject.</label>
+      <div class="fib-row">
+        <input type="text" id="q3" class="fib-blank" data-answers="list" aria-label="Answer for question 3">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q4"><span class="q-num">4</span> This chapter's reference agent does NOT ship a <code>git_commit</code> tool. A <code>confirm=True</code> flag alone doesn't solve the underlying problem because nothing stops the __________ from setting that flag itself.</label>
+      <div class="fib-row">
+        <input type="text" id="q4" class="fib-blank" data-answers="model" aria-label="Answer for question 4">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q5"><span class="q-num">5</span> <code>run_shell_command</code>'s new <code>SHELL_DENYLIST</code> checks the command string against a set of __________ patterns before running anything, refusing recognized dangerous commands like <code>rm -rf /</code> or <code>sudo</code>.</label>
+      <div class="fib-row">
+        <input type="text" id="q5" class="fib-blank" data-answers="regular expression,regex,destructive,denylist" aria-label="Answer for question 5">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q6"><span class="q-num">6</span> Unlike a denylist (block a known-bad list, allow the rest), an __________ blocks everything by default and only permits a named set of known-safe commands — safer by construction, but far more likely to block a legitimate task.</label>
+      <div class="fib-row">
+        <input type="text" id="q6" class="fib-blank" data-answers="allowlist" aria-label="Answer for question 6">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q7"><span class="q-num">7</span> This chapter is explicit that a denylist is a real, honest mitigation, not solved security — real isolation (containers, VMs, filesystem-level confinement) is Chapter __________'s subject instead.</label>
+      <div class="fib-row">
+        <input type="text" id="q7" class="fib-blank" data-answers="11" aria-label="Answer for question 7">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q8"><span class="q-num">8</span> Every new tool this chapter adds plugs into <code>TOOLS</code> and <code>TOOL_FUNCTIONS</code> without changing Chapter 7's __________ or <code>dispatch_tool_call</code>'s shape at all.</label>
+      <div class="fib-row">
+        <input type="text" id="q8" class="fib-blank" data-answers="loop,run_agent" aria-label="Answer for question 8">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div id="check-all-wrap">
+      <button type="button" id="check-all-btn" class="check-btn">Check All Answers</button>
+      <span id="quiz-score"></span>
+    </div>
+
+    <div class="quiz-celebration" id="quiz-celebration" aria-live="polite">
+      Perfect score. Chapter complete.
+    </div>
+  </form>
+
+  <div class="chapter-nav">
+    <a href="lesson.html">&larr; Back to Lesson</a>
+    <a href="exercises/index.html">Exercises &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/quiz-engine.js"></script>
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>
