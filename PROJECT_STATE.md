@@ -217,6 +217,36 @@ production-grade, interview-ready, original content only).
       real work (multi-file authoring, live code testing) regardless of
       parallelization, so speedup only comes from running genuinely
       independent tasks concurrently, not from rushing any single one.
+- [x] **CI extended to cover `practice/solution.py`**: previously only
+      `exercises/solution.py` and `project/solution.py` ran in CI —
+      flagged as a gap in Chapters 7-9's audits. Minimal, surgical diff
+      to `.github/workflows/ci.yml` and `scripts/local_check.sh` (one
+      glob pattern added, same marker-comment handling reused). Ran as
+      a second parallel background agent alongside Chapter 10's build,
+      touching only CI files while Chapter 10 touched only chapter
+      content — zero coordination overhead needed since the file sets
+      were fully disjoint (unlike the Chapter 9 + exams pairing, which
+      needed the `chapters-data.js` sequencing workaround).
+- [x] **Chapter 10 built and live — closes Module 4 (the module's only
+      chapter)**: "Detecting Hallucinated APIs and Logical Bugs."
+      Builds on Chapter 3's checklist (questions 1 and 5, made
+      mechanically specific) and Chapter 5's going-off-the-rails
+      mechanism. Hook uses a real, live-verified pandas `TypeError` for
+      a hallucinated `sort_values(ignore_na=True)` argument. Covers
+      three causes of API hallucination (thin training data, post-
+      training API drift, structural similarity to a more common
+      library's chaining pattern) and four logical-bug shapes (off-by-
+      one/boundary, inverted boolean logic, mutable-default-argument
+      state leaks, operator precedence). Explicitly self-referential:
+      cites this course's own build discipline (verify against the
+      installed package before writing any example) as the same
+      mechanism it teaches. Ships a substantial 3-file flawed-PR lab
+      (3 hallucinated APIs, 2 logical bugs, 1 deliberately-correct line
+      to test over-flagging, every flaw independently executed and
+      confirmed) plus Module 4's real code-review exam
+      (`assessments/written-exams/module-4-exam.md`), per
+      CURRICULUM_MAP.md's stated assessment type for this module.
+      **Module 4 is now fully built and live.**
 
 ## Pending / Not Started
 
@@ -296,37 +326,36 @@ scenarios/8 interview questions minimum, tested code before writing).
 
 ## Next Recommended Task
 
-**Modules 1-3 (Chapters 1-9) are all built and live.** The homepage,
-roadmap page, and Module 1/2 written exams are also done. Next: Module
-4 — Chapter 10 ("Detecting Hallucinated APIs and Logical Bugs,"
-Advanced), conceptual, no live-model dependency (like Modules 1-2).
-This is the human half of "AI proposes, human reviews" — builds
-directly on Chapter 3's diff-review checklist and Chapter 5's failure
-modes, now focused specifically on spotting a plausible-looking but
-wrong API call or a subtly incorrect logic change. Read Chapters 3, 5,
-7-9 first for the review-discipline and tool-layer terminology to
-build on. Module 4 has only one chapter (per CURRICULUM_MAP.md), so
-this chapter alone should feel complete/weighty, and its own
-practice/exercises are Module 4's assessment ("a deliberately-flawed
-AI-generated PR to review and fix," per the curriculum map) — consider
-building that as a substantial reviewable-PR artifact, not just a
-short scenario list.
+**Modules 1-4 (Chapters 1-10) are all built and live.** The homepage,
+roadmap page, and Module 1/2/4 written exams are also done (Module 3
+deliberately has no separate written-exam file — its assessment is the
+code-review checklist embedded in Chapter 9's practice bank, per
+CURRICULUM_MAP.md). Next: Module 5 — Chapters 11 and 12. Chapter 11
+("Security: Sandboxing, Permissions, Destructive Commands," Advanced)
+builds directly on the security previews Chapters 7-9 already made
+(`_safe_path`, the shell-command denylist/allowlist trade-off, the
+unresolved `git_commit` question, MCP's own connection-failure
+surface) — this is where those previews get resolved in full. Chapter
+12 ("Putting an Agent in CI," Advanced) is where Module 5's lab ships
+("wire a minimal agent into a CI check" per the curriculum map) —
+likely a genuinely real, working CI integration given how this course
+already treats its own CI as a live, tested artifact. Read Chapters
+7-10 fully first. Module 5's assessment is a "production-readiness
+checklist exam" — likely another real written exam file
+(`assessments/written-exams/module-5-exam.md`), written once both
+chapters are done.
 
-Consider parallelizing again where genuinely independent: e.g. Chapter
-10's build alongside the Module 3 written exam (assessments/
-written-exams/module-3-exam.md — Module 3's own assessment is the code
-review checklist embedded in Chapter 9's practice bank, not a separate
-written exam per CURRICULUM_MAP.md, so this may not be needed — check
-the curriculum map before assuming one is required), or alongside
-extending `scripts/local_check.sh`/`ci.yml` to run `practice/solution.py`
-files (flagged in Chapters 7-9's audits, still not done). Follow the
-same file-conflict-avoidance pattern used for Chapter 9 + the exams:
-have any parallel task avoid `chapters-data.js` until last, or don't
-touch it at all if avoidable.
+Continue parallelizing where genuinely independent — the Chapter 9 +
+exams pairing (needed `chapters-data.js` sequencing) and the Chapter
+10 + CI-extension pairing (fully disjoint files, zero coordination
+needed) both worked cleanly; prefer file-disjoint pairings when
+possible. Chapters 11 and 12 likely need to be sequential though (12
+builds on 11's security model for its CI-integration lab) — don't
+force parallelism where the content genuinely depends on order.
 
 Also outstanding, not blocking: re-run Chapter 7's `project/starter.py`/
 `solution.py` and Chapter 9's full agent-loop-against-a-live-model path
 once Ollama is reliably reachable (both disclosed as not-live-verified
-due to a persistent sandbox-wide generation hang across three build
+due to a persistent sandbox-wide generation hang across four build
 sessions now — check `ollama ps` / try a plain completion before
 assuming it's resolved, every time).
