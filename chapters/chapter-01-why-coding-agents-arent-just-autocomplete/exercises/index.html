@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why Coding Agents Aren't Just Autocomplete Exercises — AI Coding Agents for Everyone</title>
+<meta name="description" content="Hands-on exercises for Why Coding Agents Aren't Just Autocomplete.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-01">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../quiz.html">&larr; Back to the quiz</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 1 Exercises</span>
+    <span class="reading-time">~25 min</span>
+  </div>
+  <h1>Exercises: Why Coding Agents Aren't Just Autocomplete</h1>
+  <p>This chapter is conceptual — no SDK or code execution yet, that
+  starts in Module 3. These exercises build the judgment to tell an
+  agent's loop-driven behavior apart from a single-shot suggestion, and
+  to reason about when each is the right tool.</p>
+
+  <div class="what-is">
+    <span class="label">Exercise standard</span>
+    Six tasks below. At least three are production-gear: harder,
+    ambiguous, real-world judgment calls rather than clean textbook
+    cases.
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">1</span> Tag the transcript</h3>
+    <p>You're shown two short transcripts of a developer asking for help
+    fixing a broken date-parsing function. Transcript A: the assistant
+    reads the cursor's surrounding lines and suggests a one-line fix
+    inline. Transcript B: the assistant searches the repo for other
+    callers of the function, reads two of them, edits the function and
+    one caller, then runs the test suite and reports the result. For
+    each, name which one used single-shot autocomplete-style prediction
+    and which one ran an agent loop — and point to the specific action in
+    the transcript that proves it (not just "it felt more thorough").</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">2</span> Where would the loop have to stop?</h3>
+    <p>Take the CSV export example from the lesson. If the tool being
+    used were autocomplete-style only (no agent loop), list every step
+    in the sequence — search, read, edit, run tests, read failure, edit
+    again — that a human would have had to trigger manually instead.
+    Count them.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">3</span> Name the observation that changed the plan</h3>
+    <p>In the lesson's example, the agent's original plan didn't include
+    editing <code>_validate_headers</code>. Identify the exact
+    observation (what the agent read or ran) that caused the plan to
+    change, and explain in one sentence why an autocomplete-style tool
+    would never have produced that observation in the first place.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">4</span> (Production-gear) The ambiguous transcript</h3>
+    <p>You're given a transcript where an assistant reads one file, then
+    proposes a multi-line change, then stops — no test run, no second
+    file touched. Is this autocomplete or a very short agent loop that
+    just happened not to need more steps? Explain what additional
+    information (not present in the transcript itself) would let you
+    tell the difference for certain, and what your best guess is without
+    that information.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">5</span> (Production-gear) The overconfident review</h3>
+    <p>A teammate says "I only asked it to fix one function, so I only
+    need to review that one function's diff." You know the assistant
+    they used runs an agent loop, not single-shot suggestions. Write two
+    to three sentences explaining, using this chapter's concepts, why
+    that review plan is risky — and what they should check instead
+    before trusting it's safe to merge.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">6</span> (Production-gear) Pick the right tool for the ticket</h3>
+    <p>You have three tickets: (a) rename a single local variable for
+    clarity, (b) migrate a deprecated logging call to a new API across an
+    unknown number of files, (c) add one new optional parameter to a
+    function you already have open, with a clear default. For each,
+    decide whether reaching for an autonomous coding agent or sticking
+    with inline-suggestion autocomplete is the better fit, and justify
+    each choice using the loop-versus-prediction distinction from this
+    chapter — not just "agents are more powerful so always use them."</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../quiz.html">&larr; Back to Quiz</a>
+    <a href="../practice/index.html">Practice Bank &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

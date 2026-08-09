@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why Coding Agents Aren't Just Autocomplete — AI Coding Agents for Everyone</title>
+<meta name="description" content="What actually changed between inline-suggestion autocomplete and an agent that plans, acts, and observes across a whole codebase.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-01">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 1</span>
+    <span class="badge-difficulty">Beginner</span>
+    <span class="reading-time">~18 min</span>
+  </div>
+
+  <h1>Why Coding Agents Aren't Just Autocomplete</h1>
+  <p class="lede">
+    "It's just fancier autocomplete" is the single most common way people
+    underestimate what a coding agent can do — and the single most
+    common reason people get frustrated when it does something they
+    didn't expect. This chapter builds the real distinction before you
+    write a single prompt.
+  </p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#hook">1. A ticket, two tools, two different afternoons</a>
+    <a href="#autocomplete-ceiling">2. Where autocomplete's ceiling actually is</a>
+    <a href="#the-loop">3. The plan / act / observe / repeat loop</a>
+    <a href="#autonomy">4. What "autonomy" actually buys you (and costs you)</a>
+    <a href="#thought-process">5. GenAI Builder Thought Process</a>
+    <a href="#recap">6. Points to remember</a>
+  </nav>
+
+  <div class="hook" id="hook">
+    <p>
+      Two developers, same afternoon, same ticket: "the CSV export is
+      missing the new `region` column — add it, and make sure the
+      existing tests still pass."
+    </p>
+    <p>
+      Developer A has an inline-suggestion tool — the kind that watches
+      the cursor and proposes the next few lines as you type. They open
+      the export function, start typing the new field mapping, and the
+      tool suggests a plausible line. It's a good suggestion — it saved
+      some keystrokes. But Developer A still has to find which file
+      defines the CSV headers, notice there's a second place headers get
+      validated, remember to check the test file, run the tests, read
+      the failure, and fix the one they forgot. The tool helped at each
+      keystroke. It did not know a second place existed.
+    </p>
+    <p>
+      Developer B opens a coding agent and types roughly the same
+      request in plain English. What happens next looks nothing like
+      autocomplete: the agent searches the repo for where CSV headers
+      are defined, opens the export function, opens the file that
+      validates headers (which Developer A didn't know about until the
+      tests failed), edits both, runs the test suite itself, reads the
+      failure output, and fixes a second file it discovers is
+      responsible for the failing test — all before showing Developer B
+      anything to review. Same ticket. Completely different shape of
+      work.
+    </p>
+  </div>
+
+  <section id="autocomplete-ceiling" class="subtopic">
+    <h2>Where Autocomplete's Ceiling Actually Is</h2>
+    <p>
+      This isn't a knock on autocomplete-style tools — GitHub Copilot's
+      original inline suggestions and IDE features like IntelliSense are
+      genuinely useful, and most engineers who've used them well know
+      exactly what they're good at: predicting the next few tokens given
+      the code immediately around the cursor. That's a real, bounded
+      job, and they do it fast.
+    </p>
+    <p>
+      The ceiling shows up the moment a task needs information the tool
+      doesn't have in front of it. Inline suggestion tools generally see
+      the current file (and sometimes a few open tabs) — they don't go
+      searching the rest of the repository for a second file that
+      validates headers, they don't run your test suite, and they
+      certainly don't read a failing test's output and go fix the actual
+      cause. Every one of those steps still lands on the human, one
+      keystroke or one file at a time.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... autocomplete-style suggestion?</span>
+      A tool that predicts likely next tokens or lines based on
+      immediate local context (the current file, cursor position, recent
+      edits) and proposes them inline as you type. It is reactive to
+      your keystrokes and scoped to what's visible around the cursor —
+      it does not decide what to look at next, run commands, or judge
+      whether its own suggestion actually solved the problem.
+    </div>
+    <p>
+      That single sentence — "it does not decide what to look at next" —
+      is the whole gap this chapter is about. Autocomplete predicts.
+      An agent decides.
+    </p>
+  </section>
+
+  <section id="the-loop" class="subtopic">
+    <h2>The Plan / Act / Observe / Repeat Loop</h2>
+    <p>
+      What actually happened during Developer B's afternoon wasn't one
+      big prediction — it was a sequence of small, deliberate cycles.
+      Naming that sequence is the single most useful mental model in
+      this entire course, because every coding agent you'll ever use —
+      Claude Code, Cursor's agent mode, GitHub Copilot's agent mode —
+      runs some version of it:
+    </p>
+    <ul>
+      <li><strong>Plan:</strong> given the request, decide what to do
+      next. Not the whole solution up front — usually just the next
+      concrete step ("first, find where CSV headers are defined").</li>
+      <li><strong>Act:</strong> actually do that step using a real tool
+      — search the codebase, read a file, run a shell command, or edit
+      code. This is the part that has no autocomplete equivalent: the
+      agent is not predicting text, it's calling a function that has a
+      real effect (a file gets read, a command gets executed).</li>
+      <li><strong>Observe:</strong> look at what the tool actually
+      returned — the search results, the file's contents, the test
+      runner's output — and treat that as new information, not as a
+      guess to move past.</li>
+      <li><strong>Repeat:</strong> decide the next step based on what
+      was just observed, which might be totally different from what was
+      planned before that observation. Finding the second
+      header-validation file wasn't in the original plan — it showed up
+      because the agent ran the tests and read a failure it didn't
+      expect.</li>
+    </ul>
+    <figure class="diagram-figure">
+      <pre><code>Autocomplete (single-shot, no loop):
+
+  your keystrokes --&gt; predict next tokens --&gt; you decide what's next
+
+
+Coding agent (plan / act / observe / repeat):
+
+        +-------&gt; PLAN: what's the next concrete step?
+        |             |
+        |             v
+   REPEAT        ACT: use a real tool (search, read, run, edit)
+        |             |
+        |             v
+        +------- OBSERVE: read what the tool actually returned
+                        |
+                        v
+              done, or loop again with new information</code></pre>
+      <figcaption>Autocomplete produces one prediction per keystroke and
+      hands control straight back to you. An agent keeps the loop
+      itself, deciding its own next step from what it just learned.</figcaption>
+    </figure>
+    <p>
+      Notice what makes this different from "a bigger, smarter
+      autocomplete": the loop can change direction mid-task based on
+      something it discovers, without a human re-typing a new prompt for
+      every discovery. Developer A would have needed to notice the
+      second header file themselves, then go ask the tool (or write it
+      themselves) to fix that file too. Developer B's agent noticed it
+      because observing a failed test was part of its own loop, not a
+      separate errand for the human.
+    </p>
+  </section>
+
+  <section id="autonomy" class="subtopic">
+    <h2>What "Autonomy" Actually Buys You (and Costs You)</h2>
+    <p>
+      "Autonomy" here has a specific, narrow meaning worth being precise
+      about: the agent can complete several plan/act/observe cycles in a
+      row — reading multiple files, running a command, editing more than
+      one file, re-running a check — without a human approving each
+      individual keystroke or file read along the way. It does not mean
+      "unsupervised forever" or "trusted blindly." Most agent tools still
+      let you review the full set of changes before anything is
+      committed, and later chapters (2 and 3 especially) are built almost
+      entirely around how to scope that autonomy and review its output
+      well.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">export.py — before the agent's turn</span>
+      </div>
+      <pre><code>def csv_headers():
+    return ["id", "name", "amount", "created_at"]
+
+def _validate_headers(headers):
+    # duplicated on purpose in this codebase's legacy export module
+    expected = ["id", "name", "amount", "created_at"]
+    if headers != expected:
+        raise ValueError("header mismatch")</code></pre>
+    </div>
+    <p>
+      This is the second file Developer A didn't know existed. An
+      autocomplete tool sitting in <code>export.py</code> would never
+      surface it — it isn't in view. An agent that ran the test suite as
+      part of its own loop hit the <code>ValueError</code>, read the
+      traceback, opened <code>_validate_headers</code>, and updated the
+      expected list too — a second file edit that happened because the
+      agent observed a real failure, not because it predicted the next
+      line of a file a human had open.
+    </p>
+    <p>
+      That's the trade being made: fewer individual approvals in
+      exchange for a tool that can act on what it discovers. It's a real
+      capability upgrade, and it's also exactly why "review the diff
+      like you'd review a colleague's PR" (Chapter 3) matters more with
+      an agent than it ever did with inline suggestions — the agent
+      touched more files, on its own judgment, than a human typing
+      keystroke-by-keystroke ever would in the same amount of time.
+    </p>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p><strong>Problem:</strong> a learner keeps saying "I already use
+      Copilot, so I already know how coding agents work" — and gets
+      surprised the first time an agent edits three files they never
+      opened.</p>
+      <p><strong>Assumption being made:</strong> that "AI writes code
+      for me" is one capability with different brand names, rather than
+      two structurally different things — a single prediction versus a
+      loop that decides its own next step.</p>
+      <p><strong>What actually distinguishes them:</strong> not
+      "smarter," not "bigger model" — specifically, whether the tool can
+      call real tools (search, read, run, edit) and use what comes back
+      to decide its next move, across more than one step, without a
+      human re-prompting after every discovery.</p>
+      <p><strong>Why this matters before Chapter 2:</strong> you can't
+      scope a task for an agent well (Chapter 2) or review its diff like
+      a senior engineer (Chapter 3) if you're still mentally modeling it
+      as "autocomplete that got lucky." The habits that work for
+      reviewing one suggested line don't scale to reviewing a five-file
+      change the agent made on its own initiative.</p>
+      <p><strong>Working definition to carry forward:</strong> an agent
+      is a system that runs plan/act/observe/repeat using real tools,
+      across multiple steps, with autonomy over how many steps it takes
+      before showing you the result — not a single smarter prediction.</p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember</h2>
+      <ul>
+        <li>Autocomplete-style tools predict the next few tokens from
+        local context and hand control back to you after every
+        suggestion — they don't decide what to look at next.</li>
+        <li>A coding agent runs a plan/act/observe/repeat loop: it picks
+        a next step, uses a real tool (search, read, run, edit), reads
+        what that tool actually returned, and decides its next step from
+        that new information.</li>
+        <li>The "act" step is the structural difference — it's a real
+        effect (a file gets read or edited, a command actually runs),
+        not a text prediction a human still has to apply.</li>
+        <li>Autonomy means completing several loop cycles without
+        per-keystroke approval — it does not mean unsupervised forever;
+        reviewing the result well is still the human's job (Chapter 3).</li>
+        <li>The practical tell: if a tool only ever changes what's
+        visible around your cursor, it's autocomplete. If it can
+        discover something (like a second file) mid-task and act on that
+        discovery on its own, it's running an agent loop.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="what-is">
+    <span class="label">Interview questions (4 levels)</span>
+    See <a href="interview-questions.html">Chapter 1 interview questions</a>.
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

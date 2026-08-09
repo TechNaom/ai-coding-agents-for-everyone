@@ -19,7 +19,8 @@ window.ACAFE_MODULES = [
         id: "chapter-01",
         num: 1,
         title: "Why Coding Agents Aren't Just Autocomplete",
-        description: "What actually changed, and why it matters for how you work."
+        description: "What actually changed, and why it matters for how you work.",
+        path: "chapters/chapter-01-why-coding-agents-arent-just-autocomplete/lesson.html"
       },
       {
         id: "chapter-02",

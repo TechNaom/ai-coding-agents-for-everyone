@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why Coding Agents Aren't Just Autocomplete Interview Questions — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interview questions for Why Coding Agents Aren't Just Autocomplete.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-01">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="practice/index.html">&larr; Back to practice bank</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 1 Interview Questions</span>
+    <span class="reading-time">~14 min</span>
+  </div>
+  <h1>Interview Questions: Why Coding Agents Aren't Just Autocomplete</h1>
+  <p>Grouped by level. Each includes a strong answer, a red flag, and a follow-up.</p>
+
+  <div class="lesson-card">
+    <h2>1. (Beginner) In plain language, what's the actual difference between autocomplete and a coding agent?</h2>
+    <p><strong>Strong answer:</strong> Autocomplete predicts the next few tokens or lines from local context (the current file, cursor position) and stops after each suggestion, handing control back to the human. A coding agent runs a loop — plan, act, observe, repeat — where it decides its own next step, uses real tools (search, read, run, edit), and reacts to what those tools actually return, across multiple steps, before showing the human anything.</p>
+    <p><strong>Red flag:</strong> Says an agent is "just a smarter or bigger autocomplete," treating it as a difference of scale rather than structure (a loop that decides its own next step versus a single prediction).</p>
+    <p><strong>Follow-up:</strong> "What's one thing an agent can do that inline-suggestion autocomplete structurally cannot, no matter how good the underlying model gets?"</p>
+    <p><strong>What this proves:</strong> Understands the distinction is architectural (loop + real tool calls) rather than "better predictions."</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>2. (Beginner) What does "the agent observed a test failure and fixed a second file" actually mean, mechanically?</h2>
+    <p><strong>Strong answer:</strong> The agent ran the test suite as a real tool call, read the actual output (a traceback pointing at a specific function), and used that new information to decide its next step — opening and editing the file the traceback pointed to. Nothing about that step was predicted from the cursor's local context; it came from a tool's real return value.</p>
+    <p><strong>Red flag:</strong> Describes it vaguely as "the AI figured it out" without naming the actual mechanism (a tool call happened, real output came back, that output changed the plan).</p>
+    <p><strong>Follow-up:</strong> "What would have to be true for the agent to miss that second file entirely?"</p>
+    <p><strong>What this proves:</strong> Can explain the loop concretely rather than treating agent behavior as unexplainable magic.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>3. (Intermediate) Does "autonomy" in a coding agent mean it should run completely unsupervised?</h2>
+    <p><strong>Strong answer:</strong> No. Autonomy here specifically means completing several plan/act/observe cycles — reading multiple files, running commands, editing more than one file — without a human approving each individual step along the way. It does not mean the human's review disappears; most agent tools still surface the full set of changes for review before anything is committed, and reviewing that output well is a distinct, necessary skill (covered in Chapter 3).</p>
+    <p><strong>Red flag:</strong> Equates "autonomous" with "trusted blindly" or "no human involved at any point," or conversely dismisses autonomy as meaningless because "a human reviews it anyway."</p>
+    <p><strong>Follow-up:</strong> "If autonomy doesn't remove the need for review, what does it actually change about the human's job?"</p>
+    <p><strong>What this proves:</strong> Distinguishes "fewer approval checkpoints during the task" from "no accountability after the task" — a distinction that matters a lot once agents touch production code.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>4. (Intermediate) A colleague says "Copilot's inline suggestions and Copilot's agent mode are basically the same feature with a different UI." How do you respond?</h2>
+    <p><strong>Strong answer:</strong> Push back on "basically the same." Inline suggestions predict text reactively as you type and never initiate a tool call on their own; agent mode can search the repo, read files it wasn't shown, run commands, and edit multiple files across several decided-for-itself steps before returning control. Same underlying model family, structurally different capability — the UI difference is a symptom of the loop existing, not the cause of the difference.</p>
+    <p><strong>Red flag:</strong> Agrees it's "just a UI difference," or can't name a concrete capability (multi-file edits from a discovery, running its own commands) that inline suggestions don't have.</p>
+    <p><strong>Follow-up:</strong> "What's a task you'd trust to agent mode that you wouldn't bother trying with inline suggestions alone, and why?"</p>
+    <p><strong>What this proves:</strong> Doesn't conflate "same vendor, same model" with "same capability" — catches a common but consequential misconception.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>5. (Senior) How would you explain to a skeptical senior engineer why "review the diff" needs to change now that agents are involved, not just "review it like always"?</h2>
+    <p><strong>Strong answer:</strong> With inline suggestions, a human typed or approved essentially every line, so the review surface roughly tracked human intent line by line. With an agent, the set of touched files can include ones the human never opened — discovered mid-task from an observation (a failing test, a search result) — so the reviewer can no longer assume "I know what's in scope because I know what I asked for." The review has to actively verify the full diff against the original request, specifically checking for changes that weren't obviously implied by the ask, not just skim for style.</p>
+    <p><strong>Red flag:</strong> Says review doesn't need to change at all ("code is code"), missing that the discovery process itself widens the plausible scope of unreviewed changes.</p>
+    <p><strong>Follow-up:</strong> "Give a concrete example of a change an agent might make that a diff-skim would miss but a scope-check would catch."</p>
+    <p><strong>What this proves:</strong> Connects the structural difference (loop-driven discovery) to a concrete change in engineering practice, not just a conceptual talking point.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>6. (Senior) What's a failure mode that's specific to the plan/act/observe loop and doesn't really exist for autocomplete?</h2>
+    <p><strong>Strong answer:</strong> A loop that misinterprets an observation and compounds the mistake across several more steps before a human sees anything — for example, misreading a test failure's actual cause, "fixing" the wrong file, then observing a still-failing test and layering a second wrong fix on top. Autocomplete can't compound like this because there's no multi-step loop for an early misstep to propagate through — each suggestion is independent and the human catches problems one line at a time. (This chapter names the mental model; Chapter 5 covers loop failure modes like this in depth.)</p>
+    <p><strong>Red flag:</strong> Names a failure mode that's just as applicable to autocomplete (like "gives a wrong suggestion"), showing they haven't isolated what's specific to the loop structure.</p>
+    <p><strong>Follow-up:</strong> "How would scoping the task tightly up front (Chapter 2) reduce the chance of that compounding?"</p>
+    <p><strong>What this proves:</strong> Can reason about failure modes that follow directly from a system's structure, not just recite generic "AI can be wrong" caveats.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>7. (Architect) You're setting engineering-org guidelines for when a task is appropriate to hand to an autonomous coding agent versus doing it with inline-suggestion assistance only. What's your framework?</h2>
+    <p><strong>Strong answer:</strong> Frame it around how well-defined "done" is and how contained the blast radius of an unreviewed intermediate step would be. Tasks with a clear, checkable success condition (tests pass, a specific field appears in output) and low-risk intermediate states are good agent-loop candidates — the loop can self-correct against that check. Tasks with ambiguous success criteria or where a wrong intermediate edit could be dangerous even before review (touching auth logic, deployment config) should either stay inline-suggestion-only or run the agent in a tightly scoped, sandboxed way with mandatory human checkpoints — anticipating Module 5's security content rather than treating this as a blanket "agents are safe/unsafe" call.</p>
+    <p><strong>Red flag:</strong> Gives a blanket rule ("always use agents" or "never trust agents on production code") without a framework tied to task properties like verifiability and blast radius.</p>
+    <p><strong>Follow-up:</strong> "How would this framework change for a codebase with a strong, fast test suite versus one with almost no test coverage?"</p>
+    <p><strong>What this proves:</strong> Architect-level judgment — builds a reusable decision framework instead of a one-off opinion, and anticipates how it interacts with later security material.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>8. (Architect) How would you justify, to a leadership team funding developer tooling, why "we already bought Copilot" isn't the same investment as "we're rolling out agentic coding tools"?</h2>
+    <p><strong>Strong answer:</strong> Frame it as a different capability with a different risk and training profile, not an upgrade of the same line item. Inline suggestions need almost no process change — engineers stay in full control line by line. Agentic tools change what "review" means (question 5), introduce new failure modes (question 6), and raise questions about permissions and blast radius (question 7) that need actual org decisions — sandboxing, what commands an agent can run in CI, who's accountable for an agent-authored change. The pitch to leadership should separate "cost of the tool" from "cost of the process changes needed to use it safely," since skipping the second one is where real incidents come from.</p>
+    <p><strong>Red flag:</strong> Presents agentic tools as a drop-in replacement with no process implications, or conversely treats them as too risky to justify any investment without engaging with where the real value is (the loop handling multi-step, multi-file work).</p>
+    <p><strong>Follow-up:</strong> "What's the smallest pilot you'd run to validate this investment before a full rollout?"</p>
+    <p><strong>What this proves:</strong> Can translate a technical capability distinction into an organizational investment and risk conversation — a core architect communication skill.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="practice/index.html">&larr; Practice Bank</a>
+    <a href="project/index.html">Build the Project &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

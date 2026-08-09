@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why Coding Agents Aren't Just Autocomplete Quiz — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interactive quiz for Why Coding Agents Aren't Just Autocomplete.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-01" data-chapter-id="chapter-01">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="lesson.html">&larr; Back to the lesson</a></p>
+
+  <span class="chapter-badge">Chapter 1 Quiz</span>
+  <h1>Why Coding Agents Aren't Just Autocomplete</h1>
+  <p>Seven questions. Fill in the blank, then check your answers.</p>
+
+  <div class="quiz-progress-wrap" aria-hidden="true">
+    <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+  </div>
+
+  <form onsubmit="return false;">
+    <div class="quiz-question">
+      <label for="q1"><span class="q-num">1</span> Autocomplete-style tools predict the next tokens from local context and hand control back to you after every __________.</label>
+      <div class="fib-row">
+        <input type="text" id="q1" class="fib-blank" data-answers="suggestion,prediction" aria-label="Answer for question 1">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q2"><span class="q-num">2</span> The four steps of the agent loop, in order, are plan, act, __________, repeat.</label>
+      <div class="fib-row">
+        <input type="text" id="q2" class="fib-blank" data-answers="observe" aria-label="Answer for question 2">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q3"><span class="q-num">3</span> In the "act" step, the agent uses a real __________ — for example searching the codebase, reading a file, running a command, or editing code — rather than just predicting text.</label>
+      <div class="fib-row">
+        <input type="text" id="q3" class="fib-blank" data-answers="tool" aria-label="Answer for question 3">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q4"><span class="q-num">4</span> In the CSV export example, the agent discovered a second file responsible for the failing test by __________ the test suite and reading its output, not by predicting the next line.</label>
+      <div class="fib-row">
+        <input type="text" id="q4" class="fib-blank" data-answers="running" aria-label="Answer for question 4">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q5"><span class="q-num">5</span> "Autonomy" in this chapter means the agent can complete several loop cycles without per-keystroke __________ — not that it's unsupervised forever.</label>
+      <div class="fib-row">
+        <input type="text" id="q5" class="fib-blank" data-answers="approval,approvals" aria-label="Answer for question 5">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q6"><span class="q-num">6</span> Inline suggestion tools like IntelliSense are generally scoped to the __________ file (and sometimes a few open tabs), not the whole repository.</label>
+      <div class="fib-row">
+        <input type="text" id="q6" class="fib-blank" data-answers="current" aria-label="Answer for question 6">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q7"><span class="q-num">7</span> The practical tell for an agent versus autocomplete: an agent can discover something mid-task and __________ on that discovery on its own, without a new prompt from the human.</label>
+      <div class="fib-row">
+        <input type="text" id="q7" class="fib-blank" data-answers="act" aria-label="Answer for question 7">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div id="check-all-wrap">
+      <button type="button" id="check-all-btn" class="check-btn">Check All Answers</button>
+      <span id="quiz-score"></span>
+    </div>
+
+    <div class="quiz-celebration" id="quiz-celebration" aria-live="polite">
+      Perfect score. Chapter complete.
+    </div>
+  </form>
+
+  <div class="chapter-nav">
+    <a href="lesson.html">&larr; Back to Lesson</a>
+    <a href="exercises/index.html">Exercises &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/quiz-engine.js"></script>
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

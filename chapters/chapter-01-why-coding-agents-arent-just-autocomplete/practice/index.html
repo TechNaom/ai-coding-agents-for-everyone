@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why Coding Agents Aren't Just Autocomplete Practice Bank — AI Coding Agents for Everyone</title>
+<meta name="description" content="Practice bank for Why Coding Agents Aren't Just Autocomplete.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-01">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../exercises/index.html">&larr; Back to exercises</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 1 Practice Bank</span>
+    <span class="reading-time">~20 min</span>
+  </div>
+  <h1>Practice Bank: Why Coding Agents Aren't Just Autocomplete</h1>
+  <p>Short scenarios, one judgment question each — practice telling
+  loop-driven agent behavior apart from single-shot prediction in
+  realistic, sometimes ambiguous situations.</p>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · New hire</span>
+    <h3>The onboarding assumption</h3>
+    <p>A new hire says "I've used Copilot for two years, so agent mode
+    should feel exactly the same, just with a chat box." What's the one
+    expectation you'd correct before their first real task with an
+    agent, and why does it matter for that first task specifically?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Debugging</span>
+    <h3>The silent multi-file fix</h3>
+    <p>An engineer asks an agent to "fix the flaky login test." The
+    agent comes back having edited the test file and a shared fixture
+    used by four other test files. The engineer is surprised the
+    fixture changed at all. Using the plan/act/observe loop, explain how
+    that fixture edit plausibly happened without the agent going rogue.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Estimation</span>
+    <h3>The time-savings pitch</h3>
+    <p>A team lead pitches "coding agents will save us 50% of dev time
+    because they're just faster autocomplete." What's misleading about
+    framing the value this way, based on what you now know actually
+    changed (loop and tool use, not raw prediction speed)?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Trust</span>
+    <h3>The "it ran the tests, so it's fine" trap</h3>
+    <p>An agent reports "all tests pass" after a multi-file change. A
+    reviewer approves the PR on that basis alone. What does "tests
+    pass" actually verify about an agent-driven change, and what does it
+    not verify — especially compared to a change a human made one line
+    at a time with inline suggestions?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Tool choice</span>
+    <h3>The wrong tool for a tiny task</h3>
+    <p>A developer fires up an autonomous coding agent to rename one
+    local variable across a single 20-line function they already have
+    open. It works, but takes noticeably longer than just typing the
+    rename with inline-suggestion help. What does this suggest about
+    when the agent loop's overhead is worth paying, versus when it
+    isn't?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Incident review</span>
+    <h3>The compounding misread</h3>
+    <p>During an incident postmortem, someone notes the agent
+    misinterpreted an early test failure, "fixed" the wrong file, then
+    observed a second failure and made a second wrong edit before a
+    human caught it. Where in the plan/act/observe/repeat loop did this
+    go wrong, and is this a failure mode autocomplete-style tools could
+    have produced in the same way?</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../exercises/index.html">&larr; Exercises</a>
+    <a href="../interview-questions.html">Interview Questions &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>
