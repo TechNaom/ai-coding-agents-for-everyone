@@ -111,7 +111,7 @@ window.ACAFE_MODULES = [
   {
     title: "Module 5 — Production & Safety",
     summary: "What changes when an agent operates on a live codebase and in CI.",
-    examPath: null,
+    examPath: "assessments/written-exams/module-5-exam.md",
     chapters: [
       {
         id: "chapter-11",
