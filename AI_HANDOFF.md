@@ -21,7 +21,7 @@ EVALUATE → SECURE → OPTIMIZE → SCALE → ARCHITECT progression; layered
 depth for 5 personas; story-first; no shallow tutorials; 13 chapters,
 don't pad; all content original.
 
-## Current state (as of 2026-08-09, Modules 1-4 complete, homepage live)
+## Current state (as of 2026-08-09, Modules 1-4 complete, Chapter 11 live)
 
 **Read `PROJECT_STATE.md` for the authoritative, up-to-date status.**
 
@@ -143,48 +143,58 @@ No website root `index.html` yet (Step 9, comes later).
 
 ## Current task
 
-**Modules 1-4 (Chapters 1-10) are all built and live.** Chapter 10
-closed Module 4 (its only chapter) with a substantial 3-file flawed-PR
-lab and a real code-review exam — read `quality-audits/chapter-10-audit.md`.
-The homepage, roadmap, and Module 1/2/4 written exams are all done.
-CI now also runs `practice/solution.py` files (was a known gap since
-Chapter 7). Next: Module 5, Chapter 11 ("Security: Sandboxing,
-Permissions, Destructive Commands," Advanced) — this is where the
-security previews Chapters 7-9 already made get resolved in full:
-`_safe_path`'s harness-vs-model-trusted boundary (Ch7), the shell
-denylist/allowlist trade-off and the unresolved `git_commit` question
-(Ch8), MCP's own connection-failure surface (Ch9). Read Chapters 7-9
-fully first — this chapter should feel like it's closing loops those
-three opened, not starting fresh. Then Chapter 12 ("Putting an Agent
-in CI," Advanced) ships Module 5's lab (per CURRICULUM_MAP.md: "wire a
-minimal agent into a CI check") — likely a genuinely real, working CI
-integration, consistent with how this course already treats its own
-CI as a live, tested artifact rather than a described concept. Module
-5's assessment is a "production-readiness checklist exam" — likely
-another real written exam file once both chapters land.
+**Modules 1-4 (Chapters 1-10) are complete; Chapter 11 (Module 5's
+first chapter) is also live.** Chapter 11 resolved everything Chapters
+7-9 deliberately left open: a real fail-closed permission-scope system
+(`TOOL_POLICY`, `ALLOWED`/`REQUIRES_CONFIRMATION`/`BLOCKED`,
+unclassified tools default to `BLOCKED`), `confirm_with_human()`
+denying on `EOFError` so an unattended run never hangs, `git_commit`
+finally shipped with no `confirm` parameter, and honestly-scoped
+resource-limit sandboxing (real `RLIMIT_CPU`/`RLIMIT_AS`, NOT claimed
+as container-grade isolation). Read `quality-audits/chapter-11-audit.md`.
+Next: Chapter 12 ("Putting an Agent in CI," Advanced) — completes
+Module 5. Build directly on Chapter 11's `project/solution.py` — its
+fail-closed-on-EOFError confirmation behavior is EXACTLY what makes an
+agent safe to run unattended in CI (Chapter 11's own closing thought-
+process section names this connection explicitly, forward-referencing
+Chapter 12). Read Chapter 11 fully first. This chapter should actually
+wire a real CI check, consistent with how this course already treats
+its own CI as a live, tested artifact rather than a described concept.
+After Chapter 12, write `assessments/written-exams/module-5-exam.md`
+("production-readiness checklist exam" per CURRICULUM_MAP.md) — closes
+Module 5. Then Chapter 13 (capstone, Module 6) is the final chapter of
+the whole course.
 
-**Speed note**: the user asked to speed up the build by running
-independent work in parallel — this has now been validated twice.
-Chapter 9 + the Module 1/2 exams (needed `chapters-data.js` edit
-sequencing) and Chapter 10 + the CI-extension task (fully disjoint
-files, zero coordination) both ran cleanly as concurrent background
-agents. Prefer file-disjoint task pairings when available. Chapters 11
-and 12 likely need to run sequentially, though — 12's CI-integration
-lab probably builds on 11's security model — don't force parallelism
-where the content genuinely depends on order.
+**Speed note**: parallel background-agent builds have now been
+validated twice (Chapter 9 + Module 1/2 exams; Chapter 10 + the CI
+extension). Chapters 11 and 12 were correctly built sequentially since
+12 depends on 11's exact permission system — keep doing that when
+content genuinely depends on order, don't force parallelism just for
+speed.
+
+**Local-testing gotcha, learned from Chapter 11**: `scripts/local_check.sh`
+must be run with `< /dev/null` (or from a genuinely non-interactive
+shell) once a chapter's code calls `input()` for a live confirmation
+demo (Chapter 11 onward) — an open stdin in an interactive shell makes
+`input()` block for real instead of hitting `EOFError` the way it does
+in CI (confirmed against the real GitHub Actions log for Chapter 11's
+commit: `input()` hit EOF immediately there, denied, and continued
+correctly). A "failure" without `< /dev/null` is a local-shell
+artifact, not a real bug — verify against `< /dev/null` before
+concluding something is broken.
 
 **Known gaps to close when possible, not blocking**: Chapter 7's
 `project/starter.py`/`solution.py` and Chapter 9's full agent-loop
 path against a live model haven't been re-observed live yet (disclosed
 in their respective quality-audits) — re-run once Ollama is reliably
-reachable; it hung across all four build sessions so far that tried
+reachable; it hung across all five build sessions so far that tried
 (check `ollama ps` / try a plain completion first, every time, don't
 assume resolved).
 
 ## Next task after that
 
-Continue module by module: Module 5 (Chapters 11-12) then Module 6
-(Chapter 13: capstone). Don't mass-generate ahead of validation.
+Module 6 (Chapter 13: capstone) is the last chapter of the whole
+course. Don't mass-generate ahead of validation.
 
 ## Important architectural decisions (see PROJECT_STATE.md for full detail)
 

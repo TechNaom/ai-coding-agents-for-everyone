@@ -247,6 +247,38 @@ production-grade, interview-ready, original content only).
       (`assessments/written-exams/module-4-exam.md`), per
       CURRICULUM_MAP.md's stated assessment type for this module.
       **Module 4 is now fully built and live.**
+- [x] **Chapter 11 built and live — starts Module 5**: "Security:
+      Sandboxing, Permissions, Destructive Commands." Resolves three
+      things Chapters 7-9 deliberately left open. Real three-tier
+      permission-scope system (`ALLOWED`/`REQUIRES_CONFIRMATION`/
+      `BLOCKED`) checked in the harness before dispatch, defaulting
+      unclassified tools to `BLOCKED` (fail closed); `confirm_with_human()`
+      reads real stdin and denies on `EOFError` — verified both locally
+      (with stdin redirected from `/dev/null`, matching CI) and on the
+      real GitHub Actions runner, where `input()` correctly hit EOF
+      immediately and the script denied-and-continued rather than
+      hanging. `git_commit` finally shipped with no `confirm` parameter
+      at all. Honestly-scoped sandboxing: real `RLIMIT_CPU`/`RLIMIT_AS`
+      kernel limits and a stripped subprocess environment, independently
+      verified (a CPU-bomb actually SIGKILL'd, a 1GB allocation actually
+      MemoryError'd) — explicitly NOT claimed as container/VM-grade
+      isolation, and `RLIMIT_NPROC` deliberately omitted after testing
+      showed it's host-account-scoped, not subprocess-scoped, so it's a
+      worse mitigation than none. Four-category threat model (data
+      loss, scope escape, supply-chain/credential exposure, irreversible
+      external effects) plus a retrospective least-privilege audit of
+      every Chapter 7-9 tool. Ships the real Module 5 lab ("add
+      permission scoping to the Module 3 agent," per CURRICULUM_MAP.md).
+      Fixed two consistency gaps on review: `lesson.html` was missing
+      the interview-questions callout and footer GitHub link every
+      prior chapter's `lesson.html` includes — worth a final visual
+      pass on future chapters' lesson.html against this checklist.
+      **Note for local testing**: this chapter's `project/solution.py`
+      calls `input()` for a live confirmation demo — running
+      `scripts/local_check.sh` from an interactive shell with open
+      stdin will make it hang/appear to fail; always run with
+      `< /dev/null` or in a genuinely non-interactive shell to match
+      CI's actual behavior.
 
 ## Pending / Not Started
 
@@ -326,36 +358,42 @@ scenarios/8 interview questions minimum, tested code before writing).
 
 ## Next Recommended Task
 
-**Modules 1-4 (Chapters 1-10) are all built and live.** The homepage,
-roadmap page, and Module 1/2/4 written exams are also done (Module 3
-deliberately has no separate written-exam file — its assessment is the
-code-review checklist embedded in Chapter 9's practice bank, per
-CURRICULUM_MAP.md). Next: Module 5 — Chapters 11 and 12. Chapter 11
-("Security: Sandboxing, Permissions, Destructive Commands," Advanced)
-builds directly on the security previews Chapters 7-9 already made
-(`_safe_path`, the shell-command denylist/allowlist trade-off, the
-unresolved `git_commit` question, MCP's own connection-failure
-surface) — this is where those previews get resolved in full. Chapter
-12 ("Putting an Agent in CI," Advanced) is where Module 5's lab ships
-("wire a minimal agent into a CI check" per the curriculum map) —
-likely a genuinely real, working CI integration given how this course
-already treats its own CI as a live, tested artifact. Read Chapters
-7-10 fully first. Module 5's assessment is a "production-readiness
-checklist exam" — likely another real written exam file
-(`assessments/written-exams/module-5-exam.md`), written once both
-chapters are done.
+**Modules 1-4 (Chapters 1-10) are complete; Module 5's first chapter
+(11) is also live.** Next: Chapter 12 ("Putting an Agent in CI,"
+Advanced) — completes Module 5. This is where the module's lab ships
+("wire a minimal agent into a CI check" per CURRICULUM_MAP.md) — build
+on Chapter 11's exact permission-scope system (`TOOL_POLICY`,
+`confirm_with_human`'s fail-closed-on-EOFError behavior is PRECISELY
+what makes an agent safe to run unattended in CI, and Chapter 11's own
+closing thought-process section already named this connection
+explicitly). Read Chapter 11 fully first — its `project/solution.py`
+is the direct foundation. Consider having Chapter 12 actually wire a
+real CI check into a small demo/sample repo structure (this course
+already treats its own CI as a live, tested artifact, not just
+described — keep that standard). After Chapter 12, write
+`assessments/written-exams/module-5-exam.md` ("production-readiness
+checklist exam" per the curriculum map) — this closes Module 5.
 
-Continue parallelizing where genuinely independent — the Chapter 9 +
-exams pairing (needed `chapters-data.js` sequencing) and the Chapter
-10 + CI-extension pairing (fully disjoint files, zero coordination
-needed) both worked cleanly; prefer file-disjoint pairings when
-possible. Chapters 11 and 12 likely need to be sequential though (12
-builds on 11's security model for its CI-integration lab) — don't
-force parallelism where the content genuinely depends on order.
+Then Module 6: Chapter 13, the capstone (architecture challenge,
+Level 4) — the final chapter of the entire course.
+
+Continue parallelizing where genuinely independent, but Chapters 11
+and 12 were correctly built sequentially since 12 depends on 11's
+exact permission system — don't force parallelism where content
+genuinely depends on order. The Module 5 exam (after both chapters)
+could potentially run alongside early Chapter 13 planning/research if
+that becomes independent enough, but check dependencies before
+assuming.
 
 Also outstanding, not blocking: re-run Chapter 7's `project/starter.py`/
 `solution.py` and Chapter 9's full agent-loop-against-a-live-model path
 once Ollama is reliably reachable (both disclosed as not-live-verified
-due to a persistent sandbox-wide generation hang across four build
+due to a persistent sandbox-wide generation hang across five build
 sessions now — check `ollama ps` / try a plain completion before
-assuming it's resolved, every time).
+assuming it's resolved, every time). Also: when running
+`scripts/local_check.sh` locally on Chapter 11 or later, always use
+`< /dev/null` (or a genuinely non-interactive shell) — a chapter whose
+code calls `input()` for a live confirmation demo will hang/appear to
+fail if your shell's stdin stays open, which does not reflect real CI
+behavior (CI's stdin is already closed, confirmed via the real GitHub
+Actions log for Chapter 11's commit).
