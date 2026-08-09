@@ -39,11 +39,16 @@ Freshly scaffolded from `mcp-for-everyone`'s proven structure:
   itself. Use these markers, don't hardcode chapter paths in CI again.
 - **Critical difference from `mcp-for-everyone`**: this course's SDK
   (`claude-agent-sdk`) requires a real `ANTHROPIC_API_KEY` and costs
-  real money to run — MCP's course was entirely free/local. This is an
-  **unresolved open decision** (see PROJECT_STATE.md) — do not write
-  Chapter 7 or any chapter that calls the SDK until it's resolved with
-  the user. Chapters 1–3 (Module 1, conceptual/no-SDK) can proceed
-  without this blocker.
+  real money to run — MCP's course was entirely free/local. **RESOLVED
+  2026-08-09**: every exercise/solution.py that calls the model MUST
+  pin `ClaudeAgentOptions(model="claude-haiku-4-5", max_turns=<low>)`
+  to keep real cost to fractions-of-a-cent/low-cents per run, and state
+  that approximate cost in the chapter's lesson text. See
+  `PROJECT_STATE.md`'s Architecture Decisions for the full reasoning
+  (a fully open-source/local-model alternative was considered and
+  rejected as a scope change from this course's actual subject). Still
+  need to configure the `ANTHROPIC_API_KEY` CI secret when Chapter 7 is
+  built.
 
 No chapter content exists yet. No website (`index.html`) yet.
 
@@ -51,8 +56,9 @@ No chapter content exists yet. No website (`index.html`) yet.
 
 - Chapter folders: `chapters/chapter-NN-kebab-slug/`, matching
   `mcp-for-everyone`.
-- Repo name: `ai-coding-agents-for-everyone`, GitHub org assumed
-  `technaom` (not yet confirmed/created).
+- Repo name: `ai-coding-agents-for-everyone`, GitHub org `TechNaom`
+  (confirmed, public, `main` branch — same convention as
+  `mcp-for-everyone`).
 
 ## What NOT to change
 
@@ -64,8 +70,10 @@ No chapter content exists yet. No website (`index.html`) yet.
   same discipline that caught real bugs throughout `mcp-for-everyone`'s
   build. This is non-negotiable, see that repo's `AI_HANDOFF.md` for
   the full list of what testing-before-writing caught there.
-- Don't write any chapter that calls the Claude Agent SDK until the
-  `ANTHROPIC_API_KEY` open decision is resolved with the user.
+- When writing any chapter that calls the Claude Agent SDK, always pin
+  `model="claude-haiku-4-5"` and a low `max_turns` — this is the
+  resolved cost policy, not optional. State the approximate real cost
+  in the lesson text.
 - Don't hardcode a chapter-specific case into `ci.yml` again — use the
   `# CI: LONG_RUNNING_SERVER` / `# CI: NEEDS_LIVE_SERVER=` markers.
 - Don't copy lesson content, examples, or project stories from
@@ -74,19 +82,18 @@ No chapter content exists yet. No website (`index.html`) yet.
 
 ## Current task
 
-Resolve the `ANTHROPIC_API_KEY` open decision with the user (real
-cost/scope question, not a technical detail to guess at). Then build
-Chapters 1–3 (Module 1: "Using Coding Agents Well" — conceptual, no SDK
-calls needed) while that decision is pending.
+Build Chapters 1–3 (Module 1: "Using Coding Agents Well" — conceptual,
+no SDK calls needed).
 
 ## Next task after that
 
-Chapter 7 ("Build: A Minimal Coding Agent") as the reference chapter,
-once the API-key question is resolved — verify the SDK's actual API
-before writing any code sample. Then continue module by module per
-`docs/curriculum/CURRICULUM_MAP.md`, validating each with a
-`quality-audits/chapter-0N-audit.md` before moving on. Don't
-mass-generate ahead of validation.
+Chapter 7 ("Build: A Minimal Coding Agent") as the reference chapter —
+verify the SDK's actual API surface before writing any code sample,
+pin `model="claude-haiku-4-5"` per the resolved cost policy, and
+configure the `ANTHROPIC_API_KEY` CI secret at that point. Then
+continue module by module per `docs/curriculum/CURRICULUM_MAP.md`,
+validating each with a `quality-audits/chapter-0N-audit.md` before
+moving on. Don't mass-generate ahead of validation.
 
 ## Important architectural decisions (see PROJECT_STATE.md for full detail)
 

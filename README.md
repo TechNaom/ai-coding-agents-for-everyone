@@ -16,8 +16,10 @@ This course follows the same philosophy as `mcp-for-everyone`:
 - No signup required to *read* the course. **Exception**: chapters that
   actually run the Claude Agent SDK need a real `ANTHROPIC_API_KEY` —
   unlike `mcp-for-everyone`, this course cannot be fully hands-on for
-  free. This is called out explicitly wherever it applies, per this
-  course's no-hype standard.
+  free. Every hands-on example pins the cheapest model (Haiku) with a
+  low turn cap to keep real cost to fractions-of-a-cent/low-cents per
+  run, and each affected chapter states the approximate cost
+  explicitly, per this course's no-hype standard.
 - Browser-first learning pages.
 - Hands-on code and projects, tested against the real SDK before being
   written into a lesson.

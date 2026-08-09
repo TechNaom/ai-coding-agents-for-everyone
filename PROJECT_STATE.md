@@ -27,17 +27,21 @@ only).
   up much later). MCP Python SDK (`mcp[cli]`) also used for the
   tool-connection chapter, reusing `mcp-for-everyone`'s verified
   patterns rather than re-discovering them.
-- **Cost/CI implication (new, didn't apply to `mcp-for-everyone`):**
-  chapters that actually invoke the Claude Agent SDK's model calls need
-  a real `ANTHROPIC_API_KEY` and cost real money per call. This breaks
-  the "fully free and hands-on" philosophy other TechNaom courses have
-  — call this out explicitly in every affected chapter, per the
-  no-hype standard. CI is wired to use an `ANTHROPIC_API_KEY` repo
-  secret if configured; solution.py files that need it should detect
-  its absence and skip gracefully (not fail CI) rather than assume it's
-  always present. **This secret has not been configured yet** — decide
-  and configure before Chapter 7 (the reference chapter) needs to
-  actually run.
+- **Cost policy (RESOLVED 2026-08-09):** chapters that invoke the
+  Claude Agent SDK's model calls need a real `ANTHROPIC_API_KEY` and
+  cost real money per call — this breaks the "fully free" philosophy
+  other TechNaom courses have, and that's stated explicitly rather than
+  hidden. Mitigation: every exercise/solution.py that calls the model
+  MUST pin `ClaudeAgentOptions(model="claude-haiku-4-5", max_turns=<low>)`
+  — Haiku is the cheapest model, confirmed real/documented via research
+  — keeping real cost per run to fractions-of-a-cent/low-cents. State
+  the approximate cost in the chapter's lesson text, don't bury it. CI
+  is wired to use an `ANTHROPIC_API_KEY` repo secret if configured;
+  solution.py files that need it should detect its absence and skip
+  gracefully (not fail CI). **This secret has not been configured
+  yet** — configure it when Chapter 7 (the reference chapter) is
+  actually built, with a low budget/rate limit given the Haiku-only
+  policy.
 - **CI generalization:** `mcp-for-everyone`'s CI hardcoded a
   chapter-6-specific case for a long-running server. Generalized here
   (and should be backported to `mcp-for-everyone` if convenient) into a
@@ -63,10 +67,19 @@ only).
 
 ## Pending / Not Started
 
-- [ ] Decide and configure the `ANTHROPIC_API_KEY` repo secret question
-      (see Open Decisions) before building Chapter 7.
-- [ ] Step 3 continued: `CONTRIBUTING.md`, `CHANGELOG.md` (can largely
-      copy `mcp-for-everyone`'s and adapt).
+- [x] `ANTHROPIC_API_KEY` cost decision: **confirmed 2026-08-09** — keep
+      the Claude Agent SDK (the course's actual subject; a generic
+      open-source/local-model framework was considered and rejected as
+      a scope change from Discovery), but every exercise and code
+      sample must pin `ClaudeAgentOptions(model="claude-haiku-4-5", ...)`
+      (confirmed real/documented via research) and a low `max_turns`
+      cap, keeping real cost per run in the fractions-of-a-cent to
+      low-cents range. State this cost explicitly in every chapter that
+      calls the SDK — don't bury it. Still need to: configure an
+      `ANTHROPIC_API_KEY` repo secret for CI once Chapter 7 exists (low
+      budget given the Haiku-only policy).
+- [x] `CONTRIBUTING.md`, `CHANGELOG.md` — done, adapted from
+      `mcp-for-everyone`.
 - [ ] Step 4: Build Chapter 7 ("Build: A Minimal Coding Agent") as the
       reference chapter — verify the Claude Agent SDK's actual API
       surface (imports, agent-loop construction, tool-definition
@@ -88,18 +101,16 @@ only).
 
 ## Open Decisions
 
-- **`ANTHROPIC_API_KEY` for CI / hands-on testing**: this course, unlike
-  every prior TechNaom course, has chapters that cost real money to run
-  hands-on. Needs a decision: (a) who funds a CI secret for automated
-  testing, (b) whether learner-facing exercises should default to a
-  free/mocked mode with real-API as opt-in, (c) how to phrase the
-  README's "no signup required" claim honestly given this exception.
-  Not yet resolved — resolve before Chapter 7.
+- **`ANTHROPIC_API_KEY` cost policy: RESOLVED 2026-08-09** — see
+  "Pending / Not Started" above. Haiku-only, low `max_turns`, cost
+  stated explicitly per chapter. Still open: exact CI secret budget/
+  rate-limit configuration, to be set when Chapter 7 is built.
 - **License**: MIT (code) + CC BY 4.0 (content), matching
-  `mcp-for-everyone` — files created, not yet confirmed with user for
-  this specific repo.
-- **GitHub org/publish target**: assumed `technaom/ai-coding-agents-for-everyone`
-  by convention — not yet created or confirmed.
+  `mcp-for-everyone` — confirmed 2026-08-09, same pattern approved for
+  that repo.
+- **GitHub org/publish target**: confirmed 2026-08-09 —
+  `github.com/TechNaom/ai-coding-agents-for-everyone`, public, `main`
+  branch, matching `mcp-for-everyone`'s exact convention.
 
 ## Design Standards
 
