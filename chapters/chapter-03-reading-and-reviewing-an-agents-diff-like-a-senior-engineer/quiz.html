@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reading and Reviewing an Agent's Diff Like a Senior Engineer Quiz — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interactive quiz for Reading and Reviewing an Agent's Diff Like a Senior Engineer.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-03" data-chapter-id="chapter-03">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="lesson.html">&larr; Back to the lesson</a></p>
+
+  <span class="chapter-badge">Chapter 3 Quiz</span>
+  <h1>Reading and Reviewing an Agent's Diff Like a Senior Engineer</h1>
+  <p>Eight questions. Fill in the blank, then check your answers.</p>
+
+  <div class="quiz-progress-wrap" aria-hidden="true">
+    <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+  </div>
+
+  <form onsubmit="return false;">
+    <div class="quiz-question">
+      <label for="q1"><span class="q-num">1</span> A diff can pass its own acceptance check and still be wrong, because a passing test proves the check was __________, not that the underlying problem is actually fixed.</label>
+      <div class="fib-row">
+        <input type="text" id="q1" class="fib-blank" data-answers="satisfied,met" aria-label="Answer for question 1">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q2"><span class="q-num">2</span> An agent has no inherited "why we do things this way here" unless you told it in the __________, unlike a human colleague who absorbs that just by working on the team.</label>
+      <div class="fib-row">
+        <input type="text" id="q2" class="fib-blank" data-answers="session,conversation,prompt" aria-label="Answer for question 2">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q3"><span class="q-num">3</span> An agent's output can be __________ wrong — stated with the same tone and confidence whether it's right or wrong — so tone is not a reliable signal for a reviewer the way it might be with a person.</label>
+      <div class="fib-row">
+        <input type="text" id="q3" class="fib-blank" data-answers="confidently" aria-label="Answer for question 3">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q4"><span class="q-num">4</span> Human PR authors are partly kept honest by social __________ — not wanting to be embarrassed by a sloppy fix a teammate will notice — which doesn't apply to an agent the same way.</label>
+      <div class="fib-row">
+        <input type="text" id="q4" class="fib-blank" data-answers="pressure" aria-label="Answer for question 4">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q5"><span class="q-num">5</span> Any changed file not named in the prompt's stated __________ is a finding on its own, independent of whether the specific change inside it is good.</label>
+      <div class="fib-row">
+        <input type="text" id="q5" class="fib-blank" data-answers="boundary,scope" aria-label="Answer for question 5">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q6"><span class="q-num">6</span> A __________ fix changes the mechanism that produces the wrong behavior; a symptom fix only changes the output for the specific reported case, leaving the same bug reachable from a different input.</label>
+      <div class="fib-row">
+        <input type="text" id="q6" class="fib-blank" data-answers="root-cause,root cause" aria-label="Answer for question 6">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q7"><span class="q-num">7</span> Efficient review means checking the file list and acceptance criterion first, then reading every line in files outside the boundary or touching shared, high blast-__________ code with full attention.</label>
+      <div class="fib-row">
+        <input type="text" id="q7" class="fib-blank" data-answers="radius" aria-label="Answer for question 7">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q8"><span class="q-num">8</span> Writing down which checklist questions you applied and what you found turns review into something __________ instead of a one-time gut call.</label>
+      <div class="fib-row">
+        <input type="text" id="q8" class="fib-blank" data-answers="auditable" aria-label="Answer for question 8">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div id="check-all-wrap">
+      <button type="button" id="check-all-btn" class="check-btn">Check All Answers</button>
+      <span id="quiz-score"></span>
+    </div>
+
+    <div class="quiz-celebration" id="quiz-celebration" aria-live="polite">
+      Perfect score. Chapter complete.
+    </div>
+  </form>
+
+  <div class="chapter-nav">
+    <a href="lesson.html">&larr; Back to Lesson</a>
+    <a href="exercises/index.html">Exercises &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/quiz-engine.js"></script>
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

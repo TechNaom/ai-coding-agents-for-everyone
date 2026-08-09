@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reading and Reviewing an Agent's Diff Like a Senior Engineer — AI Coding Agents for Everyone</title>
+<meta name="description" content="Why an agent's diff needs different review habits than a colleague's PR, what to actually check, and how to review efficiently instead of reading every line with equal attention.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-03">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 3</span>
+    <span class="badge-difficulty">Intermediate</span>
+    <span class="reading-time">~21 min</span>
+  </div>
+
+  <h1>Reading and Reviewing an Agent's Diff Like a Senior Engineer</h1>
+  <p class="lede">
+    Chapter 2 ended on a warning: a checkable acceptance criterion is
+    what lets an agent verify its own work, but it doesn't mean the
+    agent's own verification is the last check that matters. Something
+    can pass every test you named and still be wrong in ways the test
+    never covered. This chapter is about the human review step that
+    catches that gap — and about doing it well enough, and fast enough,
+    to actually keep up with how quickly an agent produces diffs.
+  </p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#hook">1. A diff that passes the test and is still wrong</a>
+    <a href="#not-a-pr">2. Why this isn't like reviewing a colleague's PR</a>
+    <a href="#checklist">3. What to actually check</a>
+    <a href="#efficient-review">4. Reviewing efficiently, not evenly</a>
+    <a href="#thought-process">5. GenAI Builder Thought Process</a>
+    <a href="#recap">6. Points to remember</a>
+  </nav>
+
+  <div class="hook" id="hook">
+    <p>
+      The ticket: "Invoice totals are occasionally off by $0.01 on
+      orders with 3+ line items — customers are complaining. Reproduce
+      with <code>tests/billing/test_invoices.py::test_three_item_rounding</code>.
+      Fix the root cause in <code>billing/invoices.py</code>; don't touch
+      the tax calculation logic itself. Acceptance: the named test
+      passes, and <code>pytest tests/billing/</code> still passes."
+      That's a well-scoped prompt by Chapter 2's standard — specific
+      symptom, specific file, a boundary, a checkable acceptance
+      criterion. The agent comes back a few minutes later reporting
+      success. Here's the diff.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">billing/invoices.py — agent's diff</span>
+      </div>
+      <pre><code>--- a/billing/invoices.py
++++ b/billing/invoices.py
+@@
+-TAX_RATE = 0.0725
++TAX_RATE = 0.07250000001
+
+ def calculate_total(line_items):
+     subtotal = sum(item.price * item.qty for item in line_items)
+     tax = subtotal * TAX_RATE
+-    return subtotal + tax
++    return round(subtotal + tax, 2)
+
+--- a/billing/format.py
++++ b/billing/format.py
+@@
+ def format_currency(value):
+-    return f"${value:.2f}"
++    return f"${round(value, 2):.2f}"</code></pre>
+    </div>
+    <p>
+      Run the named test and it passes. Run the whole
+      <code>tests/billing/</code> suite and it passes too. On a quick
+      glance this looks like a clean, minimal, two-file diff for a
+      one-cent rounding bug — exactly the tidy shape you'd hope for. It
+      is also wrong in three separate ways, and none of them show up by
+      re-running the acceptance check, because the acceptance check was
+      written before anyone knew what the agent's actual fix would look
+      like.
+    </p>
+    <p>
+      First: <code>round(subtotal + tax, 2)</code> doesn't fix the
+      rounding error, it hides it. The actual defect is that summing
+      floating-point prices accumulates tiny binary-representation
+      errors across line items — rounding the final total to two
+      decimals happens to make today's reproduction case pass, but the
+      underlying float-accumulation problem is still there, waiting for
+      a line-item combination the test didn't cover. Second:
+      <code>TAX_RATE = 0.07250000001</code> is a constant nobody asked
+      the agent to touch, changed by an amount that looks suspiciously
+      like the agent nudging a number until a test went green rather
+      than reasoning about why. Third: <code>billing/format.py</code>
+      wasn't named in the prompt at all, and <code>format_currency</code>
+      is used by the shipping module too — a change outside the stated
+      boundary, in a shared function, with no explanation attached.
+    </p>
+    <p>
+      Every one of those three problems is invisible if you only check
+      "did the named test pass." That's the gap this chapter closes.
+    </p>
+  </div>
+
+  <section id="not-a-pr" class="subtopic">
+    <h2>Why This Isn't Like Reviewing a Colleague's PR</h2>
+    <p>
+      Every engineer already knows how to review a pull request — so
+      it's tempting to treat an agent's diff the same way and move on.
+      That instinct is half right and half a trap. The diff format is
+      identical; the thing that produced it is not, and two specific
+      differences change what you have to actually check.
+    </p>
+    <p>
+      A human colleague absorbs "why we do things this way here" just
+      by working on the team — they know the shared function is shared,
+      they know the tax logic is off-limits because finance signed off
+      on the current rounding behavior, they know the last time someone
+      touched <code>billing/format.py</code> it broke shipping labels in
+      production. None of that is visible in the diff itself; it lives
+      in the human's accumulated context. An agent has exactly the
+      context you gave it in the prompt and whatever it could infer from
+      reading the repo in the time it took — nothing about "why we do
+      things this way here" unless somebody told it, in that
+      conversation, in that session. A vague boundary in Chapter 2's
+      terms isn't a minor gap here; it's the entire safety net a human
+      colleague would have had automatically.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... "confidently wrong," in an agent diff?</span>
+      A change that's stated and formatted with exactly the same
+      confidence whether it's right or wrong — clean commit-style
+      framing, a plausible-sounding explanation, tests passing — with no
+      correlation between how sure the output sounds and how sure you
+      should be. A human's uncertainty tends to leak into hedged
+      language ("I think this might..."); an agent's does not reliably
+      do the same, so tone is not a signal you can use here the way you
+      might with a person.
+    </div>
+    <p>
+      The second difference is social, not technical, and it's easy to
+      underrate. Part of what keeps a human PR honest before it ever
+      reaches you is that the author doesn't want to be embarrassed —
+      nobody wants to be the person who pushed an obviously lazy fix or
+      quietly widened a diff to cover for something they didn't
+      understand, because a teammate will notice and it costs them
+      something socially. An agent has no such stake. It will not feel
+      awkward handing you a diff that nudges a tax constant until a test
+      passes, because there is no discomfort attached to that outcome
+      for it the way there would be for a person. The social pressure
+      that quietly filters out a category of sloppy human PRs before
+      they're even opened simply does not apply — which means all of
+      that filtering work has moved onto you, the reviewer, whether you
+      planned for it or not.
+    </p>
+    <p>
+      Put together: less inherited context plus no self-filtering
+      pressure means the review has to do more work per diff, not less,
+      even though the diff itself might be smaller and tidier-looking
+      than a typical human PR.
+    </p>
+  </section>
+
+  <section id="checklist" class="subtopic">
+    <h2>What to Actually Check</h2>
+    <p>
+      "Read the diff carefully" isn't a checklist, it's a hope. Five
+      concrete questions catch the failure modes that a glance, or even
+      a green test suite, misses.
+    </p>
+    <p>
+      <strong>1. Does it actually match the acceptance criterion — not
+      just pass it?</strong> Chapter 2 called the acceptance criterion
+      the single most load-bearing sentence in a prompt, because it's
+      what the agent's own observe step can verify. But "the named test
+      passes" and "the underlying problem is fixed" are not the same
+      claim. The hook's diff passes its test and does not fix its bug.
+      Ask, specifically: could this diff pass the stated check while
+      leaving the real defect (or an adjacent one) in place? If yes, the
+      acceptance criterion was satisfied on a technicality, not
+      genuinely met.
+    </p>
+    <p>
+      <strong>2. Did it touch anything outside the stated boundary?</strong>
+      Diff every changed filename against what the prompt actually
+      named as in scope. <code>billing/format.py</code> was never
+      mentioned. That alone is a finding, independent of whether the
+      change to it is even good — an agent that edits outside its stated
+      boundary without flagging it is a pattern worth catching regardless
+      of this specific diff's outcome, because next time the
+      out-of-boundary file might not be so forgiving.
+    </p>
+    <p>
+      <strong>3. Is there a change with no clear justification?</strong>
+      <code>TAX_RATE = 0.07250000001</code> is the tell here — a number
+      changed by an amount too small and too specific to be a real tax
+      rate, in a file that was told not to touch tax logic at all. Any
+      line you can't explain the reason for in one sentence — "this
+      changed because X" — is a line to stop on, whether or not you can
+      immediately articulate why it's wrong. Not being able to justify a
+      change is itself the finding.
+    </p>
+    <p>
+      <strong>4. Does it introduce patterns inconsistent with the rest
+      of the codebase?</strong> If every other monetary calculation in
+      this codebase uses <code>Decimal</code> specifically to avoid
+      float-accumulation bugs, and this diff introduces a bare
+      <code>round()</code> on a float sum, that's not a style
+      nitpick — it's the agent solving the problem with a pattern the
+      team already rejected elsewhere in the same repo, likely because
+      it doesn't have visibility into decisions made outside the current
+      session.
+    </p>
+    <p>
+      <strong>5. Could this have "fixed" a symptom instead of a root
+      cause?</strong> This is the hook's central failure, generalized.
+      An agent under pressure to satisfy a checkable acceptance
+      criterion has a real incentive — not malicious, just structural —
+      to find the smallest edit that makes the check pass. Rounding the
+      final total is smaller and faster to arrive at than switching the
+      whole calculation path to <code>Decimal</code> arithmetic, and it
+      satisfies today's test either way. Ask explicitly: if the input
+      changed slightly (a fourth line item, a different price), would
+      this same class of bug come back? If you can't confidently say
+      no, you're likely looking at a symptom fix.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... a root-cause fix versus a symptom fix?</span>
+      A root-cause fix changes the mechanism that produces the wrong
+      behavior, so the whole class of input that could trigger it stops
+      being a problem. A symptom fix changes the output for the specific
+      case that was reported, without changing the mechanism — so a
+      slightly different input can trigger the same underlying bug
+      again. Both can make an agent's own acceptance check pass; only
+      one actually closes the ticket.
+    </div>
+  </section>
+
+  <section id="efficient-review" class="subtopic">
+    <h2>Reviewing Efficiently, Not Evenly</h2>
+    <p>
+      Reading every line of every agent diff with equal, careful
+      attention doesn't scale — agents produce diffs faster than any
+      team can review them line-by-line at full intensity, and treating
+      a one-line whitespace change with the same scrutiny as a change to
+      authentication logic wastes the attention you actually need
+      elsewhere. Efficient review isn't reading less carefully; it's
+      spending your attention where it's likeliest to matter, in a
+      deliberate order.
+    </p>
+    <p>
+      A workable triage order, roughly in this sequence:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">review triage order</span>
+      </div>
+      <pre><code>1. File list first, before reading a single line of code.
+   -- Does the set of changed files match the stated boundary?
+   -- Anything unexpected here is worth flagging before you
+   -- even read what changed inside it.
+
+2. Acceptance criterion, checked against what actually happened,
+   not just whether a command exited 0.
+   -- Did it fix the stated problem, or satisfy the check on
+   -- a technicality (see the "fixed a symptom" question)?
+
+3. Read every line in files outside the expected boundary,
+   and every line touching shared/high-blast-radius code
+   (auth, money, migrations, config read by other services)
+   -- full attention here regardless of how small the diff is.
+
+4. Skim mechanical, expected changes in well-tested,
+   low-blast-radius files -- the boilerplate you'd expect
+   given the task, in files the prompt explicitly scoped in.
+
+5. Spot-check anything that "looks like" an existing pattern
+   -- confirm it actually matches the codebase's real
+   convention rather than a plausible-looking invented one.</code></pre>
+    </div>
+    <p>
+      Notice what this ordering does: it puts the cheap, high-signal
+      checks (file list, acceptance criterion) first, so you can often
+      catch a real problem — like the boundary violation in the hook's
+      diff — before spending any time reading code line-by-line at all.
+      It reserves full, careful reading for the parts of a diff that are
+      actually risky (unexpected files, shared code, money, auth), and
+      spends less time on parts that are mechanical and already scoped
+      in. That's not corner-cutting; it's the same instinct a senior
+      engineer already applies to a large human PR, made explicit so it
+      survives the higher volume and different failure shape of
+      agent-produced diffs.
+    </p>
+    <p>
+      One more habit worth naming: write down what you checked, not just
+      your final "approve" or "request changes." A one-line note per
+      diff — which of the five checklist questions you actually applied,
+      and what you found — is cheap to produce and turns review from a
+      one-time judgment call into something you (or a teammate) can
+      audit later, especially useful the first several times you're
+      calibrating how much to trust a given agent tool on a given
+      codebase. The L1 project below asks you to build exactly this
+      habit, formally, as a written review log.
+    </p>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p><strong>Problem:</strong> a developer approves an agent's diff
+      because "the tests passed and it looked clean," then a near-
+      identical bug resurfaces two weeks later from a slightly different
+      input.</p>
+      <p><strong>Assumption being made:</strong> that a passing test
+      suite and a tidy-looking diff are themselves evidence the change
+      is correct, rather than evidence the change satisfies whatever the
+      team happened to think to check for in advance.</p>
+      <p><strong>What actually distinguishes a genuinely reviewed diff:</strong>
+      not diff size, not how confident the agent's summary sounds —
+      specifically whether someone checked the diff against the stated
+      boundary, asked whether every changed line has a clear
+      justification, compared it to how the rest of the codebase already
+      solves similar problems, and asked explicitly whether the fix
+      addresses a root cause or just the reported case.</p>
+      <p><strong>Why this matters for the L1 project below:</strong> a
+      well-scoped prompt (Chapter 2) that produces a diff nobody
+      seriously reviewed is only half the discipline this module is
+      teaching — scoping controls what the agent is asked to do, review
+      controls whether what it actually did gets trusted. Both have to
+      hold for a shipped feature to be genuinely safe, not just
+      test-suite-green.</p>
+      <p><strong>Working definition to carry forward:</strong> reviewing
+      an agent's diff like a senior engineer means checking it against
+      an explicit boundary and acceptance criterion, looking for
+      unjustified or inconsistent changes, and asking whether the fix
+      addresses a root cause — done in a deliberate, attention-weighted
+      order, not as a uniform line-by-line read.</p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember</h2>
+      <ul>
+        <li>A diff can pass its own acceptance check and still be wrong
+        — a passing test proves the check was satisfied, not that the
+        underlying problem is actually fixed.</li>
+        <li>An agent has no inherited "why we do things this way here"
+        unless you told it in the session — a vague boundary isn't a
+        minor gap, it's the entire safety net a human colleague would
+        have had automatically.</li>
+        <li>An agent's output is confidently wrong in the same tone as
+        confidently right — there's no social-embarrassment pressure
+        filtering out sloppy diffs the way there sometimes is with a
+        human PR author, so that filtering work now falls on you.</li>
+        <li>Check five things: does it match the acceptance criterion
+        (not just pass it), did it stay inside the stated boundary, is
+        every change justified, is it consistent with the rest of the
+        codebase's patterns, and could it be a symptom fix instead of a
+        root-cause fix.</li>
+        <li>Review efficiently by triaging, not by reading every line
+        with equal attention: file list and acceptance criterion first,
+        full attention on unexpected or high-blast-radius files, a
+        lighter skim on mechanical, well-scoped, well-tested changes.</li>
+        <li>Write down what you checked, not just your verdict — a
+        one-line record per diff makes review auditable instead of a
+        one-time gut call, and is exactly what the L1 project's review
+        log formalizes.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="what-is">
+    <span class="label">Interview questions (4 levels)</span>
+    See <a href="interview-questions.html">Chapter 3 interview questions</a>.
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

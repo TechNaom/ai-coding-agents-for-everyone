@@ -33,7 +33,8 @@ window.ACAFE_MODULES = [
         id: "chapter-03",
         num: 3,
         title: "Reading and Reviewing an Agent's Diff Like a Senior Engineer",
-        description: "The review habits that catch what a quick glance misses."
+        description: "The review habits that catch what a quick glance misses.",
+        path: "chapters/chapter-03-reading-and-reviewing-an-agents-diff-like-a-senior-engineer/lesson.html"
       }
     ]
   },

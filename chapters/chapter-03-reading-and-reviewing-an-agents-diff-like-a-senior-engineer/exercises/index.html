@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reading and Reviewing an Agent's Diff Like a Senior Engineer Exercises — AI Coding Agents for Everyone</title>
+<meta name="description" content="Hands-on exercises for Reading and Reviewing an Agent's Diff Like a Senior Engineer.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-03">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../quiz.html">&larr; Back to the quiz</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 3 Exercises</span>
+    <span class="reading-time">~32 min</span>
+  </div>
+  <h1>Exercises: Reading and Reviewing an Agent's Diff Like a Senior Engineer</h1>
+  <p>Still conceptual — no SDK or code execution here, that starts in
+  Module 3. Each exercise hands you a realistic diff and a task
+  description; the work is judgment, not code — find what's wrong (or
+  confirm what's right), and explain why a quick glance would miss it.</p>
+
+  <div class="what-is">
+    <span class="label">Exercise standard</span>
+    Six tasks below. At least three are production-gear: harder,
+    ambiguous, real-world judgment calls rather than clean textbook
+    cases.
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">1</span> The passing test that isn't the whole story</h3>
+    <p>Task: "In <code>users/search.py</code>, <code>find_by_email</code>
+    raises an unhandled exception when the email has mixed case
+    (e.g. <code>Jane@Example.com</code>) instead of returning
+    <code>None</code>. Fix it so it returns <code>None</code> for a
+    non-matching email regardless of case. Acceptance: `pytest
+    tests/users/test_search.py::test_mixed_case_email` passes."</p>
+    <pre><code>--- a/users/search.py
++++ b/users/search.py
+@@
+ def find_by_email(email, users):
+-    return next(u for u in users if u.email == email)
++    try:
++        return next(u for u in users if u.email == email)
++    except StopIteration:
++        return None</code></pre>
+    <p>The named test now passes. Explain what this diff does and does
+    not fix, referencing the "root cause vs. symptom" distinction from
+    the lesson, and state whether you'd approve it as-is.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">2</span> Spot the boundary violation</h3>
+    <p>Task: "In <code>notifications/email.py</code>, add a retry with
+    exponential backoff when sending fails, up to 3 attempts. Don't
+    touch the SMTP configuration. Acceptance: `pytest
+    tests/notifications/test_email.py` passes."</p>
+    <pre><code>--- a/notifications/email.py
++++ b/notifications/email.py
+@@
++import time
++
++def _send_with_retry(payload, attempts=3):
++    for i in range(attempts):
++        try:
++            return _send(payload)
++        except SMTPError:
++            time.sleep(2 ** i)
++    raise SMTPError("all retries failed")
+
+--- a/config/smtp.py
++++ b/config/smtp.py
+@@
+-TIMEOUT_SECONDS = 5
++TIMEOUT_SECONDS = 20</code></pre>
+    <p>Identify the boundary violation, and explain specifically why it
+    matters that it happened silently — with no note in the diff or
+    summary calling it out — rather than whether the timeout change
+    itself is a good idea.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">3</span> Justified or not?</h3>
+    <p>Task: "In <code>orders/discount.py</code>, `apply_discount`
+    doesn't handle a discount percentage over 100, which currently lets
+    an order total go negative. Cap the effective discount at 100%.
+    Acceptance: `pytest tests/orders/test_discount.py` passes."</p>
+    <pre><code>--- a/orders/discount.py
++++ b/orders/discount.py
+@@
+ def apply_discount(total, percent):
+-    return total - (total * percent / 100)
++    percent = min(percent, 100)
++    return total - (total * percent / 100)
++
++MAX_ORDER_TOTAL = 999999</code></pre>
+    <p>One of these two changes is directly justified by the task; the
+    other has no stated reason. Identify which is which, and write the
+    one-sentence question you'd ask the agent about the unjustified one
+    before approving.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">4</span> (Production-gear) The diff that's too quiet</h3>
+    <p>Task: "In <code>auth/session.py</code>, sessions aren't expiring
+    after the configured 30-minute idle timeout — users stay logged in
+    indefinitely. Fix the expiry check. Acceptance: `pytest
+    tests/auth/test_session.py::test_idle_expiry` passes."</p>
+    <pre><code>--- a/auth/session.py
++++ b/auth/session.py
+@@
+ def is_expired(session, now):
+-    return False
++    idle_seconds = (now - session.last_seen).total_seconds()
++    return idle_seconds > session.idle_timeout_seconds</code></pre>
+    <p>The agent's summary says: "Fixed the expiry check — sessions now
+    correctly expire after being idle past their timeout." The diff
+    looks small, targeted, and exactly matches the ticket. This is the
+    hardest kind of diff to catch a problem in, because it looks
+    completely right. Using the full checklist (not just "does it look
+    reasonable"), identify at least one question you'd still ask before
+    approving a security-relevant change like this one, and explain why
+    "it looks right" isn't sufficient for code in this category.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">5</span> (Production-gear) Consistent with the diff, inconsistent with the codebase</h3>
+    <p>Task: "Add input validation to the new `/api/v2/signup` endpoint
+    — reject requests missing `email` or `password`. Acceptance: `pytest
+    tests/api/test_signup.py` passes." You're told that every other
+    endpoint in this codebase validates input using a shared
+    `validate_request(schema, payload)` helper in
+    <code>api/validation.py</code>, which returns structured error
+    responses with a consistent JSON shape.</p>
+    <pre><code>--- a/api/v2/signup.py
++++ b/api/v2/signup.py
+@@
+ def signup(request):
++    if "email" not in request.json or "password" not in request.json:
++        return {"error": "Missing required field"}, 400
+     user = create_user(request.json)
+     return {"id": user.id}, 201</code></pre>
+    <p>The test passes and the behavior is arguably correct. Explain
+    why you'd still flag this diff, using the "pattern consistency"
+    check from the lesson, and what asking the agent to redo it would
+    look like in practice.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">6</span> (Production-gear) Build your own triage pass</h3>
+    <p>You receive a six-file agent diff for the task "add CSV export to
+    the monthly report page, matching the existing PDF export's
+    permission checks. Acceptance: `pytest
+    tests/reports/test_export.py` passes, and manual check that
+    exporting as a non-admin user returns a 403." The six changed files
+    are: <code>reports/export_csv.py</code> (new),
+    <code>reports/routes.py</code>, <code>reports/permissions.py</code>,
+    <code>tests/reports/test_export.py</code>,
+    <code>shared/csv_utils.py</code> (new), and
+    <code>reports/templates/report_page.html</code>. Using the triage
+    order from the lesson (file list first, then acceptance criterion,
+    then attention-weighted reading), write out your review plan: which
+    files you'd read in full immediately, which you'd skim, and what
+    specific question about this diff you can't actually answer without
+    seeing the code (name it, don't guess an answer).</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../quiz.html">&larr; Back to Quiz</a>
+    <a href="../practice/index.html">Practice Bank &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

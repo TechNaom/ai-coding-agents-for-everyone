@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reading and Reviewing an Agent's Diff Like a Senior Engineer Practice Bank — AI Coding Agents for Everyone</title>
+<meta name="description" content="Practice bank for Reading and Reviewing an Agent's Diff Like a Senior Engineer.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-03">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../exercises/index.html">&larr; Back to exercises</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 3 Practice Bank</span>
+    <span class="reading-time">~19 min</span>
+  </div>
+  <h1>Practice Bank: Reading and Reviewing an Agent's Diff Like a Senior Engineer</h1>
+  <p>Short scenarios, one judgment question each — practice the review
+  habits from this chapter in situations where the right call isn't
+  always obvious at first read.</p>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The rubber stamp</span>
+    <h3>The three-line diff at 5:58pm</h3>
+    <p>It's the end of the day, and an agent hands back a three-line
+    diff for a task you scoped carefully that morning. It's small, the
+    named test passes, and you're tempted to approve it in ten seconds
+    so you can close your laptop. What's the minimum version of the
+    review checklist you could still apply in under a minute, and which
+    checks would you refuse to skip even under time pressure?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · No embarrassment filter</span>
+    <h3>The confident wrong summary</h3>
+    <p>An agent's summary reads: "Refactored the retry logic to be more
+    robust and fixed the underlying race condition." The diff actually
+    just adds a `time.sleep(1)` call before the retry — it doesn't touch
+    any shared state or locking. Using this chapter's "confidently
+    wrong" idea, explain why the summary's confident tone should carry
+    zero weight in your review, and what you'd check instead to verify
+    whether a race condition was actually addressed.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Inherited context gap</span>
+    <h3>The "obviously fine" change that wasn't</h3>
+    <p>An agent changes a default page size from 20 to 100 in
+    `search/api.py` as part of a larger task, with no note explaining
+    why. To a new team member this looks like a harmless tuning choice.
+    You happen to know this default was deliberately set to 20 after a
+    past incident where a larger default caused a downstream service to
+    time out. What does this scenario tell you about relying on "does
+    this look reasonable" as a review standard, and what should you have
+    put in the original prompt to prevent this?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Symptom vs root cause</span>
+    <h3>The bug that comes back next sprint</h3>
+    <p>Two sprints ago, an agent fixed a reported crash by adding a
+    null-check right before the line that crashed. This sprint, a
+    near-identical crash happens two lines further down in the same
+    function, from the same underlying missing-data issue. What does
+    this recurrence suggest about how the first fix was reviewed, and
+    what question — if it had been asked during that original review —
+    would likely have caught it?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Pattern consistency</span>
+    <h3>The new pattern nobody approved</h3>
+    <p>An agent's diff introduces a new way of handling errors —
+    returning error tuples like `(None, "error message")` — in a
+    codebase where every other function raises typed exceptions
+    instead. The new code works and is well-tested. What's the risk of
+    approving this diff as-is beyond "it's inconsistent," and how would
+    you phrase feedback to the agent that keeps the underlying fix but
+    aligns it with the codebase's existing pattern?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Reviewing your own prompt's blind spot</span>
+    <h3>The boundary you forgot to state</h3>
+    <p>You scoped a task well by Chapter 2's standard, except you forgot
+    to name a boundary around a shared utilities file. The agent, acting
+    reasonably given what it was told, edits that shared file as part of
+    a sensible-looking solution. Whose responsibility is it to catch
+    this in review, given that the prompt itself never ruled it out —
+    and what does this tell you about the relationship between Chapter
+    2's scoping discipline and this chapter's review discipline?</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../exercises/index.html">&larr; Exercises</a>
+    <a href="../interview-questions.html">Interview Questions &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

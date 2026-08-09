@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reading and Reviewing an Agent's Diff Like a Senior Engineer Interview Questions — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interview questions for Reading and Reviewing an Agent's Diff Like a Senior Engineer.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-03">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="practice/index.html">&larr; Back to practice bank</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 3 Interview Questions</span>
+    <span class="reading-time">~15 min</span>
+  </div>
+  <h1>Interview Questions: Reading and Reviewing an Agent's Diff Like a Senior Engineer</h1>
+  <p>Grouped by level. Each includes a strong answer, a red flag, and a follow-up.</p>
+
+  <div class="lesson-card">
+    <h2>1. (Beginner) Why can't you review an agent's diff the same way you'd review a human teammate's pull request?</h2>
+    <p><strong>Strong answer:</strong> The diff format looks identical, but a human colleague already absorbed "why we do things this way here" from working on the team, and the fear of being caught with a sloppy fix nudges them toward cleaner work before you ever see it. An agent has only the context given in that session and no social stake in how the diff looks — so both the inherited-context filter and the embarrassment filter that quietly catch some human mistakes simply aren't present.</p>
+    <p><strong>Red flag:</strong> Says agent diffs need "less" review because they're often cleaner-looking or better formatted than a rushed human PR, conflating tidy formatting with correctness.</p>
+    <p><strong>Follow-up:</strong> "What's one thing you'd explicitly write into a prompt to compensate for the missing inherited context?"</p>
+    <p><strong>What this proves:</strong> Understands that the difference is structural (what produced the diff), not cosmetic (what the diff looks like).</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>2. (Beginner) A diff passes every test named in the prompt's acceptance criterion. Is that enough to approve it? Why or why not?</h2>
+    <p><strong>Strong answer:</strong> Not by itself. A passing test proves the stated check was satisfied, not that the actual underlying problem is fixed — an agent can find the smallest edit that makes a specific test go green without addressing the mechanism that caused the bug. You still have to check the diff against the boundary, look for unjustified changes, and ask whether it's a root-cause fix or a symptom fix.</p>
+    <p><strong>Red flag:</strong> Treats "tests pass" as equivalent to "correct," without considering that the test itself only covers the cases someone thought to write.</p>
+    <p><strong>Follow-up:</strong> "What's a concrete way you'd try to break a diff that already passes its stated test?"</p>
+    <p><strong>What this proves:</strong> Distinguishes a checkable condition being satisfied from the actual problem being solved — the core gap this chapter closes.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>3. (Intermediate) You're reviewing a diff and find one line you can't explain a reason for. What do you do, and why does that matter even if the line looks harmless?</h2>
+    <p><strong>Strong answer:</strong> Stop on it and ask the agent (or investigate yourself) why that specific change exists, before approving. Not being able to justify a change in one sentence is itself the finding — it's exactly how a diff like the chapter's tax-constant example looks harmless (a tiny numeric nudge) while actually being an agent adjusting a value until a test passed, rather than reasoning about the cause. Harmless-looking and justified are not the same thing.</p>
+    <p><strong>Red flag:</strong> Says unexplained-but-small changes are fine to wave through because they're low-risk, without recognizing that "I can't explain why" is itself diagnostic.</p>
+    <p><strong>Follow-up:</strong> "How would you phrase the follow-up question to the agent to get a genuinely useful answer rather than a plausible-sounding rationalization?"</p>
+    <p><strong>What this proves:</strong> Applies the "unjustified change" check as an active habit, not just a passive read-through.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>4. (Intermediate) How would you tell the difference between a root-cause fix and a symptom fix when reviewing a diff, in practice?</h2>
+    <p><strong>Strong answer:</strong> Ask whether the mechanism that produced the wrong behavior actually changed, or whether only the output for the reported case changed. A concrete test: imagine a slightly different input than the one in the bug report — would the same class of bug still occur? If you can't confidently say no, it's likely a symptom fix. The chapter's example: rounding a final total hides a float-accumulation bug for today's reproduction case but doesn't remove the accumulation itself, so a different set of line items could trigger it again.</p>
+    <p><strong>Red flag:</strong> Equates "the specific reported bug no longer reproduces" with "the bug is fixed," without probing whether a nearby input could still trigger it.</p>
+    <p><strong>Follow-up:</strong> "What would you ask the agent to do differently if you suspected a symptom fix, without just redoing the work yourself?"</p>
+    <p><strong>What this proves:</strong> Can operationalize an abstract distinction (root cause vs. symptom) into a concrete review action.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>5. (Senior) Design a review process for agent diffs that scales — your team now merges five times as many agent-assisted changes per week as before. What do you keep, and what do you deliberately not do?</h2>
+    <p><strong>Strong answer:</strong> Keep full, careful line-by-line reading for high-blast-radius or out-of-boundary changes (auth, money, shared config, migrations) and for anything that fails a quick triage (file list mismatch, no acceptance criterion evidence). Deliberately don't read every mechanical, well-scoped, well-tested change with the same intensity — skim those, since the attention is better spent where risk actually concentrates. The goal is attention allocation proportional to risk, not reading less overall.</p>
+    <p><strong>Red flag:</strong> Proposes either "review everything at full depth" (doesn't scale, becomes theater as volume grows and gets skipped under pressure) or "spot-check occasionally" (no defensible logic for which diffs get skipped).</p>
+    <p><strong>Follow-up:</strong> "How would you know if your triage order was miscalibrated — letting through the wrong kind of risk?"</p>
+    <p><strong>What this proves:</strong> Thinks about review as a scalable system with a deliberate attention budget, not a personal virtue applied uniformly.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>6. (Senior) A teammate says "I don't need a written review log, I remember what I checked." Why would you push back on that for agent-reviewed diffs specifically?</h2>
+    <p><strong>Strong answer:</strong> A one-line record of what was checked (boundary, acceptance criterion, justification, consistency, root cause) turns review from an unfalsifiable claim into something auditable — useful when a bug resurfaces later and someone needs to know whether it was actually checked for, and essential while a team is still calibrating how much to trust a given agent tool on a given codebase. It's cheap to produce and expensive to reconstruct after the fact from memory alone.</p>
+    <p><strong>Red flag:</strong> Treats the review log as bureaucratic overhead with no functional purpose beyond compliance, missing its role in building calibrated trust over time.</p>
+    <p><strong>Follow-up:</strong> "What's the minimum viable review log format that wouldn't feel like busywork to a team under deadline pressure?"</p>
+    <p><strong>What this proves:</strong> Sees the review log as a trust-calibration and audit tool, not paperwork — directly relevant to how the L1 project is structured.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>7. (Architect) You're setting an org-wide standard for merging agent-produced diffs. What would you make a hard gate (blocks merge) versus a soft check (reviewer judgment)?</h2>
+    <p><strong>Strong answer:</strong> Hard gates should be mechanically checkable and low false-positive: the changed-file list matches the stated boundary, and the acceptance criterion's automated checks actually pass. Soft checks — is a change justified, is it consistent with codebase patterns, is it a root-cause fix — require human judgment that can't be reliably automated yet, so they stay as reviewer responsibility backed by a required review-log entry rather than a bot check. Trying to force judgment calls into automated gates produces either too many false blocks or gates people learn to route around.</p>
+    <p><strong>Red flag:</strong> Proposes automating everything (root-cause detection, pattern-consistency checking) as if these were solved, mechanically checkable problems today, or proposes making nothing a hard gate and relying entirely on reviewer discipline at scale.</p>
+    <p><strong>Follow-up:</strong> "How would this standard need to change as static analysis or agent-specific linting tools mature?"</p>
+    <p><strong>What this proves:</strong> Can separate what's genuinely automatable from what still requires human judgment, and design policy around that boundary rather than wishing it away.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>8. (Architect) How does under-investing in agent-diff review discipline create compounding organizational risk, even if any single bad diff is individually low-stakes?</h2>
+    <p><strong>Strong answer:</strong> Each approved-without-real-review diff that happens to be fine reinforces a habit of trusting green tests and tidy-looking diffs as sufficient — a habit that costs nothing until it meets a diff like the chapter's example, where the tests pass and the fix is still wrong. At team scale, this shows up later as intermittent, hard-to-trace bugs (symptom fixes that resurface under different inputs) and gradually eroded codebase consistency (inconsistent patterns accumulating diff by diff), both of which are far more expensive to unwind than the review discipline would have cost upfront.</p>
+    <p><strong>Red flag:</strong> Argues review discipline only matters for high-stakes changes, missing that habits formed on low-stakes diffs are exactly what generalizes (badly) to high-stakes ones later.</p>
+    <p><strong>Follow-up:</strong> "What early warning signal would tell you your org's review discipline was slipping before a serious incident surfaced it?"</p>
+    <p><strong>What this proves:</strong> Reasons about review discipline as a compounding, org-level risk factor rather than a per-diff correctness question — architect-level systems thinking closing out Module 1.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="practice/index.html">&larr; Practice Bank</a>
+    <a href="project/index.html">Build the Project &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

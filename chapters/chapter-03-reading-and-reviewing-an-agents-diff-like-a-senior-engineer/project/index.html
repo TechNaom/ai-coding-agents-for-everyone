@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reading and Reviewing an Agent's Diff Like a Senior Engineer Project — AI Coding Agents for Everyone</title>
+<meta name="description" content="The Level 1 Guided project: ship a real small feature with a coding agent and produce a written review log applying this module's checklist.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-03">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../interview-questions.html">&larr; Back to interview questions</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 3 Project</span>
+    <span class="reading-time">~25 min to read · a few hours to build</span>
+  </div>
+  <h1>Level 1 Project: Ship a Real Small Feature With a Coding Agent</h1>
+  <p>
+    This is it — the project Chapters 1 and 2 both pointed to as
+    "unlocks after Chapter 3." You now have all three pieces this module
+    teaches: the loop/autonomy mental model (Chapter 1), how to scope a
+    task so an agent can actually succeed at it (Chapter 2), and how to
+    review what it hands back like a senior engineer would (this
+    chapter). This project asks you to use all three, for real, on a
+    real (small) codebase, and to produce a written artifact that proves
+    you did.
+  </p>
+
+  <div class="hook">
+    <p>
+      The deliverable has two halves, and both are graded by the same
+      standard a senior engineer would actually use: a working diff, and
+      an honest review log that shows your reasoning — not just your
+      verdict. A perfect diff with no review log doesn't demonstrate the
+      skill this module teaches; neither does a review log for a feature
+      that doesn't actually work. You need both.
+    </p>
+  </div>
+
+  <h2>What you'll need</h2>
+  <ul>
+    <li>Any coding agent tool you have access to — Claude Code, Cursor's
+    agent mode, GitHub Copilot's agent mode, or an equivalent. This
+    course is intentionally tool-agnostic (per
+    <code>docs/course-architecture.md</code>): the judgment matters more
+    than the specific product, and none of it is Claude Agent SDK code
+    — that starts in Module 3.</li>
+    <li>A small, real codebase you're allowed to modify: your own side
+    project, a personal repo, a small open-source project you already
+    contribute to, or a fresh throwaway repo you scaffold yourself with
+    a handful of files and at least a minimal way to check behavior
+    (a test suite, or a script you can run and inspect). It does not
+    need to be large or impressive — a codebase you can hold in your
+    head is actually the right size for this project.</li>
+    <li>A way to save two artifacts: the agent's diff (a patch file, a
+    screenshot of the tool's diff view, or a link to a local commit),
+    and your written review log (plain Markdown or text is fine).</li>
+  </ul>
+
+  <h2>Step 1 — Pick one small, real feature or fix</h2>
+  <p>
+    Choose a task sized like the well-scoped examples from Chapters 1
+    and 2 — not a one-line rename (too small to be worth an agent's
+    overhead), not "modernize the module" (open-ended, no natural
+    stopping point). Pick something you'd genuinely be glad to have
+    built. A few shapes that fit the right size, pick one or invent your
+    own of similar scope:
+  </p>
+  <ul>
+    <li><strong>Add a field with validation</strong> — a new optional
+    field on an existing form, API endpoint, or data model, with input
+    validation and a test covering the invalid case.</li>
+    <li><strong>Fix a specific, reproducible bug</strong> — something
+    with a clear repro steps and a test you can point the agent at,
+    the way Chapter 2's cache-key example worked.</li>
+    <li><strong>Add a small, self-contained capability</strong> — CSV
+    export of an existing report, a rate limit on one endpoint, a
+    confirmation step before a destructive action, pagination on an
+    endpoint that currently returns everything at once.</li>
+    <li><strong>Add a guardrail</strong> — input sanitization, a
+    permission check that's missing on one route, an idle-session
+    timeout — something with real, checkable behavior before and
+    after.</li>
+  </ul>
+  <p>
+    If you don't already have a codebase with something like this
+    waiting, the fastest path is a small personal utility: a script or
+    tiny web service you build in twenty minutes (even a to-do list API
+    or a CLI tool), specifically so you have a codebase small enough to
+    fully understand yourself — which matters for Step 3, review.
+  </p>
+
+  <h2>Step 2 — Write a scoped prompt (Chapter 2)</h2>
+  <p>
+    Before you open the agent, write the prompt out first, as its own
+    artifact, using Chapter 2's three ingredients:
+  </p>
+  <div class="code-window">
+    <div class="code-window-bar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="filename">prompt checklist</span>
+    </div>
+    <pre><code>1. Context: the specific symptom or goal, and which file(s)
+   or area of the codebase it lives in.
+2. Scope boundary: what's explicitly in play, and what the
+   agent should stop and ask about before touching.
+3. Acceptance criterion: a condition you (and the agent) can
+   check mechanically -- a test passing, a specific behavior
+   verified by running the code -- not a subjective goal.</code></pre>
+  </div>
+  <p>
+    Save this prompt exactly as you send it to the agent. It becomes the
+    first section of your review log, and it's also the yardstick the
+    rest of the review measures against — you can't check whether a diff
+    matches its acceptance criterion if you didn't write one down.
+  </p>
+
+  <h2>Step 3 — Run it, then review it like Chapter 3, not like a rubber stamp</h2>
+  <p>
+    Let the agent run its plan/act/observe loop and hand back a diff. Do
+    not accept it on sight. Work through the five checks from the
+    lesson, in the triage order the lesson recommends (file list and
+    acceptance criterion first, full attention on anything unexpected or
+    high-risk, a lighter pass on mechanical expected changes):
+  </p>
+  <ol>
+    <li>Does the diff actually satisfy the acceptance criterion, or just
+    pass a check on a technicality?</li>
+    <li>Did it touch any file outside what the prompt named as in
+    scope?</li>
+    <li>Is there any change you can't justify in one sentence?</li>
+    <li>Does it introduce a pattern inconsistent with how the rest of
+    your codebase already does similar things?</li>
+    <li>Could this be a fix for the symptom rather than the root cause —
+    would a slightly different input bring the same problem back?</li>
+  </ol>
+  <p>
+    If the diff fails any of these, don't just fix it yourself — go back
+    to the agent with a specific follow-up (exactly as you'd do with a
+    human teammate's PR) and record what you asked for and what came
+    back. A review log that shows one round of "found a problem, asked
+    for a fix, verified the fix" is a <em>stronger</em> submission than
+    one where the agent happened to get it right the first time — it's
+    direct evidence you can actually catch a real problem, not just that
+    you got lucky.
+  </p>
+
+  <h2>Step 4 — Write the review log</h2>
+  <p>
+    The review log is the actual graded artifact of this project — the
+    diff on its own doesn't prove you reviewed it well. Use this
+    structure:
+  </p>
+  <div class="code-window">
+    <div class="code-window-bar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="filename">review-log.md — required sections</span>
+    </div>
+    <pre><code># Review Log: &lt;feature name&gt;
+
+## Task and prompt
+&lt;the exact prompt you sent, verbatim&gt;
+
+## Acceptance criterion
+&lt;copied from the prompt, stated as a checkable condition&gt;
+
+## Diff summary
+&lt;one line per changed file: what changed and why, in your
+own words -- not copy-pasted from the agent's summary&gt;
+
+## Checklist results
+- Matches acceptance criterion (not just passes it)? &lt;yes/no + why&gt;
+- Stayed inside the stated boundary? &lt;yes/no + why&gt;
+- Every change justified? &lt;yes/no -- list anything you
+  couldn't explain, and how you resolved it&gt;
+- Consistent with existing codebase patterns? &lt;yes/no + why&gt;
+- Root-cause fix, or could this be a symptom fix?
+  &lt;your reasoning, including what input might break it again&gt;
+
+## Verdict
+&lt;Approved as-is / Approved after follow-up (describe the
+follow-up and what changed) / Rejected and redone&gt;
+
+## Time
+&lt;rough time the agent took vs. rough time you spent
+reviewing -- this is a real number worth tracking&gt;</code></pre>
+  </div>
+  <p>
+    Write every section honestly, including when the answer is "yes,
+    this passed the check cleanly." A review log that just says
+    "everything looked fine" for each item isn't useful — the value is
+    in the specific reasoning: <em>why</em> you're confident the fix is
+    root-cause rather than symptom, <em>why</em> a given change is
+    justified, not just a checkmark. If you genuinely found nothing
+    wrong, say what you actually checked to reach that conclusion.
+  </p>
+
+  <h2>What "done" looks like</h2>
+  <ul>
+    <li>The feature works — you've personally verified the acceptance
+    criterion yourself, not just trusted the agent's report that it
+    passed.</li>
+    <li>You have a saved copy of the prompt you wrote and the diff the
+    agent produced.</li>
+    <li><code>review-log.md</code> (or equivalent) exists, follows the
+    structure above, and every checklist item has real reasoning behind
+    it — not a bare yes/no.</li>
+    <li>If you caught a problem during review, the log documents the
+    follow-up round: what you asked for and what changed as a result.
+    If you didn't catch anything, the log explains specifically what you
+    checked to be confident in that.</li>
+    <li>The prompt itself holds up against Chapter 2's three
+    ingredients — context, scope boundary, acceptance criterion — and
+    the log briefly notes whether, in hindsight, the prompt could have
+    been scoped better.</li>
+  </ul>
+
+  <div class="what-is">
+    <span class="label">Where this fits</span>
+    Module 1 — Using Coding Agents Well: Chapter 1 built the loop/
+    autonomy mental model, Chapter 2 covered prompting and scoping,
+    Chapter 3 (this chapter) covers reviewing the result. This project
+    is the Level 1, Guided project from the course's curriculum map —
+    the first of four projects (L1 through L4) — and it's the one place
+    in Module 1 where all three chapters have to work together on a
+    real, non-hypothetical change.
+  </div>
+
+  <div class="points-to-remember">
+    <h2>Why this project is structured this way</h2>
+    <p>
+      A project that only asked you to "use an agent to build something"
+      would test whether you can operate the tool, which was never the
+      hard part. The hard part — and the actual point of this module —
+      is writing a request precise enough that the agent can succeed,
+      and then not trusting the result just because it looks clean and
+      the tests are green. The review log exists specifically because
+      "I reviewed it" is an unfalsifiable claim and "here's what I
+      checked and what I found" isn't. If this project only asked for
+      the diff, it would be measuring luck as often as it measured
+      judgment.
+    </p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../interview-questions.html">&larr; Interview Questions</a>
+    <a href="../../../index.html">All Chapters &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>
