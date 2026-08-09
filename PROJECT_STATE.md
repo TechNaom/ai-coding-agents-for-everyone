@@ -279,6 +279,42 @@ production-grade, interview-ready, original content only).
       stdin will make it hang/appear to fail; always run with
       `< /dev/null` or in a genuinely non-interactive shell to match
       CI's actual behavior.
+- [x] **Chapter 12 built and live — completes Module 5**: "Putting an
+      Agent in CI." Delivers on Chapter 11's own forward-reference
+      (its closing thought-process section named this exact chapter).
+      Shows Chapter 11's agent, dropped into CI unchanged, is safe but
+      useless (every `REQUIRES_CONFIRMATION` tool denies on closed
+      stdin). Names and explicitly rejects the wrong fix (auto-
+      answering `confirm_with_human` under a `CI_MODE` flag — shown as
+      Chapter 8's exact flaw recreated one layer up) before building
+      the real one: a second, human-reviewed `TOOL_POLICY_CI` selected
+      once at startup via an env var, with per-tool code-level scope
+      checks (a scratch-path prefix for `write_file`, a protected-
+      branch check for `git_commit`) substituting for the confirmation
+      CI structurally cannot give. Tools with no narrow scope
+      (`edit_file`, `run_shell_command`) become `BLOCKED` outright in
+      CI, not `ALLOWED`. Adds a narrow, zero-argument `run_tests` tool
+      as a concrete least-privilege fix. Covers both curriculum-map use
+      cases (PR review bot, CI troubleshooting agent) and closes
+      honestly on what still needs Chapter 3's review discipline even
+      after CI-safe scoping (draft PRs, merging, policy drift over
+      time — a correct policy that quietly stops being safe as the
+      codebase around it changes). Found and fixed four real bugs
+      while building (a path-normalization escape bug, a nested-git-
+      repo hazard, a `CI_MODE` leak between demo functions, an
+      unguarded crash on incomplete starter code) — all disclosed in
+      the audit. Ships Module 5's second real lab plus an illustrative
+      `example-ci-workflow.yml`. **Module 5 (Chapters 11-12) is now
+      fully built and live.**
+- [x] **Module 5 written exam built**: `assessments/written-exams/module-5-exam.md`
+      — a genuine "production-readiness checklist exam" per
+      CURRICULUM_MAP.md's stated assessment type, not a general concept
+      quiz. Includes a substantial "find the flaws" section: a
+      realistic DocsBot agent config with 4 planted production-
+      readiness flaws (fail-open default, an unscoped `run_shell_command`
+      left `ALLOWED` in CI, `RLIMIT_NPROC` misused as if subprocess-
+      scoped, no CI wall-clock budget) plus a severity-ranking question.
+      15 numbered items total. Registered in `chapters-data.js`.
 
 ## Pending / Not Started
 
@@ -358,32 +394,37 @@ scenarios/8 interview questions minimum, tested code before writing).
 
 ## Next Recommended Task
 
-**Modules 1-4 (Chapters 1-10) are complete; Module 5's first chapter
-(11) is also live.** Next: Chapter 12 ("Putting an Agent in CI,"
-Advanced) — completes Module 5. This is where the module's lab ships
-("wire a minimal agent into a CI check" per CURRICULUM_MAP.md) — build
-on Chapter 11's exact permission-scope system (`TOOL_POLICY`,
-`confirm_with_human`'s fail-closed-on-EOFError behavior is PRECISELY
-what makes an agent safe to run unattended in CI, and Chapter 11's own
-closing thought-process section already named this connection
-explicitly). Read Chapter 11 fully first — its `project/solution.py`
-is the direct foundation. Consider having Chapter 12 actually wire a
-real CI check into a small demo/sample repo structure (this course
-already treats its own CI as a live, tested artifact, not just
-described — keep that standard). After Chapter 12, write
-`assessments/written-exams/module-5-exam.md` ("production-readiness
-checklist exam" per the curriculum map) — this closes Module 5.
+**Modules 1-5 (Chapters 1-12) are all complete, including the Module 5
+written exam.** This is the last outstanding chapter: **Chapter 13,
+the capstone (Module 6, Architect level)** — the final chapter of the
+entire 13-chapter course. Per `docs/curriculum/CURRICULUM_MAP.md`:
+"Design (and partially implement) an agentic workflow for a realistic
+engineering org" — the L4 Architecture Challenge specifically asks
+learners to design an agentic CI workflow (a PR review bot or CI
+troubleshooting agent) for a **regulated engineering org**, as a
+**business problem only** (not another from-scratch code build — this
+capstone is architecture/design-level synthesis, matching
+`mcp-for-everyone`'s own capstone's ADR/architecture rigor). Read
+Chapters 3, 5, 7-12 first — the capstone should synthesize the whole
+course: Chapter 3's review discipline, Chapter 5's failure modes,
+Chapters 7-9's agent-building mechanism, Chapters 11-12's security/CI
+model, all applied to a single coherent, realistic org scenario with
+real constraints (compliance, audit trail, blast radius, who's
+accountable when the agent is wrong). Expect this chapter to look
+different in shape from Chapters 7-12 — less "here's working code,"
+more "here's a full architecture proposal with ADRs, trade-off
+analysis, and a rubric," similar in spirit to how `mcp-for-everyone`'s
+own capstone chapter was built. It can still include real, runnable
+code where a concrete mechanism benefits from it (e.g. a policy
+snippet), but the CENTER of this chapter is the design document, not a
+new agent implementation.
 
-Then Module 6: Chapter 13, the capstone (architecture challenge,
-Level 4) — the final chapter of the entire course.
-
-Continue parallelizing where genuinely independent, but Chapters 11
-and 12 were correctly built sequentially since 12 depends on 11's
-exact permission system — don't force parallelism where content
-genuinely depends on order. The Module 5 exam (after both chapters)
-could potentially run alongside early Chapter 13 planning/research if
-that becomes independent enough, but check dependencies before
-assuming.
+After Chapter 13, the entire 13-chapter course is content-complete.
+Remaining work becomes polish: verify every chapter's quality audit is
+present and accurate, consider building out `capstones/`-style
+supporting material if warranted, and a final full read-through pass
+checking cross-chapter consistency now that the whole arc exists
+end to end.
 
 Also outstanding, not blocking: re-run Chapter 7's `project/starter.py`/
 `solution.py` and Chapter 9's full agent-loop-against-a-live-model path

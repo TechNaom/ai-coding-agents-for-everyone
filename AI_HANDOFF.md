@@ -21,7 +21,7 @@ EVALUATE → SECURE → OPTIMIZE → SCALE → ARCHITECT progression; layered
 depth for 5 personas; story-first; no shallow tutorials; 13 chapters,
 don't pad; all content original.
 
-## Current state (as of 2026-08-09, Modules 1-4 complete, Chapter 11 live)
+## Current state (as of 2026-08-09, Modules 1-5 complete — only the capstone left)
 
 **Read `PROJECT_STATE.md` for the authoritative, up-to-date status.**
 
@@ -143,34 +143,34 @@ No website root `index.html` yet (Step 9, comes later).
 
 ## Current task
 
-**Modules 1-4 (Chapters 1-10) are complete; Chapter 11 (Module 5's
-first chapter) is also live.** Chapter 11 resolved everything Chapters
-7-9 deliberately left open: a real fail-closed permission-scope system
-(`TOOL_POLICY`, `ALLOWED`/`REQUIRES_CONFIRMATION`/`BLOCKED`,
-unclassified tools default to `BLOCKED`), `confirm_with_human()`
-denying on `EOFError` so an unattended run never hangs, `git_commit`
-finally shipped with no `confirm` parameter, and honestly-scoped
-resource-limit sandboxing (real `RLIMIT_CPU`/`RLIMIT_AS`, NOT claimed
-as container-grade isolation). Read `quality-audits/chapter-11-audit.md`.
-Next: Chapter 12 ("Putting an Agent in CI," Advanced) — completes
-Module 5. Build directly on Chapter 11's `project/solution.py` — its
-fail-closed-on-EOFError confirmation behavior is EXACTLY what makes an
-agent safe to run unattended in CI (Chapter 11's own closing thought-
-process section names this connection explicitly, forward-referencing
-Chapter 12). Read Chapter 11 fully first. This chapter should actually
-wire a real CI check, consistent with how this course already treats
-its own CI as a live, tested artifact rather than a described concept.
-After Chapter 12, write `assessments/written-exams/module-5-exam.md`
-("production-readiness checklist exam" per CURRICULUM_MAP.md) — closes
-Module 5. Then Chapter 13 (capstone, Module 6) is the final chapter of
-the whole course.
+**Modules 1-5 (Chapters 1-12) are all complete, including the Module 5
+written exam.** Only one chapter remains in the entire 13-chapter
+course: **Chapter 13, the capstone (Module 6, Architect level)**. Per
+`docs/curriculum/CURRICULUM_MAP.md`: "design (and partially implement)
+an agentic workflow for a realistic engineering org" — specifically
+the L4 Architecture Challenge: design an agentic CI workflow (a PR
+review bot or CI troubleshooting agent) for a **regulated engineering
+org**, as a **business problem only**, not another from-scratch code
+build. This should look different in shape from Chapters 7-12 — more
+architecture proposal/ADRs/trade-off analysis/rubric, less "here's a
+new working agent," similar in spirit to `mcp-for-everyone`'s own
+capstone. Read Chapters 3, 5, 7-12 first — the capstone should
+synthesize the whole course (review discipline, failure modes, the
+agent-building mechanism, the security/CI model), applied to one
+coherent, realistic scenario with real constraints (compliance, audit
+trail, blast radius, accountability). It can include real code where a
+concrete mechanism benefits (e.g. a policy snippet) but the center of
+this chapter is the design document.
 
-**Speed note**: parallel background-agent builds have now been
-validated twice (Chapter 9 + Module 1/2 exams; Chapter 10 + the CI
-extension). Chapters 11 and 12 were correctly built sequentially since
-12 depends on 11's exact permission system — keep doing that when
-content genuinely depends on order, don't force parallelism just for
-speed.
+After Chapter 13, the course is content-complete. Remaining work
+becomes polish: verify every quality audit is present/accurate, and a
+final cross-chapter consistency pass now that the whole arc exists.
+
+**Speed note**: parallel background-agent builds have been validated
+three times now (Chapter 9 + Module 1/2 exams; Chapter 10 + the CI
+extension; sequential-but-correct for Chapter 11 + 12 which genuinely
+depended on order). Keep using judgment about genuine independence
+rather than forcing parallelism for its own sake.
 
 **Local-testing gotcha, learned from Chapter 11**: `scripts/local_check.sh`
 must be run with `< /dev/null` (or from a genuinely non-interactive
@@ -193,8 +193,9 @@ assume resolved).
 
 ## Next task after that
 
-Module 6 (Chapter 13: capstone) is the last chapter of the whole
-course. Don't mass-generate ahead of validation.
+Chapter 13 (capstone) is the last chapter of the whole course. Once
+it's done, this course's content is complete — shift to polish/review
+mode. Don't mass-generate ahead of validation.
 
 ## Important architectural decisions (see PROJECT_STATE.md for full detail)
 
