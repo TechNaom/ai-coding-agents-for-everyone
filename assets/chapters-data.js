@@ -13,7 +13,7 @@ window.ACAFE_MODULES = [
   {
     title: "Module 1 — Using Coding Agents Well",
     summary: "The daily-practice layer: prompting, scoping, and reviewing before any internals.",
-    examPath: null,
+    examPath: "assessments/written-exams/module-1-exam.md",
     chapters: [
       {
         id: "chapter-01",
@@ -41,7 +41,7 @@ window.ACAFE_MODULES = [
   {
     title: "Module 2 — How Coding Agents Actually Work",
     summary: "Open the hood on the agentic loop.",
-    examPath: null,
+    examPath: "assessments/written-exams/module-2-exam.md",
     chapters: [
       {
         id: "chapter-04",

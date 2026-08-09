@@ -1,0 +1,281 @@
+# Module 2 Written Exam — How Coding Agents Actually Work
+
+Covers: Chapter 4 (The Agentic Loop: Plan, Act, Observe, Repeat),
+Chapter 5 (Why Agents Loop, Stall, or Go Off the Rails), Chapter 6
+(Context Windows and Codebase-Scale Understanding).
+
+Assessment type (per `docs/curriculum/CURRICULUM_MAP.md`): concept quiz
+plus a failure-diagnosis exercise. Part C below is that failure-
+diagnosis exercise — short transcript excerpts you must diagnose
+against Chapter 5's four named failure modes (looping/thrashing,
+stalling, going off the rails, premature "done").
+
+No open resources needed beyond the three chapters themselves. For
+short-answer, diagnosis, and architecture questions, write full
+sentences — a bullet list of keywords doesn't demonstrate
+understanding.
+
+---
+
+## Part A — Multiple Choice
+
+Choose the single best answer for each.
+
+**A1.** What is a "tool call," mechanically, per Chapter 4?
+
+- (a) A separate reasoning module the model invokes outside of ordinary
+  text generation
+- (b) A structured piece of model output — a tool name plus a JSON
+  object of arguments — produced the same way any text is produced:
+  as the most probable continuation of everything currently in the
+  model's input
+- (c) A hardcoded if/else router that matches keywords in the user's
+  request to a specific function
+- (d) A persistent background process the model stays aware of while
+  it runs
+
+**A2.** Which of the following is *not* one of the loop-termination
+mechanisms Chapter 4 actually names?
+
+- (a) A clean stop — a turn with no tool call
+- (b) A hard stop — a harness-enforced step/turn cap
+- (c) A confidence-threshold stop — the model halts once its internal
+  certainty score drops below a fixed value
+- (d) A boundary stop — an explicit rule blocking or redirecting a
+  tool call
+
+**A3.** An agent tries four slightly different fixes for the same
+import error across four turns, with the fourth attempt nearly
+identical to its first. Per Chapter 5, this pattern is best described
+as:
+
+- (a) Stalling
+- (b) Looping / thrashing
+- (c) Premature "done"
+- (d) Going off the rails
+
+**A4.** Per Chapter 6, when an instruction given early in a long
+session appears to be "ignored" 65 turns later — even though the
+conversation was nowhere near the model's actual token limit — what
+actually happened to that instruction?
+
+- (a) It was silently deleted from the conversation to make room for
+  newer content
+- (b) It is still technically present, but it lost influence relative
+  to a much larger volume of newer, unrelated material — crowding and
+  dilution, not deletion
+- (c) The harness automatically expires instructions after a fixed
+  number of turns
+- (d) It was moved to a separate long-term memory store the model
+  didn't check
+
+---
+
+## Part B — Concept / Short Answer
+
+Answer in your own words, in full sentences.
+
+**B1.** A teammate says "the agent noticed the existing helper function
+and changed its approach." Rewrite that sentence in terms of the
+actual mechanism Chapter 4 describes — what does "noticing" and
+"changing its approach" actually consist of, turn to turn? Be specific
+about why the model has no persistent awareness of a tool while it's
+executing.
+
+**B2.** Name Chapter 4's stop conditions (at least four), plus the
+fifth, resource-driven one Chapter 6 covers in full. For each one,
+state whether it represents the model believing the task is finished,
+or the harness overriding the model regardless of what it predicted.
+
+**B3.** Chapter 6 names two distinct mechanisms — crowding and
+dilution — that both produce "forgetting" long before a conversation
+hits its hard token limit. Explain the difference between the two, and
+explain why this graceful-degradation failure is different in kind
+from a hard-limit cutoff, not just different in severity.
+
+---
+
+## Part C — Failure-Diagnosis Exercise
+
+For each transcript excerpt below: (1) name which of Chapter 5's four
+failure modes is occurring (looping/thrashing, stalling, going off the
+rails, or premature "done"), (2) point to the specific textual evidence
+in the excerpt that supports your diagnosis, and (3) state what a human
+reviewing this transcript should actually do about it, per Chapter 5's
+mitigation section.
+
+**C1.**
+
+```
+Task: "Fix the failing test in tests/reports/test_export.py —
+export_to_pdf() raises a TypeError on multi-page reports."
+
+Turn 4 (assistant): "The issue is the page count isn't being cast to
+an int before formatting."
+  edit_file(path="reports/export.py",
+            old="page_label = f'Page {count}'",
+            new="page_label = f'Page {int(count)}'")
+
+Turn 5 (tool_result): run_tests -> "TypeError: unsupported format
+string passed to NoneType.__format__"
+
+Turn 6 (assistant): "Let me guard against None with a default value
+instead."
+  edit_file(path="reports/export.py",
+            old="page_label = f'Page {int(count)}'",
+            new="page_label = f'Page {count or 1}'")
+
+Turn 7 (tool_result): run_tests -> "TypeError: unsupported format
+string passed to NoneType.__format__"
+
+Turn 8 (assistant): "I'll go back to casting to int, that's probably
+closer to correct."
+  edit_file(path="reports/export.py",
+            old="page_label = f'Page {count or 1}'",
+            new="page_label = f'Page {int(count)}'")
+
+Turn 9 (tool_result): run_tests -> "TypeError: unsupported format
+string passed to NoneType.__format__"
+```
+
+**C2.**
+
+```
+Task: "Fix the off-by-one error in the search results pagination in
+api/search.py. Acceptance: pytest tests/api/test_search.py passes."
+
+Turn 6 (tool_result): run_tests -> "3 passed, 0 failed"
+  (this test run was against the file's state before turns 7-9 below)
+
+Turn 7 (assistant): "I also want to clean up the variable naming for
+clarity."
+  edit_file(path="api/search.py", old="pg", new="page_number")
+
+Turn 8 (assistant): "And adjust the default page size to match the
+rest of the API."
+  edit_file(path="api/search.py", old="PAGE_SIZE = 20", new="PAGE_SIZE = 25")
+
+Turn 9 (assistant): "One more small adjustment to the offset
+calculation for consistency."
+  edit_file(path="api/search.py",
+            old="offset = (pg - 1) * PAGE_SIZE",
+            new="offset = (page_number - 1) * PAGE_SIZE")
+
+Turn 10 (assistant), no tool_use block:
+  "I've fixed the off-by-one pagination error and cleaned up related
+  code for consistency. This should satisfy the acceptance criterion."
+```
+
+**C3.**
+
+```
+Task: "Apply the new holiday shipping surcharge to checkout. Acceptance:
+tests/checkout/test_surcharge.py passes."
+
+Turn 2 (tool_result): search_codebase("shipping surcharge") ->
+  "checkout/pricing.py:22: def apply_surcharge(cart, rate): ...
+   checkout/pricing.py:51: def apply_surcharge_v2(cart, rate,
+   region=None): ..."
+
+Turn 3 (assistant): "apply_surcharge_v2 is the version actually wired
+into the checkout flow, since it's the newer one."
+  read_file(path="checkout/pricing.py")
+
+Turn 4 (assistant): "Confirmed — updating apply_surcharge_v2 to include
+the holiday rate."
+  edit_file(path="checkout/pricing.py", old="...", new="...")
+
+Turn 5 (assistant): "Updating the surcharge tests to match the v2
+function's signature, since that's the one checkout calls."
+  edit_file(path="tests/checkout/test_surcharge.py", old="...", new="...")
+
+Turn 6 (tool_result): run_tests -> "2 passed, 0 failed"
+
+Turn 7 (assistant), no tool_use block:
+  "Holiday surcharge is applied through the checkout function checkout
+  actually uses (apply_surcharge_v2). Tests pass."
+```
+
+---
+
+## Part D — Architecture / Production Question
+
+**D1.** Your team wants to run a coding agent unattended overnight
+against a batch of tickets, with no human watching any individual run
+live. Using Chapter 4's stop-condition mechanism and Chapter 5's four
+failure modes, design a policy that catches as many of these failure
+modes as possible without a human present during the run itself.
+Specifically address: (1) which stop condition(s) need to be made
+strictest and why, (2) what you would do differently about trusting a
+clean stop versus trusting an independently-run acceptance check, and
+(3) one concrete, automatable signal you'd look for in a transcript to
+flag a likely thrashing or stalling run for human review after the
+fact.
+
+---
+
+## Answer Key
+
+**Part A (Multiple Choice):**
+
+1. A1 — (b)
+2. A2 — (c)
+3. A3 — (b)
+4. A4 — (b)
+
+**Part C (Failure-Diagnosis Exercise) — diagnosis key:**
+
+- **C1** is looping/thrashing. Turn 8's edit reverts to essentially
+  turn 4's fix (`int(count)`), after turn 6's detour — a rotation
+  through variants of the same idea rather than a narrowing toward new
+  information. None of the three attempts ever addressed the actual
+  signal in the error message (`count` itself is `None`, not merely the
+  wrong type) — nothing in the transcript ever supplied that as a new,
+  distinguishing fact, so each retry stayed inside the same "which
+  cast/guard is right" space.
+- **C2** is premature "done." The only test run visible in the
+  transcript (turn 6) happened *before* turns 7–9's edits, including
+  the offset-calculation change in turn 9 — exactly the kind of edit
+  most likely to reintroduce or shift an off-by-one bug. Turn 10's
+  "this should satisfy the acceptance criterion" is a prediction about
+  what the code probably does, not a report of a check that was
+  actually run after the last edit.
+- **C3** is going off the rails (a compounding mistake). Turn 3's claim
+  that `apply_surcharge_v2` is "the version actually wired into the
+  checkout flow" was never verified against anything — it was inferred
+  from the function being newer-looking, not from reading anything that
+  actually traced checkout's call path. Every turn after that treats it
+  as settled, and turn 5 edits the tests to match the *assumed* function
+  rather than checking which one checkout truly calls. Turn 7's "the
+  checkout function checkout actually uses" restates the original guess
+  with more confidence than turn 3 ever had, and the test suite passing
+  proves nothing about which function is real, since the tests were
+  edited to match the assumption in turn 5.
+
+**Parts B and D, and the "what should a human do" component of Part
+C — self-check, not a published key.**
+
+These have no single correct sentence — they're graded on whether your
+reasoning traces back to specific chapter content, not on matching an
+exact phrase. To check your own answers:
+
+- Compare Part B against Chapter 4's "Points to Remember" and its
+  `interview-questions.html` (Beginner/Intermediate questions 1–4 cover
+  the same ground from a different angle), and Chapter 6's "Points to
+  Remember" and `interview-questions.html` questions 1–4.
+- For Part C's mitigation component, compare against Chapter 5's
+  "Mitigation Patterns" section — a thrashing run calls for supplying a
+  genuinely new fact or stepping back to re-scope, not "try harder";
+  a premature-done claim calls for independently re-running the actual
+  acceptance check rather than trusting the closing message; a
+  compounding mistake calls for tracing the earliest unverified claim
+  back to whether it was ever actually checked against a tool result.
+- Compare Part D against Chapter 4's Architect-level interview question
+  7 (designing a stop-condition policy for unattended CI) and Chapter
+  5's Architect-level interview question 7 (designing review for
+  overnight unattended batches) — both cover this exact scenario and
+  list the specific red flags for an answer that relies on the model's
+  own judgment instead of harness-enforced checks.
+
+If you can defend your answer against the "red flag" descriptions in
+the relevant `interview-questions.html` pages, you've answered it well.

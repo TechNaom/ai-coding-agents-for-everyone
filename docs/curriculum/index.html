@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Coding Agents for Everyone Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body>
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">Home</a>
+      <a href="CURRICULUM_MAP.md">Markdown roadmap</a>
+      <a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <h1>Roadmap</h1>
+  <p class="lede">
+    The course mirrors the <code>mcp-for-everyone</code> architecture:
+    chapters grouped into modules, each ending with exercises, a
+    practice bank, interview prep, a project, and a builder
+    thought-process journal. The build-your-own-agent chapters (7
+    onward) run against a local, open-source model via Ollama by
+    default — zero API cost, zero API key, with a documented option to
+    swap in a hosted provider instead.
+  </p>
+  <p>
+    <a class="btn-primary" href="../../chapters/chapter-01-why-coding-agents-arent-just-autocomplete/lesson.html">Start with Chapter 1 (live now)</a>
+  </p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h3>Module 1: Using Coding Agents Well</h3>
+      <p>Prompting, scoping, and reviewing an agent's diff like a senior engineer — before any internals.</p>
+      <p><strong>Outcome:</strong> ship a real small feature with a written review log.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Module 2: How Coding Agents Actually Work</h3>
+      <p>The plan/act/observe/repeat loop, named failure modes, and context-window limits — opening the hood.</p>
+      <p><strong>Outcome:</strong> diagnose why an agent looped, stalled, or went off the rails.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Module 3: Building a Coding Agent</h3>
+      <p>A real, working agent from scratch against a local model, real tools, and MCP-based tools instead of hand-rolled ones.</p>
+      <p><strong>Outcome:</strong> a working minimal agent with real tools, tested.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Module 4: Reviewing AI-Generated Code Critically</h3>
+      <p>Detecting hallucinated APIs and logical bugs — the human half of "AI proposes, human reviews."</p>
+      <p><strong>Outcome:</strong> build the habit of validating before trusting.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Module 5: Production &amp; Safety</h3>
+      <p>Sandboxing, permissions, destructive commands, and putting an agent safely into CI.</p>
+      <p><strong>Outcome:</strong> scope an agent's permissions and integrate it into CI safely.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Module 6: Capstone</h3>
+      <p>Design (and partially implement) an agentic workflow for a realistic engineering org.</p>
+      <p><strong>Outcome:</strong> think and design like an architect, not just a builder.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Every Chapter Includes</h3>
+      <p>Lesson, quiz, exercises, practice bank, interview prep, project, and a builder thought-process journal — every hands-on code example tested against a real, running model before it ships.</p>
+      <p><strong>Outcome:</strong> learn like a responsible AI-era builder.</p>
+    </div>
+  </div>
+
+  <h2>Chapter Path</h2>
+  <div class="chapter-grid">
+    <a class="chapter-card" data-chapter-link="chapter-01" href="../../chapters/chapter-01-why-coding-agents-arent-just-autocomplete/lesson.html"><span class="chapter-card-num">Chapter 1 — Live</span><h3>Why Coding Agents Aren't Just Autocomplete</h3><p>What actually changed, and why it matters for how you work.</p></a>
+    <a class="chapter-card" data-chapter-link="chapter-02" href="../../chapters/chapter-02-prompting-and-scoping-tasks-for-an-agent/lesson.html"><span class="chapter-card-num">Chapter 2 — Live</span><h3>Prompting and Scoping Tasks for an Agent</h3><p>Framing a task so an agent can actually succeed at it.</p></a>
+    <a class="chapter-card" data-chapter-link="chapter-03" href="../../chapters/chapter-03-reading-and-reviewing-an-agents-diff-like-a-senior-engineer/lesson.html"><span class="chapter-card-num">Chapter 3 — Live</span><h3>Reading and Reviewing an Agent's Diff Like a Senior Engineer</h3><p>The review habits that catch what a quick glance misses.</p></a>
+    <a class="chapter-card" data-chapter-link="chapter-04" href="../../chapters/chapter-04-the-agentic-loop-plan-act-observe-repeat/lesson.html"><span class="chapter-card-num">Chapter 4 — Live</span><h3>The Agentic Loop: Plan, Act, Observe, Repeat</h3><p>The mental model behind every coding agent's behavior.</p></a>
+    <a class="chapter-card" data-chapter-link="chapter-05" href="../../chapters/chapter-05-why-agents-loop-stall-or-go-off-the-rails/lesson.html"><span class="chapter-card-num">Chapter 5 — Live</span><h3>Why Agents Loop, Stall, or Go Off the Rails</h3><p>Diagnosing the most common agent failure modes.</p></a>
+    <a class="chapter-card" data-chapter-link="chapter-06" href="../../chapters/chapter-06-context-windows-and-codebase-scale-understanding/lesson.html"><span class="chapter-card-num">Chapter 6 — Live</span><h3>Context Windows and Codebase-Scale Understanding</h3><p>Why an agent "forgets" things, and how to work with that.</p></a>
+    <a class="chapter-card" data-chapter-link="chapter-07" href="../../chapters/chapter-07-build-a-minimal-coding-agent/lesson.html"><span class="chapter-card-num">Chapter 7 — Live</span><h3>Build: A Minimal Coding Agent</h3><p>A real, working agent from scratch against a local model, tested end to end.</p></a>
+    <a class="chapter-card" data-chapter-link="chapter-08" href="../../chapters/chapter-08-giving-your-agent-file-shell-git-tools/lesson.html"><span class="chapter-card-num">Chapter 8 — Live</span><h3>Giving Your Agent File/Shell/Git Tools</h3><p>Extending the minimal agent with real, carefully-scoped tool access.</p></a>
+    <a class="chapter-card" href="#"><span class="chapter-card-num badge-coming-soon">Chapter 9</span><h3>Connecting Your Agent to MCP Servers</h3><p>Swapping hand-rolled tools for MCP-based ones.</p></a>
+    <a class="chapter-card" href="#"><span class="chapter-card-num badge-coming-soon">Chapter 10</span><h3>Detecting Hallucinated APIs and Logical Bugs</h3><p>Building the habit of validating before trusting.</p></a>
+    <a class="chapter-card" href="#"><span class="chapter-card-num badge-coming-soon">Chapter 11</span><h3>Security: Sandboxing, Permissions, Destructive Commands</h3><p>Containing what an agent can actually do to your codebase.</p></a>
+    <a class="chapter-card" href="#"><span class="chapter-card-num badge-coming-soon">Chapter 12</span><h3>Putting an Agent in CI</h3><p>PR review bots and CI troubleshooting agents, done safely.</p></a>
+    <a class="chapter-card" href="#"><span class="chapter-card-num badge-coming-soon">Chapter 13</span><h3>Capstone: Design an Agent Workflow for a Real Team</h3><p>A Level 4 architecture challenge closing the course.</p></a>
+  </div>
+
+  <h2>Canonical Source</h2>
+  <p>
+    The editable roadmap lives in
+    <a href="CURRICULUM_MAP.md">CURRICULUM_MAP.md</a>. Keep this page and
+    <code>assets/chapters-data.js</code> aligned as chapters are built.
+  </p>
+</main>
+
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

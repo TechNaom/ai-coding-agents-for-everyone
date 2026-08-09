@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Coding Agents for Everyone — Free, Interactive Coding-Agent Course</title>
+<meta name="description" content="A free, visual, engineering-first course on using and building AI coding agents: prompt and review them like a senior engineer, then build one from scratch against a local, open-source model.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="#chapters">All Chapters</a>
+      <a href="docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="page">
+    <span class="hero-eyebrow">Free · open-source by default · engineering-first</span>
+    <h1>Use coding agents well. Then build one yourself.</h1>
+    <p class="lede">
+      Learn to prompt, scope, and review AI coding agents like a senior
+      engineer — then open the hood on the agentic loop and build a real
+      one from scratch, running against a local, open-source model via
+      Ollama. No signup, no API key, no cost to run the hands-on
+      chapters, with a documented option to swap in a hosted provider if
+      you'd rather.
+    </p>
+    <div class="hero-badges">
+      <span>Plain-language first</span>
+      <span>Tested against real, running code</span>
+      <span>Zero-cost by default</span>
+      <span>Interview-ready</span>
+    </div>
+    <div class="action-row">
+      <a href="chapters/chapter-01-why-coding-agents-arent-just-autocomplete/lesson.html" class="btn-primary">Start Chapter 1</a>
+      <a href="#chapters" class="btn-secondary">Browse chapters</a>
+    </div>
+    <div class="hero-stats">
+      <div><strong>8</strong><span>chapters live</span></div>
+      <div><strong>2</strong><span>modules complete</span></div>
+      <div><strong>0</strong><span>API key required</span></div>
+      <div><strong>0</strong><span>signup required</span></div>
+    </div>
+  </div>
+</section>
+
+<main class="page">
+  <h2>Why This Course Is Different</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h3>Real, Running Code — Not Illustrative Snippets</h3>
+      <p>Chapter 7 onward builds a genuine, working coding agent, tested against a real local model before anything is written into a lesson — with real transcripts, not invented ones.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Open-Source By Default</h3>
+      <p>The build-your-own-agent chapters run against Ollama and a local open-weight model — zero API cost, zero API key, for every learner — with a documented, one-parameter option to swap in a hosted provider if you want one.</p>
+    </div>
+    <div class="feature-card">
+      <h3>Mechanism First, Not Framework First</h3>
+      <p>The agent loop is built from scratch against the plan/act/observe/repeat mechanism this course teaches — no agent SDK hiding how it actually works.</p>
+    </div>
+  </div>
+
+  <section id="chapters" class="course-map" aria-labelledby="chapters-title">
+    <div class="section-heading-row">
+      <div>
+        <span class="section-kicker">Complete learning path</span>
+        <h2 id="chapters-title">All Chapters</h2>
+      </div>
+      <a href="docs/curriculum/index.html" class="section-link">Open roadmap</a>
+    </div>
+    <p class="section-intro">
+      The sidebar and this chapter map are connected to the same course
+      data. Modules 1-2 (Chapters 1-6) and Module 3's first two chapters
+      (7-8) are live end to end — lesson, quiz, exercises, practice
+      bank, interview prep, and a project each. The rest of the course
+      is being built module by module; see
+      <a href="https://github.com/TechNaom/ai-coding-agents-for-everyone/blob/main/PROJECT_STATE.md">PROJECT_STATE.md</a>
+      for current status.
+    </p>
+    <div id="chapter-map" class="module-list" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first coding-agent learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="assets/chapters-data.js"></script>
+<script src="assets/progress.js"></script>
+<script src="assets/sidebar.js"></script>
+<script src="assets/home.js"></script>
+</body>
+</html>
