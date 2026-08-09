@@ -82,6 +82,24 @@ only).
       feature with a written review log") that Ch1/Ch2 pointed to.
       All conceptual, no SDK calls — built without needing the
       ANTHROPIC_API_KEY decision below to be operationalized yet.
+- [x] **Module 2 built and live** — Chapters 4–6 (The Agentic Loop:
+      Plan, Act, Observe, Repeat; Why Agents Loop, Stall, or Go Off the
+      Rails; Context Windows and Codebase-Scale Understanding). Same
+      per-chapter quality bar as Module 1. Chapter 4 opens the hood on
+      the loop mechanism (tool calls as structured model output,
+      stateless per-turn prediction, four-plus-one stop conditions) and
+      hosts Module 2's real lab ("trace and annotate a transcript").
+      Chapter 5 names four failure modes (looping/thrashing, stalling,
+      going off the rails, premature "done") mechanically in terms of
+      Chapter 4's model. Chapter 6 closes the module: context windows,
+      why "forgetting" is graceful degradation (crowding/dilution) not
+      a hard cutoff, why codebase-scale understanding is inherently
+      limited, and ties back to both Ch4 and Ch5. All conceptual, no
+      SDK calls. One authoring bug found and fixed by the build agent
+      (mismatched HTML tag in Ch6 practice page) before commit — worth
+      spot-checking future chapters' practice pages for the same class
+      of error. Module 1 and 2 written exams are NOT built yet
+      (`examPath` still null for both).
 
 ## Pending / Not Started
 
@@ -115,7 +133,21 @@ only).
 
 ## Known Issues
 
-- None yet — repo is freshly scaffolded, no chapter content written.
+- None currently open. Chapters 1-6 (Modules 1-2) built, CI-verified
+  green on real GitHub Actions runners, and live on GitHub Pages.
+
+## Structural reference note (2026-08-09)
+
+The user confirmed `python-for-everyone` (34 chapters, richer
+per-chapter file set — `README.md` in `exercises/`/`practice/`/
+`project/`, `ai-paired.html`, `interview-questions.md` alongside the
+`.html` version, top-level `capstones/`) is the preferred structural
+reference for TechNaom courses going forward, not `rag-for-everyone`
+or the `mcp-for-everyone` pattern this repo was originally scaffolded
+from. Decision: **forward-only** — Chapters 1-6 stay as already built
+(mcp-for-everyone-derived pattern, already shipped and CI-verified);
+apply the richer python-for-everyone-derived per-chapter file set
+starting with Chapter 7 onward. Don't retrofit 1-6 without being asked.
 
 ## Open Decisions
 
@@ -138,16 +170,18 @@ scenarios/8 interview questions minimum, tested code before writing).
 
 ## Next Recommended Task
 
-Module 1 (Chapters 1-3) is done. Next: build Module 2 (Chapters 4-6:
-The Agentic Loop; Why Agents Loop/Stall/Go Off the Rails; Context
-Windows and Codebase-Scale Understanding) — still conceptual, no SDK
-calls needed, so no dependency on the `ANTHROPIC_API_KEY` secret.
-Chapter 5 and 6 can now forward-reference nothing further and should
-instead pay off the forward-references Chapters 1-2 already made to
-them. After Module 2, configure the `ANTHROPIC_API_KEY` CI secret and
-build Chapter 7 (the reference chapter) — verify the Claude Agent
-SDK's actual API surface against the installed package before writing
-any code sample, same discipline used throughout `mcp-for-everyone`.
-Write the Module 1 written exam (assessments/written-exams/) before or
-alongside starting Module 2 — it's the one piece of Module 1 not yet
-built.
+Modules 1 and 2 (Chapters 1-6) are done. Next: configure the
+`ANTHROPIC_API_KEY` CI secret (low budget/rate limit, Haiku-only
+policy) and build Chapter 7 ("Build: A Minimal Coding Agent" — the
+reference chapter, starts Module 3). Verify the Claude Agent SDK's
+actual API surface against the installed package before writing any
+code sample — same discipline used throughout `mcp-for-everyone`, and
+non-negotiable per AI_HANDOFF.md. Pin `model="claude-haiku-4-5"` and a
+low `max_turns`, state the approximate real cost in the lesson text.
+Starting with Chapter 7, use `python-for-everyone`'s richer
+per-chapter file pattern (see "Structural reference note" above), not
+the mcp-for-everyone-derived pattern Chapters 1-6 used.
+
+Also outstanding, not blocking Chapter 7: write the Module 1 and
+Module 2 written exams (assessments/written-exams/) — the one piece of
+each completed module not yet built.

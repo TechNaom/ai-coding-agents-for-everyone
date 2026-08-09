@@ -20,7 +20,7 @@ EVALUATE → SECURE → OPTIMIZE → SCALE → ARCHITECT progression; layered
 depth for 5 personas; story-first; no shallow tutorials; 13 chapters,
 don't pad; all content original.
 
-## Current state (as of 2026-08-09, Module 1 complete)
+## Current state (as of 2026-08-09, Modules 1-2 complete)
 
 **Read `PROJECT_STATE.md` for the authoritative, up-to-date status.**
 
@@ -54,8 +54,26 @@ don't pad; all content original.
   Chapter 3 ships the real L1 project. Each chapter was built by a
   fresh subagent briefed to read the prior chapters first for
   continuity, then reviewed by the orchestrating session before commit
-  — that pattern worked well and is worth reusing for Module 2.
-  Module 1's written exam is NOT built yet (`examPath` still null).
+  — that pattern worked well and was reused for Module 2.
+- **Module 2 (Chapters 4-6) is built and live**: "The Agentic Loop:
+  Plan, Act, Observe, Repeat," "Why Agents Loop, Stall, or Go Off the
+  Rails," "Context Windows and Codebase-Scale Understanding." Chapter 4
+  opens the hood on the loop mechanism and hosts Module 2's real lab.
+  Chapter 5 names four failure modes mechanically, paying off Chapters
+  1/2/4's forward-references. Chapter 6 closes the module (context
+  windows, graceful degradation, codebase-scale limits) and explicitly
+  ties Ch4 and Ch5 together as a recap. All conceptual, no SDK calls.
+  Module 1 and 2 written exams are NOT built yet (`examPath` still null
+  for both modules).
+- **Structural reference changed 2026-08-09**: the user confirmed
+  `python-for-everyone` (34 chapters, richer per-chapter files —
+  `README.md` in exercises/practice/project, `ai-paired.html`,
+  `interview-questions.md` alongside the `.html` version) is the
+  preferred structural reference going forward, not the
+  `mcp-for-everyone` pattern Chapters 1-6 were built against. Decision:
+  forward-only — Chapters 1-6 stay as-is (already shipped, CI-verified);
+  apply the richer pattern starting with Chapter 7. Don't retrofit 1-6
+  without being asked.
 - **Critical difference from `mcp-for-everyone`**: this course's SDK
   (`claude-agent-sdk`) requires a real `ANTHROPIC_API_KEY` and costs
   real money to run — MCP's course was entirely free/local. **RESOLVED
@@ -101,23 +119,24 @@ No website root `index.html` yet (Step 9, comes later).
 
 ## Current task
 
-Build Chapters 4-6 (Module 2: "How Coding Agents Actually Work" —
-still conceptual, no SDK calls needed). Also write the Module 1
-written exam (assessments/written-exams/) if not already done. Read
-Chapters 1-3 fully first for continuity/terminology before writing
-Chapter 4 — Chapters 1 and 2 already forward-reference Chapter 5
-(failure modes) and Chapter 6 (context windows); pay those off rather
-than re-deriving the same ground.
+Configure the `ANTHROPIC_API_KEY` CI secret, then build Chapter 7
+("Build: A Minimal Coding Agent") as the reference chapter — the first
+chapter that actually runs the SDK, and the first to use
+python-for-everyone's richer per-chapter file pattern instead of the
+mcp-for-everyone-derived one Chapters 1-6 used. Verify the SDK's actual
+API surface against the installed package before writing any code
+sample (non-negotiable — same discipline that caught real bugs
+throughout `mcp-for-everyone`'s build). Pin `model="claude-haiku-4-5"`
+and a low `max_turns`, state the approximate real cost in the lesson
+text. Read Chapters 1-6 fully first for continuity/terminology.
 
 ## Next task after that
 
-Chapter 7 ("Build: A Minimal Coding Agent") as the reference chapter —
-verify the SDK's actual API surface before writing any code sample,
-pin `model="claude-haiku-4-5"` per the resolved cost policy, and
-configure the `ANTHROPIC_API_KEY` CI secret at that point. Then
-continue module by module per `docs/curriculum/CURRICULUM_MAP.md`,
-validating each with a `quality-audits/chapter-0N-audit.md` before
-moving on. Don't mass-generate ahead of validation.
+Continue module by module per `docs/curriculum/CURRICULUM_MAP.md`
+(Module 3: Chapters 8-9), validating each with a
+`quality-audits/chapter-0N-audit.md` before moving on. Also write the
+Module 1 and Module 2 written exams (assessments/written-exams/) —
+outstanding but not blocking. Don't mass-generate ahead of validation.
 
 ## Important architectural decisions (see PROJECT_STATE.md for full detail)
 
