@@ -35,15 +35,44 @@ carries over unchanged.
 
 ## Tool/SDK Version Policy
 
-This course teaches against the **Claude Agent SDK** (current as of
-build time) for the "build your own agent" chapters, and covers
-Claude Code / Cursor / GitHub Copilot at a conceptual, tool-agnostic
-level for the "use agents well" chapters — specific UI details of
-commercial tools change too fast to teach as exact steps; teach the
-underlying practice (scoping, reviewing, iterating) that survives tool
-churn. Verify current SDK package name, install command, and API
-surface against primary sources before writing Chapter 7 (the
-reference chapter) — do not assume prior knowledge is current.
+**Revised 2026-08-09** (was: Claude Agent SDK + Anthropic API). The
+user rejected any Anthropic-API-dependent design, including the
+Haiku-only low-cost mitigation — the requirement is genuinely free
+(open-source) or genuinely low-price, and the resolved choice is
+**fully local, open-source**: no API key, no account, no per-run cost
+for any learner, ever.
+
+This course builds the "build your own agent" chapters' agent loop
+**from scratch** against **Ollama** (`pip install ollama`), which
+exposes an OpenAI-compatible chat API with tool-calling support over a
+locally-run open-weight model — confirmed via research 2026-08-09
+against `ollama-python`'s own examples (`chat(model=..., messages=...,
+tools=[...])`, tool calls returned as `message.tool_calls`, results
+sent back as `role: "tool"` messages). There is deliberately no
+third-party agent-framework SDK layered on top: the loop is written
+directly against Chapter 4's plan/act/observe/repeat mechanism and the
+model's raw tool-calling API, so the mechanism stays visible rather
+than hidden behind framework abstraction — this is also a better
+teaching fit than adopting a framework like LangGraph would have been.
+
+**Model choice**: recommend a tool-calling-capable open-weight model —
+current candidates are Qwen2.5-coder (coding-tuned) or Llama 3.1 —
+verify against Ollama's current model library and confirm tool-calling
+support before writing Chapter 7's code (do not assume prior knowledge
+is current; the reference-chapter research discipline applies here
+just as much as it did to the original SDK research). State the
+hardware expectation (approximate RAM, disk space for the model
+weights) explicitly in the lesson text, the same way the old policy
+required stating API cost explicitly — this course's no-hype standard
+applies to hardware cost the same way it applied to dollar cost.
+
+Claude Code / Cursor / GitHub Copilot are still covered at a
+conceptual, tool-agnostic level for the "use agents well" chapters
+(Module 1) — specific UI details of commercial tools change too fast
+to teach as exact steps; teach the underlying practice (scoping,
+reviewing, iterating) that survives tool churn. This part of the
+policy is unchanged — Module 1 never depended on the Anthropic API and
+required no rework.
 
 ## Conversational Clarity Standard
 

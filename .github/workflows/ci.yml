@@ -68,17 +68,16 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install the Claude Agent SDK and mcp
-        run: pip install claude-agent-sdk "mcp[cli]" --quiet
-
-      - name: Set ANTHROPIC_API_KEY from repo secret (if configured)
-        run: echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> "$GITHUB_ENV"
-        # Chapters that actually invoke the Claude Agent SDK's model calls
-        # need a real API key -- unlike mcp-for-everyone, this course can't
-        # be fully tested for free. If ANTHROPIC_API_KEY isn't set as a repo
-        # secret, those specific solution.py files should detect its
-        # absence and skip gracefully (print a clear message, exit 0)
-        # rather than fail CI -- see CONTRIBUTING.md.
+      - name: Install the ollama client and mcp
+        run: pip install ollama "mcp[cli]" --quiet
+        # No Anthropic API dependency in this course (reversed 2026-08-09
+        # -- see PROJECT_STATE.md). Chapters that call a model do so via
+        # Ollama against a local, open-source model. A GitHub Actions
+        # runner does not have a running Ollama server or a pulled model
+        # available -- solution.py files that need a live model must
+        # detect the server's absence (e.g. a connection error to
+        # localhost:11434) and skip gracefully (print a clear message,
+        # exit 0) rather than fail CI. See CONTRIBUTING.md.
 
       - name: Check all chapter Python files compile (syntax check)
         run: |

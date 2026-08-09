@@ -31,8 +31,9 @@ same sizing model as `mcp-for-everyone`.
    its diff like a senior engineer would.
 2. Explain the agentic loop (plan → act → observe → repeat) and
    diagnose why an agent loops, stalls, or goes off the rails.
-3. Build a minimal coding agent using the Claude Agent SDK with real
-   tools (file read/write, shell, git).
+3. Build a minimal coding agent from scratch against a local,
+   open-source model (via Ollama) with real tools (file read/write,
+   shell, git).
 4. Connect an agent to MCP servers instead of hand-rolled tools.
 5. Detect hallucinated APIs and logical bugs in AI-generated code.
 6. Secure an agent operating on a live codebase (destructive commands,
@@ -61,7 +62,8 @@ modes; reason about context-window limits on codebase understanding.
 **Assessment:** concept quiz + failure-diagnosis exercise
 
 ### Module 3 — Building a Coding Agent
-**Purpose:** hands-on construction with the Claude Agent SDK.
+**Purpose:** hands-on construction, built from scratch against a local
+open-source model via Ollama.
 **Prerequisites:** Module 2
 **Outcomes:** a working minimal agent with real tools, tested.
 **Chapters:** 7, 8, 9

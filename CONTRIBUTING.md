@@ -16,18 +16,18 @@ This rule is inherited from `mcp-for-everyone`, where it caught real,
 non-obvious SDK bugs repeatedly (see that repo's `PROJECT_STATE.md` for
 the full list) — it applies here from day one, not just once it's
 proven itself in this repo too. Every code example in every chapter
-must be installed and run against the real `claude-agent-sdk` (or
-`mcp[cli]` for the tool-connection chapter) before being written into a
-lesson — never written from memory or copied from older tutorials.
-**Do not relax this for any edit, however small it seems.** If you're
-adding or changing a code sample:
+must be installed and run against the real `ollama` client with a real
+local model pulled (or `mcp[cli]` for the tool-connection chapter)
+before being written into a lesson — never written from memory or
+copied from older tutorials. **Do not relax this for any edit, however
+small it seems.** If you're adding or changing a code sample:
 
 ```bash
 python3 -m venv /tmp/acafe-test-env
-/tmp/acafe-test-env/bin/pip install claude-agent-sdk "mcp[cli]"
-# export ANTHROPIC_API_KEY=... if the example calls the model --
-# see PROJECT_STATE.md's Open Decisions before doing this against a
-# real account
+/tmp/acafe-test-env/bin/pip install ollama "mcp[cli]"
+# ollama pull <model>  -- see PROJECT_STATE.md for the current
+# recommended tool-calling-capable model; requires a running local
+# Ollama server (https://ollama.com), no API key or account needed
 /tmp/acafe-test-env/bin/python your_new_example.py
 ```
 
@@ -107,10 +107,11 @@ quality-audits/chapter-0N-audit.md
   `# CI: LONG_RUNNING_SERVER` or `# CI: NEEDS_LIVE_SERVER=<path>`
   marker comment (see `ci.yml`'s comments) so CI knows not to treat a
   non-zero exit as a failure.
-- **Chapters that call the Claude Agent SDK's model** must check for
-  `ANTHROPIC_API_KEY` and skip/degrade gracefully with a clear message
-  if it's absent, rather than crashing — see PROJECT_STATE.md's Open
-  Decisions for the unresolved policy question this depends on.
+- **Chapters that call the model via Ollama** must check for a running
+  local Ollama server (e.g. a connection error to `localhost:11434`)
+  and skip/degrade gracefully with a clear message if it's absent,
+  rather than crashing — CI runners don't have Ollama running or a
+  model pulled, so this path is exercised on every CI run.
 - **Every chapter needs**: a hook grounded in a real problem, tested
   code (not illustrative pseudocode), a production scenario, common
   mistakes, a builder thought-process box, 6+ exercises (3+

@@ -2,8 +2,8 @@
 
 Free, interactive course on using and building AI coding agents:
 prompting and reviewing agent-generated code like a senior engineer,
-understanding the agentic loop, building a real agent with the Claude
-Agent SDK, and connecting it to tools via MCP.
+understanding the agentic loop, building a real agent against a local,
+open-source model, and connecting it to tools via MCP.
 
 🔗 **Repo:** <https://github.com/TechNaom/ai-coding-agents-for-everyone>
 🔗 **Live UI:** <https://technaom.github.io/ai-coding-agents-for-everyone/>
@@ -13,16 +13,16 @@ This course follows the same philosophy as `mcp-for-everyone`:
 
 - Plain-language first, without hiding the real engineering.
 - One chapter at a time, validated before scaling.
-- No signup required to *read* the course. **Exception**: chapters that
-  actually run the Claude Agent SDK need a real `ANTHROPIC_API_KEY` —
-  unlike `mcp-for-everyone`, this course cannot be fully hands-on for
-  free. Every hands-on example pins the cheapest model (Haiku) with a
-  low turn cap to keep real cost to fractions-of-a-cent/low-cents per
-  run, and each affected chapter states the approximate cost
-  explicitly, per this course's no-hype standard.
+- No signup required to *read or run* the course. Every hands-on
+  chapter runs against a local, open-source model via
+  [Ollama](https://ollama.com) — no API key, no account, and no per-run
+  cost. The trade-off is stated plainly: a learner needs a machine
+  capable of running a small-to-mid-size local model (see
+  `docs/course-architecture.md` for the specific model and hardware
+  guidance).
 - Browser-first learning pages.
-- Hands-on code and projects, tested against the real SDK before being
-  written into a lesson.
+- Hands-on code and projects, tested against the real, installed
+  Ollama model before being written into a lesson.
 - Interview-ready explanations.
 - Strong architecture and trade-off thinking.
 
@@ -35,17 +35,24 @@ and AI-assisted development practice.
 `AI Coding Agents for Everyone` teaches two things most developers
 never learn explicitly: how to use a coding agent (Claude Code, Cursor,
 Copilot) well — prompting, scoping, reviewing — and what's actually
-happening when you build one yourself with the Claude Agent SDK,
-including connecting it to real tools via MCP.
+happening when you build one yourself, from scratch, against a local
+open-source model, including connecting it to real tools via MCP.
 
-## SDK versions
+## SDK and model versions
 
-This course teaches against the **Claude Agent SDK**
-(`pip install claude-agent-sdk`, current as of build time) for the
-build-your-own-agent chapters, and the **MCP Python SDK**
-(`pip install "mcp[cli]"`) for the tool-connection chapter. Commercial
-tools (Claude Code, Cursor, Copilot) are covered conceptually — their UI
-details change too fast to teach as exact steps.
+This course builds the agent loop directly against **Ollama**'s
+Python client (`pip install ollama`) and its OpenAI-compatible
+tool-calling API, using an open-weight model capable of tool calling
+(current recommendation: Qwen2.5-coder or Llama 3.1 — see
+`docs/course-architecture.md` for the exact model and why). There is
+no third-party agent SDK in this course; the loop is built from the
+same plan/act/observe/repeat mechanism Chapter 4 teaches, directly on
+top of the model's chat-completions API, deliberately, so the
+mechanism is never hidden behind a framework's abstraction. The
+**MCP Python SDK** (`pip install "mcp[cli]"`) is used for the
+tool-connection chapter. Commercial tools (Claude Code, Cursor,
+Copilot) are covered conceptually — their UI details change too fast
+to teach as exact steps.
 
 ## Who this is for
 

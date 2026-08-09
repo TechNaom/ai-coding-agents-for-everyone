@@ -1,14 +1,14 @@
 # PROJECT_STATE.md — AI Coding Agents for Everyone
 
-Last updated: 2026-08-09 (Module 1 complete)
+Last updated: 2026-08-09 (Modules 1-2 complete; SDK/model policy reversed)
 
 ## Course Objective
 
 Teach learners (beginner → architect) to use AI coding agents
-effectively and to build one themselves, using the Claude Agent SDK and
-MCP, following the TechNaom master course-building philosophy (layered
-depth, story-first, production-grade, interview-ready, original content
-only).
+effectively and to build one themselves, from scratch against a local
+open-source model (via Ollama) and MCP, following the TechNaom master
+course-building philosophy (layered depth, story-first,
+production-grade, interview-ready, original content only).
 
 ## Architecture Decisions
 
@@ -21,27 +21,40 @@ only).
   assets, templates, `.github/workflows/ci.yml`, and
   `scripts/local_check.sh` were copied from `mcp-for-everyone` and
   rebranded/generalized — see below.
-- **SDK: `claude-agent-sdk`** (confirmed via research 2026-08-09,
-  `pip install claude-agent-sdk`, Python 3.10+, released as recently as
-  2026-08-08 — verify this hasn't changed if picking this course back
-  up much later). MCP Python SDK (`mcp[cli]`) also used for the
-  tool-connection chapter, reusing `mcp-for-everyone`'s verified
-  patterns rather than re-discovering them.
-- **Cost policy (RESOLVED 2026-08-09):** chapters that invoke the
-  Claude Agent SDK's model calls need a real `ANTHROPIC_API_KEY` and
-  cost real money per call — this breaks the "fully free" philosophy
-  other TechNaom courses have, and that's stated explicitly rather than
-  hidden. Mitigation: every exercise/solution.py that calls the model
-  MUST pin `ClaudeAgentOptions(model="claude-haiku-4-5", max_turns=<low>)`
-  — Haiku is the cheapest model, confirmed real/documented via research
-  — keeping real cost per run to fractions-of-a-cent/low-cents. State
-  the approximate cost in the chapter's lesson text, don't bury it. CI
-  is wired to use an `ANTHROPIC_API_KEY` repo secret if configured;
-  solution.py files that need it should detect its absence and skip
-  gracefully (not fail CI). **This secret has not been configured
-  yet** — configure it when Chapter 7 (the reference chapter) is
-  actually built, with a low budget/rate limit given the Haiku-only
-  policy.
+- **SDK/model policy: REVERSED 2026-08-09.** The prior "Claude Agent
+  SDK + Haiku-only cost mitigation" policy below is **superseded** —
+  the user explicitly rejected any Anthropic-API-dependent design, not
+  just an expensive one. New policy: build the agent loop **from
+  scratch** against **Ollama** (`pip install ollama`), a local,
+  open-source model runner with an OpenAI-compatible tool-calling API
+  (confirmed via research 2026-08-09: `chat(model=..., messages=...,
+  tools=[...])`, tool calls returned as `message.tool_calls`, results
+  sent back as `role: "tool"` messages — see `ollama-python`'s own
+  `examples/tools.py`). No third-party agent-framework SDK is used —
+  the loop is written directly against Chapter 4's plan/act/observe/
+  repeat mechanism and the model's raw tool-calling API, deliberately,
+  so the mechanism stays visible. Recommended model: a tool-calling-
+  capable open-weight model (candidates: Qwen2.5-coder, Llama 3.1) —
+  **re-verify** the current recommendation and exact tool-calling
+  support against Ollama's model library before writing Chapter 7's
+  code; this is not yet re-confirmed at the code level, only at the
+  API-shape level. Zero API cost, zero API key, for every learner — but
+  a real hardware cost (RAM/disk for local model weights) that must be
+  stated explicitly in the lesson text, replacing the old "state the
+  dollar cost" requirement with "state the hardware requirement."
+  MCP Python SDK (`mcp[cli]`) is unaffected by this reversal, still
+  used for the tool-connection chapter (Chapter 9), reusing
+  `mcp-for-everyone`'s verified patterns.
+- **Superseded cost policy (for history only — do not follow):** the
+  original 2026-08-09 resolution kept the Claude Agent SDK and pinned
+  `ClaudeAgentOptions(model="claude-haiku-4-5", max_turns=<low>)` to
+  keep Anthropic API cost to fractions-of-a-cent per run, with an
+  `ANTHROPIC_API_KEY` CI secret planned for Chapter 7. The user
+  rejected this entirely later the same day — no Anthropic API
+  dependency of any kind, cheap or not. Nothing under this bullet
+  should be implemented; it's kept only so a future reader understands
+  why references to Haiku/ClaudeAgentOptions may still appear in old
+  commit messages.
 - **CI generalization:** `mcp-for-everyone`'s CI hardcoded a
   chapter-6-specific case for a long-running server. Generalized here
   (and should be backported to `mcp-for-everyone` if convenient) into a
@@ -103,23 +116,26 @@ only).
 
 ## Pending / Not Started
 
-- [x] `ANTHROPIC_API_KEY` cost decision: **confirmed 2026-08-09** — keep
-      the Claude Agent SDK (the course's actual subject; a generic
-      open-source/local-model framework was considered and rejected as
-      a scope change from Discovery), but every exercise and code
-      sample must pin `ClaudeAgentOptions(model="claude-haiku-4-5", ...)`
-      (confirmed real/documented via research) and a low `max_turns`
-      cap, keeping real cost per run in the fractions-of-a-cent to
-      low-cents range. State this cost explicitly in every chapter that
-      calls the SDK — don't bury it. Still need to: configure an
-      `ANTHROPIC_API_KEY` repo secret for CI once Chapter 7 exists (low
-      budget given the Haiku-only policy).
+- [x] Model/SDK dependency decision: **reversed 2026-08-09** — dropped
+      Claude Agent SDK / Anthropic API entirely (see "REVERSED
+      2026-08-09" above). New policy: Ollama + local open-source model,
+      agent loop built from scratch, zero API cost/key for any learner.
+- [ ] Confirm the specific Ollama model recommendation (Qwen2.5-coder
+      vs. Llama 3.1 vs. a newer option) and its tool-calling support
+      against Ollama's current model library — do this at the start of
+      Chapter 7, not before; verify against the actually-installed
+      package/model, not from memory or this note.
+- [ ] Update `.github/workflows/ci.yml` and `scripts/local_check.sh`:
+      remove the `ANTHROPIC_API_KEY`/`claude-agent-sdk` install steps,
+      add an Ollama install + model pull step for chapters that need
+      it. Not yet done as of this note — do this alongside or just
+      before Chapter 7's CI needs it.
 - [x] `CONTRIBUTING.md`, `CHANGELOG.md` — done, adapted from
       `mcp-for-everyone`.
 - [ ] Step 4: Build Chapter 7 ("Build: A Minimal Coding Agent") as the
-      reference chapter — verify the Claude Agent SDK's actual API
-      surface (imports, agent-loop construction, tool-definition
-      pattern) against installed package before writing any code
+      reference chapter — verify Ollama's actual tool-calling API
+      surface (imports, chat/tool-call shape, tool-definition pattern)
+      against the installed `ollama` package before writing any code
       sample, same discipline as `mcp-for-everyone`.
 - [ ] Step 5: Validate reference chapter, refine template if needed.
 - [ ] Step 6: Build remaining 12 chapters module by module, validating
@@ -151,10 +167,16 @@ starting with Chapter 7 onward. Don't retrofit 1-6 without being asked.
 
 ## Open Decisions
 
-- **`ANTHROPIC_API_KEY` cost policy: RESOLVED 2026-08-09** — see
-  "Pending / Not Started" above. Haiku-only, low `max_turns`, cost
-  stated explicitly per chapter. Still open: exact CI secret budget/
-  rate-limit configuration, to be set when Chapter 7 is built.
+- **Model/SDK dependency: RESOLVED 2026-08-09, then REVERSED same
+  day.** Final policy: Ollama + local open-source model, agent loop
+  built from scratch — no Anthropic API dependency at all, not even a
+  cheap one. See "Architecture Decisions" above for full detail. Still
+  open: exact model name/version to standardize on (verify at Chapter
+  7 start), and whether CI can practically run a local model at all
+  (a GitHub Actions runner pulling and running an LLM may be slow or
+  resource-constrained — evaluate when updating `ci.yml`; it may be
+  more practical for CI to skip model-dependent checks gracefully,
+  similar to how the old policy planned to skip without an API key).
 - **License**: MIT (code) + CC BY 4.0 (content), matching
   `mcp-for-everyone` — confirmed 2026-08-09, same pattern approved for
   that repo.
@@ -170,17 +192,19 @@ scenarios/8 interview questions minimum, tested code before writing).
 
 ## Next Recommended Task
 
-Modules 1 and 2 (Chapters 1-6) are done. Next: configure the
-`ANTHROPIC_API_KEY` CI secret (low budget/rate limit, Haiku-only
-policy) and build Chapter 7 ("Build: A Minimal Coding Agent" — the
-reference chapter, starts Module 3). Verify the Claude Agent SDK's
-actual API surface against the installed package before writing any
-code sample — same discipline used throughout `mcp-for-everyone`, and
-non-negotiable per AI_HANDOFF.md. Pin `model="claude-haiku-4-5"` and a
-low `max_turns`, state the approximate real cost in the lesson text.
-Starting with Chapter 7, use `python-for-everyone`'s richer
-per-chapter file pattern (see "Structural reference note" above), not
-the mcp-for-everyone-derived pattern Chapters 1-6 used.
+Modules 1 and 2 (Chapters 1-6) are done. Next: `pip install ollama`
+locally, pull a tool-calling-capable model, and verify the exact
+chat/tool-calling API shape against the real installed package before
+writing any code. Then build Chapter 7 ("Build: A Minimal Coding
+Agent" — the reference chapter, starts Module 3) against Ollama, no
+Anthropic API involved. State the hardware requirement (RAM/disk for
+the model) explicitly in the lesson text, replacing the old dollar-cost
+disclosure. Update `.github/workflows/ci.yml` for Ollama (or a
+graceful-skip pattern if running a local model in CI proves
+impractical) alongside this chapter. Starting with Chapter 7, use
+`python-for-everyone`'s richer per-chapter file pattern (see
+"Structural reference note" above), not the mcp-for-everyone-derived
+pattern Chapters 1-6 used.
 
 Also outstanding, not blocking Chapter 7: write the Module 1 and
 Module 2 written exams (assessments/written-exams/) — the one piece of
