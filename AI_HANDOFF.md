@@ -20,10 +20,9 @@ EVALUATE → SECURE → OPTIMIZE → SCALE → ARCHITECT progression; layered
 depth for 5 personas; story-first; no shallow tutorials; 13 chapters,
 don't pad; all content original.
 
-## Current state (as of 2026-08-09)
+## Current state (as of 2026-08-09, Module 1 complete)
 
 **Read `PROJECT_STATE.md` for the authoritative, up-to-date status.**
-Freshly scaffolded from `mcp-for-everyone`'s proven structure:
 
 - Directory skeleton, `docs/curriculum/CURRICULUM_MAP.md`,
   `docs/course-architecture.md`, `README.md`, this file,
@@ -37,6 +36,26 @@ Freshly scaffolded from `mcp-for-everyone`'s proven structure:
   `# CI: NEEDS_LIVE_SERVER=<path>` inside a `solution.py` file — so
   future chapters needing this don't require editing the workflow
   itself. Use these markers, don't hardcode chapter paths in CI again.
+- **CI is verified green on real GitHub Actions runners** (not just
+  local). Two bootstrap bugs were found and fixed on the first real
+  runs: (1) git doesn't track empty directories, so `chapters/` and
+  other empty scaffold dirs never made it into the first push —
+  fixed with `.gitkeep` placeholders; (2) the `structure-check` job's
+  quality-audit-matching loop used an unexpanded `chapters/chapter-*/`
+  glob that failed under `bash -e` when zero chapters existed — fixed
+  with `shopt -s nullglob`. GitHub Pages is enabled
+  (`https://technaom.github.io/ai-coding-agents-for-everyone/`) via
+  `gh api repos/TechNaom/ai-coding-agents-for-everyone/pages -X POST -f build_type=workflow`.
+- **Module 1 (Chapters 1-3) is built and live**: "Why Coding Agents
+  Aren't Just Autocomplete," "Prompting and Scoping Tasks for an
+  Agent," "Reading and Reviewing an Agent's Diff Like a Senior
+  Engineer." Each has lesson/quiz/interview-questions/exercises/
+  practice/project pages and a quality-audits/chapter-0N-audit.md.
+  Chapter 3 ships the real L1 project. Each chapter was built by a
+  fresh subagent briefed to read the prior chapters first for
+  continuity, then reviewed by the orchestrating session before commit
+  — that pattern worked well and is worth reusing for Module 2.
+  Module 1's written exam is NOT built yet (`examPath` still null).
 - **Critical difference from `mcp-for-everyone`**: this course's SDK
   (`claude-agent-sdk`) requires a real `ANTHROPIC_API_KEY` and costs
   real money to run — MCP's course was entirely free/local. **RESOLVED
@@ -48,9 +67,9 @@ Freshly scaffolded from `mcp-for-everyone`'s proven structure:
   (a fully open-source/local-model alternative was considered and
   rejected as a scope change from this course's actual subject). Still
   need to configure the `ANTHROPIC_API_KEY` CI secret when Chapter 7 is
-  built.
+  built — not needed for Module 2 either (still conceptual).
 
-No chapter content exists yet. No website (`index.html`) yet.
+No website root `index.html` yet (Step 9, comes later).
 
 ## Naming conventions
 
@@ -82,8 +101,13 @@ No chapter content exists yet. No website (`index.html`) yet.
 
 ## Current task
 
-Build Chapters 1–3 (Module 1: "Using Coding Agents Well" — conceptual,
-no SDK calls needed).
+Build Chapters 4-6 (Module 2: "How Coding Agents Actually Work" —
+still conceptual, no SDK calls needed). Also write the Module 1
+written exam (assessments/written-exams/) if not already done. Read
+Chapters 1-3 fully first for continuity/terminology before writing
+Chapter 4 — Chapters 1 and 2 already forward-reference Chapter 5
+(failure modes) and Chapter 6 (context windows); pay those off rather
+than re-deriving the same ground.
 
 ## Next task after that
 

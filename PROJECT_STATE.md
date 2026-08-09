@@ -1,6 +1,6 @@
 # PROJECT_STATE.md — AI Coding Agents for Everyone
 
-Last updated: 2026-08-09
+Last updated: 2026-08-09 (Module 1 complete)
 
 ## Course Objective
 
@@ -64,6 +64,24 @@ only).
       templates, shared assets, CI (generalized from
       `mcp-for-everyone`'s), README, this file, AI_HANDOFF.md,
       LICENSE/LICENSE-CONTENT.
+- [x] CI bootstrap fix: git doesn't track empty directories, so the
+      first real CI run 404'd on `chapters/` and other empty scaffold
+      dirs — fixed with `.gitkeep` files. Also fixed a `structure-check`
+      job bug (unexpanded `chapters/chapter-*/` glob under `bash -e`
+      failed when zero chapters existed) with `shopt -s nullglob`.
+      GitHub Pages enabled via `gh api .../pages -X POST`. Both CI
+      Checks and Deploy GitHub Pages are green on real GitHub Actions
+      runners as of this update.
+- [x] **Module 1 built and live** — Chapters 1–3 (Why Coding Agents
+      Aren't Just Autocomplete; Prompting and Scoping Tasks for an
+      Agent; Reading and Reviewing an Agent's Diff Like a Senior
+      Engineer), each with lesson, quiz (6-8 fill-in-blank), 8 interview
+      questions across all 4 levels, 6 exercises (3+ production-gear),
+      6 practice scenarios, and a quality-audits/chapter-0N-audit.md.
+      Chapter 3 also ships the real L1 project ("ship a real small
+      feature with a written review log") that Ch1/Ch2 pointed to.
+      All conceptual, no SDK calls — built without needing the
+      ANTHROPIC_API_KEY decision below to be operationalized yet.
 
 ## Pending / Not Started
 
@@ -120,10 +138,16 @@ scenarios/8 interview questions minimum, tested code before writing).
 
 ## Next Recommended Task
 
-Resolve the `ANTHROPIC_API_KEY` open decision with the user first —
-it's a real cost/scope question, not a technical detail to guess at.
-Then build Chapters 1–3 (Module 1, conceptual, no SDK calls needed)
-using `mcp-for-everyone`'s Chapter 1–3 page sets as the structural
-template (not content — original content required). Chapter 7 (the
-reference chapter) should wait until the API-key decision lands, since
-it's the first chapter that actually needs to run the SDK.
+Module 1 (Chapters 1-3) is done. Next: build Module 2 (Chapters 4-6:
+The Agentic Loop; Why Agents Loop/Stall/Go Off the Rails; Context
+Windows and Codebase-Scale Understanding) — still conceptual, no SDK
+calls needed, so no dependency on the `ANTHROPIC_API_KEY` secret.
+Chapter 5 and 6 can now forward-reference nothing further and should
+instead pay off the forward-references Chapters 1-2 already made to
+them. After Module 2, configure the `ANTHROPIC_API_KEY` CI secret and
+build Chapter 7 (the reference chapter) — verify the Claude Agent
+SDK's actual API surface against the installed package before writing
+any code sample, same discipline used throughout `mcp-for-everyone`.
+Write the Module 1 written exam (assessments/written-exams/) before or
+alongside starting Module 2 — it's the one piece of Module 1 not yet
+built.
