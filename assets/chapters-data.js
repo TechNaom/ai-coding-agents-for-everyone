@@ -124,7 +124,8 @@ window.ACAFE_MODULES = [
         id: "chapter-12",
         num: 12,
         title: "Putting an Agent in CI",
-        description: "PR review bots and CI troubleshooting agents, done safely."
+        description: "PR review bots and CI troubleshooting agents, done safely.",
+        path: "chapters/chapter-12-putting-an-agent-in-ci/lesson.html"
       }
     ]
   },

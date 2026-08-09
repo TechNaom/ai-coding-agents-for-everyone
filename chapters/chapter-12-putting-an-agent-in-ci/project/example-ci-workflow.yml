@@ -1,0 +1,147 @@
+# ILLUSTRATIVE EXAMPLE ONLY -- this file is NOT wired into this course's
+# own GitHub Actions setup. It does not run against this repository. It is
+# not referenced by, or a copy of, this repo's real `.github/workflows/`
+# directory. It exists purely as Chapter 12's worked example of how a real
+# project would wire `project/solution.py`'s CI-mode agent into an actual
+# GitHub Actions job.
+#
+# If you wanted to actually use this, you would copy the relevant pieces
+# into your OWN project's `.github/workflows/` directory, point the agent
+# at your own codebase, and adapt the model/provider setup (Ollama locally,
+# or one of the hosted-API options Chapter 7 documents) to your team's
+# actual constraints. Two jobs are shown, matching this chapter's two use
+# cases:
+#
+#   1. pr-review-bot   -- read-only, comments on a pull request's diff.
+#   2. ci-troubleshoot  -- investigates a failing build, proposes a fix on
+#                          a scratch branch, and opens a DRAFT pull request
+#                          for a human to review. Never touches main/master
+#                          directly (project/solution.py's git_commit()
+#                          refuses that on its own, even if this workflow
+#                          were misconfigured to try).
+
+name: Example -- Agent-Assisted CI (illustrative only, not run by this repo)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# A real deployment would scope this far more narrowly per job (e.g.
+# pull-requests: write only on the job that actually posts a comment or
+# opens a PR) -- shown broad here just to name what's needed at all.
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  pr-review-bot:
+    name: PR review bot (read-only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need history to compute a real diff
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the agent's dependencies
+        run: pip install openai
+
+      # In a real project this step would install and start Ollama, or
+      # point at a hosted provider via secrets -- see Chapter 7's "use a
+      # hosted API instead" section for the exact base_url/api_key swap.
+      # Omitted here since this file is illustrative, not runnable.
+
+      - name: Run the PR review bot
+        env:
+          ACAFE_CI_MODE: "1" # selects TOOL_POLICY_CI, not TOOL_POLICY
+        run: |
+          python3 project/solution.py --mode=pr-review \
+            --diff-ref "origin/${{ github.base_ref }}...HEAD" \
+            > review-comment.txt
+
+      # This step is what actually reaches something a human sees: a bot
+      # comment on the PR. Nothing here writes to the repository itself --
+      # exactly why this use case needed zero policy changes to be safe.
+      - name: Post the review as a PR comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: review-comment.txt
+
+  ci-troubleshoot:
+    name: CI troubleshooting agent (scoped write access)
+    runs-on: ubuntu-latest
+    # Only run this job if the test job already failed -- a troubleshooting
+    # agent's whole reason for running is that something broke.
+    if: failure()
+    needs: [run-tests] # a hypothetical prior job in the real workflow
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the agent's dependencies
+        run: pip install openai
+
+      - name: Create a scratch branch for this run
+        run: |
+          git config user.email "ci-agent@example.com"
+          git config user.name "CI Troubleshooting Agent"
+          git checkout -b "ci/auto-fix-${{ github.run_id }}"
+
+      # ACAFE_CI_MODE=1 is the ONLY thing this step sets that changes the
+      # agent's behavior -- it is read ONCE, by the harness, before the
+      # agent runs. TOOL_POLICY_CI itself (write_file scoped to
+      # ci-scratch/, git_commit scoped to non-protected branches,
+      # edit_file and run_shell_command BLOCKED outright) was decided
+      # ahead of time in project/solution.py and reviewed via a real pull
+      # request -- this workflow step cannot loosen it, widen it, or
+      # auto-answer a confirmation on its own behalf.
+      - name: Run the CI troubleshooting agent
+        env:
+          ACAFE_CI_MODE: "1"
+        run: |
+          python3 project/solution.py --mode=troubleshoot \
+            --task "Run the test suite, summarize why it's failing, and \
+                    write a proposed fix to ci-scratch/proposed-fix.diff"
+
+      # If the agent produced nothing (e.g. it couldn't diagnose the
+      # failure, or its step cap / wall-clock budget was hit first), skip
+      # opening a PR entirely rather than opening an empty or useless one.
+      - name: Check whether the agent produced anything to review
+        id: check
+        run: |
+          if git diff --quiet && [ -z "$(git status --porcelain)" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The commit itself already happened inside the agent run above, via
+      # its own scoped git_commit() -- this step's job is only to push the
+      # scratch branch and open a DRAFT PR. A draft, not a real PR ready to
+      # merge: this is Chapter 12's closing point made concrete in YAML --
+      # the agent's blast radius (a commit on a disposable scratch branch,
+      # a draft PR nobody has to act on) is pre-scoped tightly enough that
+      # landing there is fine even before a human looks. Merging it is a
+      # different, higher-stakes action that still needs the exact same
+      # review discipline Chapter 3 taught for every other diff in this
+      # course.
+      - name: Open a draft PR with the proposed fix
+        if: steps.check.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: "ci/auto-fix-${{ github.run_id }}"
+          draft: true
+          title: "[ci-agent] Proposed fix for failing build on #${{ github.event.pull_request.number }}"
+          body: |
+            Opened automatically by the CI troubleshooting agent after the
+            test job on this PR failed. This is a DRAFT -- nothing here has
+            been reviewed by a human yet. Read `ci-scratch/summary.md` and
+            `ci-scratch/proposed-fix.diff` for the agent's reasoning before
+            treating anything in this PR as trustworthy.

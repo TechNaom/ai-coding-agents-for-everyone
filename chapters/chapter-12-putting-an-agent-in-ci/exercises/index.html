@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CI Exercises — AI Coding Agents for Everyone</title>
+<meta name="description" content="Hands-on exercises for Putting an Agent in CI.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-12">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../quiz.html">&larr; Back to the quiz</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 12 Exercises</span>
+    <span class="reading-time">~45 min</span>
+  </div>
+  <h1>Exercises: Putting an Agent in CI</h1>
+  <p>These exercises don't need Ollama, a live model, network access, or
+  even a real git repo to verify — <code>starter.py</code> and
+  <code>solution.py</code> in this folder rebuild the CI policy layer's
+  own building blocks (a scratch-scope check, a protected-branch check,
+  and the mode-aware fail-closed policy lookup) as small, testable
+  functions.</p>
+
+  <div class="what-is">
+    <span class="label">Exercise standard</span>
+    Six tasks below. At least three are production-gear: harder,
+    ambiguous, real-world judgment calls rather than clean textbook
+    cases.
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">1</span> Implement <code>in_scratch</code></h3>
+    <p>Open <code>starter.py</code>. Fill in TODO 1: a scratch-prefix
+    check, careful to strip only a literal leading <code>"./"</code>
+    rather than using <code>str.lstrip()</code> (which would silently
+    mangle a real path escape like <code>"../../etc/passwd"</code>).
+    Run <code>python3 starter.py</code> and get the first seven checks
+    to <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">2</span> Implement <code>is_protected_branch</code></h3>
+    <p>Fill in TODO 2: a protected-branch check that treats an
+    UNDETERMINED branch (<code>None</code>) as protected, not as
+    "probably fine." Get the next four checks to <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">3</span> Implement <code>resolve_tier</code></h3>
+    <p>Fill in TODO 3: the mode-aware, fail-closed policy lookup that
+    stands in for <code>active_policy()</code> + <code>check_permission()</code>
+    combined. Get the remaining six checks to <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">4</span> (Production-gear) Design a tier and scope for a genuinely new CI tool</h3>
+    <p>Your team wants to add a <code>deploy_to_staging(version)</code>
+    tool to a CI troubleshooting agent built on this chapter's code. It
+    deploys a build to a real, shared staging environment other
+    engineers actively use for testing — not a disposable scratch
+    resource. Should it appear in <code>TOOL_POLICY_CI</code> at all? If
+    so, at which tier, and does it need a code-level scope check the way
+    <code>write_file</code> and <code>git_commit</code> do — or is this
+    exactly the kind of tool this chapter's design says has "no narrow
+    scope that makes it safe unattended," the same category
+    <code>run_shell_command</code> falls into? Write 3-4 sentences
+    defending your answer.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">5</span> (Production-gear) Trace a real environment-variable footgun</h3>
+    <p>A teammate writes a GitHub Actions workflow with
+    <code>env: ACAFE_CI_MODE: true</code> (no quotes) instead of
+    <code>env: ACAFE_CI_MODE: "1"</code>. GitHub Actions coerces every
+    <code>env:</code> value to a string before the process sees it, so
+    the agent's own process receives the literal string
+    <code>"true"</code> as <code>os.environ["ACAFE_CI_MODE"]</code>.
+    Using <code>project/solution.py</code>'s actual line
+    (<code>CI_MODE = os.environ.get("ACAFE_CI_MODE") == "1"</code>),
+    trace exactly what <code>CI_MODE</code> evaluates to, which policy
+    dict the run actually uses, and what the OBSERVABLE symptom would
+    be (does the agent do something dangerous, or does it just... not
+    do anything useful?). What does your answer reveal about why this
+    chapter's fail-closed defaults matter even when the bug is in the
+    CI-mode DETECTION itself, not in the policy dicts?</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">6</span> (Production-gear) Review a PR that updates one policy but not the other</h3>
+    <p>A diff adds a new tool, <code>run_linter()</code>, to
+    <code>TOOLS</code> and <code>TOOL_FUNCTIONS</code>, and adds an entry
+    for it to <code>TOOL_POLICY</code> (<code>ALLOWED</code> — it's
+    read-only) — but the PR author forgot to add a matching entry to
+    <code>TOOL_POLICY_CI</code>. Using <code>active_policy()</code>'s
+    actual behavior (not a guess), what happens the first time this tool
+    is called during a CI run versus an interactive run? Is this a bug
+    worth blocking the PR over, or is the two-dict, fail-closed-per-dict
+    design already handling it safely? Write 3-4 sentences with
+    reference to the actual code path in
+    <code>check_permission()</code>/<code>active_policy()</code>.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../quiz.html">&larr; Back to Quiz</a>
+    <a href="../practice/index.html">Practice Bank &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

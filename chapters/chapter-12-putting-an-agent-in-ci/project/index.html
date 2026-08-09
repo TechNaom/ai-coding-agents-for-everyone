@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Putting an Agent in CI: Project — AI Coding Agents for Everyone</title>
+<meta name="description" content="Module 5's second real lab: wire Chapter 11's permission-scoped agent into a CI-specific policy, with a real PR review bot and a real CI troubleshooting agent.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-12">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../interview-questions.html">&larr; Back to interview questions</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 12 Project</span>
+    <span class="reading-time">~50 min · <span class="badge-difficulty">Module 5 Lab</span></span>
+  </div>
+  <h1>Project: Wire a Minimal Agent Into a CI Check</h1>
+
+  <div class="hook">
+    <p>
+      Per <code>docs/curriculum/CURRICULUM_MAP.md</code>, Module 5's
+      second lab is exactly this: "wire a minimal agent into a CI
+      check." <code>starter.py</code> in this folder is Chapter 11's
+      exact permission-scoped agent, copied forward unchanged — the
+      same <code>TOOL_POLICY</code>, the same <code>confirm_with_human</code>,
+      the same resolved <code>git_commit</code>. Dropped into CI as-is,
+      it is safe (every <code>REQUIRES_CONFIRMATION</code> call denies
+      cleanly on closed stdin) but useless (it can't do a single useful
+      write). Your job is the fix: a second, CI-specific policy, decided
+      ahead of time, that lets the agent do real work without ever
+      auto-answering a confirmation on its own behalf.
+    </p>
+  </div>
+
+  <h2>What's provided</h2>
+  <p>
+    Every tool from Chapter 11 (<code>read_file</code>,
+    <code>write_file</code>, <code>edit_file</code>,
+    <code>list_directory</code>, <code>run_shell_command</code>,
+    <code>git_status</code>, <code>git_diff</code>, <code>git_commit</code>,
+    <code>send_email</code>), plus one new tool this chapter adds:
+    <code>run_tests</code> — narrow and bounded by design, taking no
+    arguments at all, the least-privilege fix Chapter 11's own
+    retrospective named for <code>run_shell_command</code>'s
+    over-privileged nature. A <code>CI_MODE</code> flag, read once from
+    the <code>ACAFE_CI_MODE</code> environment variable at startup, is
+    also provided — it's the harness deciding which policy applies
+    before the model has produced a single token, not something a tool
+    call or a runtime script can flip.
+  </p>
+
+  <h2>Your task</h2>
+  <p>
+    Four connected TODOs in <code>starter.py</code>: a CI-scratch write
+    boundary inside <code>write_file</code> (TODO 1), the
+    <code>TOOL_POLICY_CI</code> dict itself (TODO 2), a protected-branch
+    check inside <code>git_commit</code> (TODO 3), and a wall-clock
+    budget inside <code>run_agent</code> (TODO 4) so a run that thrashes
+    in CI stops on its own instead of burning real CI minutes. Full spec
+    in the module docstring and each TODO's own comment.
+  </p>
+
+  <div class="what-is">
+    <span class="label">What "done" looks like</span>
+    Running <code>python3 starter.py</code> (interactive-mode demo) and
+    <code>ACAFE_CI_MODE=1 python3 starter.py</code> (CI-mode demo) each
+    run a full scripted demonstration with no live model needed.
+    Interactive mode should behave exactly like Chapter 11 — unaffected
+    by anything you built for CI. CI mode should show: <code>run_tests</code>
+    running a real failing test suite; <code>write_file</code>
+    succeeding inside <code>ci-scratch/</code> but refused outside it;
+    <code>edit_file</code> and <code>run_shell_command</code> refused
+    outright with no prompt; <code>git_commit</code> succeeding on a
+    scratch branch but refused on <code>main</code>; <code>send_email</code>
+    refused in every mode.
+  </div>
+
+  <h2>Two use cases, one project</h2>
+  <p>
+    <strong>The PR review bot</strong> (<code>demo_pr_review_bot</code>)
+    is already built for you, not a TODO — it's entirely read-only, and
+    every tool it needs was already <code>ALLOWED</code> under Chapter
+    11's policy with zero changes. <strong>The CI troubleshooting
+    agent</strong> (<code>demo_ci_mode</code>) is where your TODOs
+    actually earn their keep: it runs a real, disposable git repo with a
+    real failing test, and needs real write capability that Chapter 11's
+    policy alone would never grant unattended.
+  </p>
+
+  <h2>A real, illustrative CI workflow</h2>
+  <p>
+    <code>example-ci-workflow.yml</code> shows how this project's two use
+    cases would actually get wired into a real GitHub Actions job — a
+    read-only review job that posts a PR comment, and a troubleshooting
+    job that runs only after tests fail, works on a scratch branch under
+    <code>ACAFE_CI_MODE=1</code>, and opens a <strong>draft</strong> pull
+    request a human still has to review before merging. This file is
+    clearly marked illustrative — it is not wired into, and does not
+    run as part of, this course repo's own CI.
+  </p>
+
+  <div class="points-to-remember">
+    <h2>Before you call it done</h2>
+    <p>
+      Run both modes with stdin closed:
+      <code>python3 starter.py &lt; /dev/null</code> and
+      <code>ACAFE_CI_MODE=1 python3 starter.py &lt; /dev/null</code>.
+      Confirm specifically that <code>write_file</code> and
+      <code>git_commit</code> behave DIFFERENTLY depending on the path
+      or branch, not just on their tier — a tool being
+      <code>ALLOWED</code> in <code>TOOL_POLICY_CI</code> is only half
+      the story; the scope check inside the function body is the other
+      half, and it's the half that actually keeps this design honest.
+    </p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../interview-questions.html">&larr; Interview Questions</a>
+    <a href="../../../index.html">All Chapters &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

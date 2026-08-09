@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CI Agent Quiz — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interactive quiz for Putting an Agent in CI.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-12" data-chapter-id="chapter-12">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="lesson.html">&larr; Back to the lesson</a></p>
+
+  <span class="chapter-badge">Chapter 12 Quiz</span>
+  <h1>Putting an Agent in CI</h1>
+  <p>Eight questions. Fill in the blank, then check your answers.</p>
+
+  <div class="quiz-progress-wrap" aria-hidden="true">
+    <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+  </div>
+
+  <form onsubmit="return false;">
+    <div class="quiz-question">
+      <label for="q1"><span class="q-num">1</span> Dropping Chapter 11's agent into CI unchanged is safe but __________ -- every REQUIRES_CONFIRMATION tool call denies automatically on closed stdin, so the agent can't perform a single useful write.</label>
+      <div class="fib-row">
+        <input type="text" id="q1" class="fib-blank" data-answers="useless" aria-label="Answer for question 1">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q2"><span class="q-num">2</span> The WRONG fix for a CI-run agent's uselessness is making <code>confirm_with_human</code> auto-answer "yes" when CI_MODE is set -- this recreates Chapter __________'s exact self-granted-permission flaw, just one layer up.</label>
+      <div class="fib-row">
+        <input type="text" id="q2" class="fib-blank" data-answers="8,eight" aria-label="Answer for question 2">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q3"><span class="q-num">3</span> This chapter's CI_MODE flag is read exactly __________ time(s), at startup, from an environment variable -- never something a tool call or a runtime script can flip mid-run.</label>
+      <div class="fib-row">
+        <input type="text" id="q3" class="fib-blank" data-answers="one,1" aria-label="Answer for question 3">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q4"><span class="q-num">4</span> In TOOL_POLICY_CI, write_file becomes ALLOWED, but write_file() itself refuses any path outside CI_SCRATCH_PREFIX -- this scope check substitutes for the __________ confirmation that CI cannot provide.</label>
+      <div class="fib-row">
+        <input type="text" id="q4" class="fib-blank" data-answers="human" aria-label="Answer for question 4">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q5"><span class="q-num">5</span> git_commit is ALLOWED in TOOL_POLICY_CI, but git_commit() itself refuses to commit if the current branch is in __________ -- read from git itself, not from any argument the model provided.</label>
+      <div class="fib-row">
+        <input type="text" id="q5" class="fib-blank" data-answers="PROTECTED_BRANCHES,protected_branches" aria-label="Answer for question 5">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q6"><span class="q-num">6</span> In TOOL_POLICY_CI, edit_file and run_shell_command become __________ outright, not ALLOWED -- there is no narrow scope that makes either one safe to pre-approve for every possible argument.</label>
+      <div class="fib-row">
+        <input type="text" id="q6" class="fib-blank" data-answers="BLOCKED,blocked" aria-label="Answer for question 6">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q7"><span class="q-num">7</span> run_tests is a new, narrow tool this chapter adds that takes __________ argument(s) at all -- deliberately bounded, unlike run_shell_command's arbitrary command string, which is why it's ALLOWED in both policies.</label>
+      <div class="fib-row">
+        <input type="text" id="q7" class="fib-blank" data-answers="zero,no,0" aria-label="Answer for question 7">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q8"><span class="q-num">8</span> Beyond a step cap, run_agent adds a __________-clock budget in CI mode -- a run that hangs or thrashes in CI wastes real, metered CI minutes and blocks a real PR, a cost Chapter 5's abstract discussion of failure modes didn't have to reckon with.</label>
+      <div class="fib-row">
+        <input type="text" id="q8" class="fib-blank" data-answers="wall,wall-clock,wall clock" aria-label="Answer for question 8">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div id="check-all-wrap">
+      <button type="button" id="check-all-btn" class="check-btn">Check All Answers</button>
+      <span id="quiz-score"></span>
+    </div>
+
+    <div class="quiz-celebration" id="quiz-celebration" aria-live="polite">
+      Perfect score. Chapter complete.
+    </div>
+  </form>
+
+  <div class="chapter-nav">
+    <a href="lesson.html">&larr; Back to Lesson</a>
+    <a href="exercises/index.html">Exercises &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/quiz-engine.js"></script>
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

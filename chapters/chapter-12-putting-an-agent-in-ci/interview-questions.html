@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CI Agent Interview Questions — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interview questions for Putting an Agent in CI.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-12">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="practice/index.html">&larr; Back to practice bank</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 12 Interview Questions</span>
+    <span class="reading-time">~18 min</span>
+  </div>
+  <h1>Interview Questions: Putting an Agent in CI</h1>
+  <p>Grouped by level. Each includes a strong answer, a red flag, and a follow-up. A plain-markdown mirror of these same eight questions is available at <a href="interview-questions.md">interview-questions.md</a>.</p>
+
+  <div class="lesson-card">
+    <h2>1. (Beginner) Chapter 11's agent, dropped into CI unchanged with no code changes at all, is described in this chapter as "safe but useless." Walk through exactly why both halves of that are true.</h2>
+    <p><strong>Strong answer:</strong> It's safe because <code>confirm_with_human()</code>'s <code>except (EOFError, KeyboardInterrupt)</code> branch, built in Chapter 11, denies by default the instant <code>input()</code> can't read from a real human -- CI's stdin is closed or redirected, so every <code>REQUIRES_CONFIRMATION</code> tool call hits that branch and gets refused. Nothing dangerous happens. It's useless because <code>write_file</code>, <code>edit_file</code>, <code>run_shell_command</code>, and <code>git_commit</code> are ALL <code>REQUIRES_CONFIRMATION</code> in Chapter 11's policy -- so EVERY tool capable of doing real work gets denied the same way, every single time, with nobody able to say yes. The agent can still read files and run read-only git commands, but it cannot change a single thing about the codebase, which makes it useless for any task that isn't purely diagnostic.</p>
+    <p><strong>Red flag:</strong> Says the agent "crashes" or "hangs" in CI -- misses that Chapter 11's fail-closed design specifically prevents both outcomes; the agent runs to completion, just without accomplishing anything that required a write.</p>
+    <p><strong>Follow-up:</strong> "If you only fixed the 'useless' half without touching anything about the 'safe' half, what would that fix have to look like?"</p>
+    <p><strong>What this proves:</strong> Understands Chapter 11's exact mechanism well enough to trace what happens when its assumptions (a human is present) stop holding, not just that "CI is different somehow."</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>2. (Beginner) Why is auto-answering "yes" inside <code>confirm_with_human</code> when <code>CI_MODE</code> is set the WRONG fix, even though it would make the agent immediately useful in CI?</h2>
+    <p><strong>Strong answer:</strong> It recreates Chapter 8's exact flaw, one layer up. Chapter 8's <code>git_commit(message, confirm=True)</code> failed because the thing being checked (the model's own tool call) could set the value that answered the check. Auto-answering "yes" inside <code>confirm_with_human</code> when <code>CI_MODE</code> is set does the same thing structurally: <code>CI_MODE</code> -- set once, true for the entire run -- becomes a value that, once true, effectively pre-answers every single confirmation for the rest of that run, regardless of WHICH tool or WHICH arguments are being confirmed. It's not the model setting the flag this time, but the check has still been reduced to "did someone turn on the mode that always says yes," which is exactly as unconditional and exactly as blind to the specific action being approved as the original flaw was.</p>
+    <p><strong>Red flag:</strong> Argues this is fine because "a human decided to turn on CI_MODE, so it's still human-approved somewhere" -- misses that the human approved <em>the mode</em>, once, in the abstract, not any specific action the agent later takes under that mode; that's a categorically weaker guarantee than confirming an actual proposed action.</p>
+    <p><strong>Follow-up:</strong> "What's the minimum change to this 'auto-yes' approach that WOULD make it acceptable -- and does that minimum change end up looking like this chapter's actual <code>TOOL_POLICY_CI</code> design?"</p>
+    <p><strong>What this proves:</strong> Can connect a new-looking mistake back to a previously-established failure pattern, rather than treating every chapter's problems as unrelated.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>3. (Intermediate) Explain what <code>write_file</code> being <code>ALLOWED</code> in <code>TOOL_POLICY_CI</code> actually guarantees, and what it does NOT guarantee on its own.</h2>
+    <p><strong>Strong answer:</strong> <code>ALLOWED</code> in <code>TOOL_POLICY_CI</code> only guarantees that <code>dispatch_tool_call</code> won't refuse the call at the POLICY-TIER level -- it will proceed to actually invoke <code>write_file()</code>. It does NOT guarantee the write will succeed, and it does NOT mean write_file can write anywhere. <code>write_file()</code>'s own body still checks <code>CI_SCRATCH_PREFIX</code> before touching the filesystem, and refuses with a clean error if the path is outside that scope, even though the tier already cleared it. The tier and the scope check are two independent layers doing two different jobs -- the tier says "this TOOL is allowed to run in CI at all," the scope check says "THIS SPECIFIC call, given its actual arguments, stays inside the boundary a human pre-approved."</p>
+    <p><strong>Red flag:</strong> Treats <code>ALLOWED</code> in <code>TOOL_POLICY_CI</code> as the complete answer to "is this call safe," without mentioning the scope check inside the function body at all.</p>
+    <p><strong>Follow-up:</strong> "Where exactly, in the actual call sequence, does the scope check run relative to the policy-tier check -- before <code>dispatch_tool_call</code> decides to call the function, or after, inside the function itself? Why does that ordering matter?"</p>
+    <p><strong>What this proves:</strong> Understands that a permissive tier and a safe outcome are not the same claim -- this chapter's whole design depends on that distinction holding.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>4. (Intermediate) A colleague says "CI mode is basically the same policy as interactive mode, just with the REQUIRES_CONFIRMATION tools switched to ALLOWED." Is that accurate?</h2>
+    <p><strong>Strong answer:</strong> Not quite -- it's accurate for <code>write_file</code> and <code>git_commit</code> (REQUIRES_CONFIRMATION becomes ALLOWED, each paired with a new scope check), but NOT for <code>edit_file</code> or <code>run_shell_command</code>, both of which go from REQUIRES_CONFIRMATION to BLOCKED, not ALLOWED. The difference is whether a narrow, code-checkable scope exists for the tool at all. <code>write_file</code> can be scoped to a path prefix; <code>git_commit</code> can be scoped to a non-protected branch. <code>edit_file</code> modifies a TRACKED file in place -- there's no equivalent narrow prefix that makes an arbitrary in-place edit safe without a human looking first. <code>run_shell_command</code> accepts an arbitrary string -- there's no scope narrow enough to pre-approve every possible command. So CI mode isn't "confirmation becomes automatic yes" uniformly; it's "each formerly-confirmed tool gets re-evaluated on whether a safe, narrow, pre-decidable scope exists for it at all," and the answer differs per tool.</p>
+    <p><strong>Red flag:</strong> Assumes every REQUIRES_CONFIRMATION tool becomes ALLOWED in CI mode, missing that <code>edit_file</code> and <code>run_shell_command</code> actually become MORE restrictive (BLOCKED), not less.</p>
+    <p><strong>Follow-up:</strong> "If your team later wanted to make <code>run_shell_command</code> usable in CI too, what would have to be true about it first, using the same reasoning that made <code>write_file</code> and <code>git_commit</code> work?"</p>
+    <p><strong>What this proves:</strong> Has actually looked at the specific per-tool decisions in <code>TOOL_POLICY_CI</code>, not just absorbed a one-line summary of "CI mode is more permissive."</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>5. (Senior) Walk through exactly what happens, step by step, when a CI troubleshooting agent built on this chapter's code calls <code>git_commit("apply fix")</code> while the CI runner happens to have the workspace checked out on <code>main</code> instead of a scratch branch.</h2>
+    <p><strong>Strong answer:</strong> <code>dispatch_tool_call</code> parses the arguments, finds <code>git_commit</code> in <code>TOOL_FUNCTIONS</code>. It calls <code>check_permission("git_commit")</code>, which calls <code>active_policy()</code> -- since <code>CI_MODE</code> is True, this returns <code>TOOL_POLICY_CI</code>, where <code>git_commit</code> is <code>ALLOWED</code>. Because the tier is <code>ALLOWED</code> (not <code>REQUIRES_CONFIRMATION</code>), <code>confirm_with_human</code> is never called at all -- there's no prompt, nothing waiting on stdin. Control reaches the real <code>git_commit(message)</code> function. Because <code>CI_MODE</code> is True, it calls <code>_current_branch()</code>, which runs <code>git rev-parse --abbrev-ref HEAD</code> and gets back <code>"main"</code>. Since <code>"main"</code> is in <code>PROTECTED_BRANCHES</code>, the function returns a clean "error: ... refused on protected branch 'main' ..." string WITHOUT ever running <code>git commit</code>. The model sees that error as a tool result and has to continue without the commit having happened -- no exception, no crash, no partial commit, no prompt anyone had to answer.</p>
+    <p><strong>Red flag:</strong> Assumes <code>confirm_with_human</code> gets involved somewhere in this path -- it doesn't, because the tier is ALLOWED, not REQUIRES_CONFIRMATION; conflates the branch check with the confirmation mechanism when they're two structurally different things.</p>
+    <p><strong>Follow-up:</strong> "What's the ONE piece of information this whole check depends on being trustworthy, and where does that information actually come from -- could the model influence it?"</p>
+    <p><strong>What this proves:</strong> Can trace a precise multi-function control-flow path through a design with two independent gating mechanisms (policy tier, then a mode-specific scope check inside the function body), not just describe the intended behavior at a high level.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>6. (Senior) Design an argument for why <code>run_shell_command</code> is BLOCKED outright in <code>TOOL_POLICY_CI</code>, when a narrower, explicitly-scoped alternative (<code>run_tests</code>) was built and shipped ALLOWED in the very same policy.</h2>
+    <p><strong>Strong answer:</strong> The difference isn't "shell commands are dangerous and tests aren't" in the abstract -- it's that <code>run_tests</code> has a scope narrow enough to state and verify completely: it takes ZERO arguments, runs exactly one fixed command (<code>TEST_COMMAND</code>), and nothing about its call shape lets a caller (model or otherwise) change what actually executes. <code>run_shell_command</code> accepts an arbitrary string as its entire argument -- there is no way to write a scope check for "arbitrary string" that isn't itself either infinitely permissive or a second denylist trying to enumerate danger, which Chapter 8 already showed is inherently incomplete (a list can only cover patterns someone thought of). Chapter 11's least-privilege retrospective already named the fix for this exact tension: replace one broad, gated capability with several narrow, purpose-built ones. <code>run_tests</code> is that fix, applied concretely; <code>run_shell_command</code> staying BLOCKED in CI is the honest acknowledgment that the broad version was never going to get a real scope check, only ever a confirmation -- and CI has no one to give one.</p>
+    <p><strong>Red flag:</strong> Argues run_shell_command should just get "a good enough denylist" for CI too, missing that Chapter 8 and Chapter 11 already established why a denylist is a real, honestly-scoped mitigation but not a substitute for either a human's judgment or a narrow, arguable scope.</p>
+    <p><strong>Follow-up:</strong> "Your team wants ONE more narrow shell-adjacent tool for CI, alongside run_tests. What's the best candidate, and how would you argue its scope is as narrow and verifiable as run_tests's?"</p>
+    <p><strong>What this proves:</strong> Connects this chapter's specific design decision back to Chapter 11's least-privilege framing as the actual reasoning, not just "shell is scary."</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>7. (Architect) You're designing the CI wiring for a regulated engineering org (e.g. handling financial or health data). Would you reuse this chapter's exact <code>TOOL_POLICY_CI</code>, or would you design something stricter? Justify a concrete change, not just "be more careful."</h2>
+    <p><strong>Strong answer:</strong> I would keep the STRUCTURE (two separate, human-reviewed policy dicts, code-level scope checks standing in for confirmation, a mode flag read once at startup) but tighten specific tiers for this context. Concretely: I'd move <code>write_file</code> from ALLOWED back to BLOCKED even inside <code>ci-scratch/</code>, and instead have the agent's only output be a structured report (a diff-shaped string in its final message, or a single well-defined artifact upload) that a SEPARATE, human-triggered step turns into an actual scratch-branch commit -- this removes even the scoped write capability from the unattended path entirely, accepting reduced usefulness (the agent can propose but never itself write) in exchange for a strictly smaller blast radius, which is the right trade for a regulated environment where "a scratch write that turned out to matter more than expected" is a worse failure mode than in a typical internal tools repo. I would NOT simply add more confirmation prompts, since CI still has no one to answer them -- the fix has to be tightening the ALREADY-unattended-safe design, not reintroducing a human-shaped gap that isn't actually there.</p>
+    <p><strong>Red flag:</strong> Says "add more logging/monitoring" as the primary answer without changing what the agent is actually ALLOWED to do -- observability after the fact doesn't reduce blast radius before the fact, which is what a regulated context specifically needs.</p>
+    <p><strong>Follow-up:</strong> "If write_file is fully BLOCKED, how does the agent's proposed fix actually reach a human at all -- walk through the concrete mechanism, not just 'a report.'"</p>
+    <p><strong>What this proves:</strong> Architect-level judgment -- proposes a specific, justified structural change rather than a vague "more security" gesture, and reasons about the trade-off explicitly.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>8. (Architect) A stakeholder asks: "If TOOL_POLICY_CI is just a dict a human writes once, reviewed once via PR, what actually stops it from silently becoming wrong over time -- a tool changing behavior, a scratch prefix quietly becoming load-bearing, a branch-naming convention changing?" How do you respond?</h2>
+    <p><strong>Strong answer:</strong> Nothing in this chapter's code detects that kind of DRIFT automatically -- that's an honest gap, not something to paper over. What the design DOES guarantee is that any CHANGE to <code>TOOL_POLICY_CI</code>, <code>CI_SCRATCH_PREFIX</code>, or <code>PROTECTED_BRANCHES</code> is a visible, reviewable diff in version control, the same PR-review discipline this entire course has taught since Chapter 3 -- so a human widening the policy (intentionally or by accident) leaves a trace someone could have caught, unlike a runtime auto-approval that leaves no artifact at all. For the DRIFT risk specifically (the scratch prefix becoming load-bearing without anyone updating the policy, a branch convention changing without updating PROTECTED_BRANCHES), the right answer is the same discipline this course applies to everything else security-adjacent: periodic, deliberate re-review of the policy against current reality -- the same kind of retrospective Chapter 11 did for Chapters 7-9's tools -- not a claim that the policy, once written, stays correct forever on its own. A policy dict is a snapshot of a decision, not a live guarantee; treating it as the latter is exactly the kind of overselling this course has avoided with every other mechanism (the denylist, resource limits, MCP's trade-offs).</p>
+    <p><strong>Red flag:</strong> Claims the PR-review process alone is sufficient forever, without acknowledging that a correct-at-review-time policy can still become stale as the surrounding system changes -- or, in the other direction, dismisses the whole design as fragile without crediting what version-controlled review actually does provide (an auditable trail, a deliberate human decision point) versus a runtime auto-approval.</p>
+    <p><strong>Follow-up:</strong> "Design one concrete, lightweight process (not more code) that would catch this policy going stale over, say, a year of a real team's changes."</p>
+    <p><strong>What this proves:</strong> Can hold two things at once -- genuine confidence in what a mechanism actually guarantees, and honesty about what it doesn't -- the same balance this course has modeled for every security mechanism since Chapter 8.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="practice/index.html">&larr; Practice Bank</a>
+    <a href="project/index.html">Project &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

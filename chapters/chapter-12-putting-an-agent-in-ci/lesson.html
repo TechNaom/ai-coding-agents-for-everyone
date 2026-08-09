@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Putting an Agent in CI — AI Coding Agents for Everyone</title>
+<meta name="description" content="PR review bots and CI troubleshooting agents, done safely: a second, human-decided policy for unattended CI runs, built on Chapter 11's exact permission-scope system.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-12">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 12</span>
+    <span class="badge-difficulty">Advanced</span>
+    <span class="reading-time">~45 min</span>
+  </div>
+
+  <h1>Putting an Agent in CI</h1>
+  <p class="lede">
+    Chapter 11's own closing section named this chapter before it
+    existed: "Chapter 12 puts an agent in CI — an environment that is,
+    by construction, unattended, exactly the case Section 2's
+    <code>EOFError</code> handling exists for." That sentence is a
+    setup with a punchline this chapter has to deliver. Drop Chapter
+    11's exact agent into a real CI job, unchanged, and the fail-closed
+    design works perfectly — every <code>REQUIRES_CONFIRMATION</code>
+    call gets denied the instant <code>input()</code> hits a closed
+    stdin. The agent is completely safe. It is also completely useless,
+    because every tool capable of doing real work is
+    <code>REQUIRES_CONFIRMATION</code>. This chapter is about closing
+    that gap without reopening the one Chapter 8 spent an entire
+    section closing.
+  </p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#section-1">1. Why CI is the hardest "unattended" case</a>
+    <a href="#section-2">2. Two use cases: the easy half and the hard half</a>
+    <a href="#section-3">3. Resolving the tension: a second, human-decided policy</a>
+    <a href="#section-4">4. A real CI wiring</a>
+    <a href="#section-5">5. What a human still must review</a>
+    <a href="#thought-process">6. GenAI Builder Thought Process</a>
+    <a href="#recap">7. Points to remember</a>
+  </nav>
+
+  <div class="hook">
+    <p>
+      Here's Chapter 11's <code>confirm_with_human</code>, unchanged,
+      running inside a real CI job with no human anywhere near the
+      keyboard:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">Chapter 11's confirm_with_human, running exactly as written, in CI</span>
+      </div>
+      <pre><code>[confirmation required] allow write_file({"path": "src/app.py", "content": "..."})? [y/N]: [no human available to confirm on stdin -- denying by default]
+error: write_file requires human confirmation, which was not granted</code></pre>
+    </div>
+    <p>
+      Nothing here is broken. This is Chapter 11's design working
+      exactly as intended — a real prompt was printed, a real
+      <code>input()</code> call was made, it genuinely could not read
+      anything because CI's stdin is closed, and the fail-closed
+      default kicked in. But look at what that means for a CI
+      troubleshooting agent whose entire job is "investigate a failing
+      build and propose a fix": <code>write_file</code> is denied.
+      <code>edit_file</code> is denied the same way.
+      <code>run_shell_command</code> is denied the same way.
+      <code>git_commit</code> is denied the same way. Every tool that
+      could produce a useful result is gone, and the agent that's left
+      can only read files and print things nobody asked it to say. This
+      chapter exists because "safe" and "useful" both matter, and
+      Chapter 11 alone only delivers one of them in CI.
+    </p>
+  </div>
+
+  <section id="section-1" class="subtopic">
+    <h2>Why CI Is the Hardest "Unattended" Case</h2>
+    <p>
+      It's worth being precise about what makes CI different from every
+      other scenario this course has discussed, because the difference
+      is structural, not incidental. A learner running Chapter 11's
+      agent at a terminal is "unattended" only in the loose sense that
+      they might step away for a minute — stdin is still open, a human
+      could still answer if they came back. CI is unattended by
+      construction: there is no terminal, no session, no possibility of
+      a human appearing partway through to answer a prompt. The GitHub
+      Actions log for a workflow run doesn't pause and wait for
+      keyboard input — a process whose stdin isn't explicitly connected
+      to something interactive gets a closed stream, and
+      <code>input()</code> hits <code>EOFError</code> immediately, every
+      single time, with no possibility of it ever being otherwise.
+    </p>
+    <p>
+      That's exactly the scenario Chapter 11's
+      <code>except (EOFError, KeyboardInterrupt): return False</code>
+      branch was built for, and it's worth confirming, concretely, that
+      it holds up rather than assuming it from the design intent alone:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">every REQUIRES_CONFIRMATION tool, traced through Chapter 11's agent in CI, unchanged</span>
+      </div>
+      <pre><code>write_file        -&gt; REQUIRES_CONFIRMATION -&gt; confirm_with_human() -&gt; EOFError -&gt; DENIED
+edit_file         -&gt; REQUIRES_CONFIRMATION -&gt; confirm_with_human() -&gt; EOFError -&gt; DENIED
+run_shell_command -&gt; REQUIRES_CONFIRMATION -&gt; confirm_with_human() -&gt; EOFError -&gt; DENIED
+git_commit        -&gt; REQUIRES_CONFIRMATION -&gt; confirm_with_human() -&gt; EOFError -&gt; DENIED
+
+read_file, list_directory, git_status, git_diff -&gt; ALLOWED -&gt; run normally, no prompt</code></pre>
+    </div>
+    <p>
+      Four tools out of eight are dead on arrival. The four that
+      survive are exactly the four that were already read-only. This
+      is the real design problem this chapter solves, stated precisely:
+      how do you let a CI-run agent do REAL, USEFUL work — work that
+      requires changing something — while keeping every bit of the
+      safety Chapter 11 built, in an environment where the mechanism
+      Chapter 11 relies on (a human answering a prompt) is not merely
+      unlikely but structurally impossible.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the actual difference between "nobody happened to be watching" and "nobody CAN be watching"?</span>
+      <p>
+        A learner who walks away from their terminal mid-run could, in
+        principle, come back and type <code>y</code>. The failure mode
+        there is a stalled run (Chapter 5's vocabulary), not a wrong
+        decision — Chapter 11's fail-closed default just means the
+        agent gives up cleanly instead of hanging forever. CI is
+        different in kind, not just degree: there is no keyboard for
+        anyone to walk back to. Designing around "maybe a human will
+        answer eventually" doesn't apply at all — the only two
+        real options are "this action never happens in CI" or
+        "a human decided the answer to this exact class of action,
+        ahead of time, somewhere a human COULD actually review the
+        decision." This chapter builds the second option, deliberately,
+        rather than pretending the first option (an agent that does
+        nothing) is good enough for a chapter titled "putting an agent
+        in CI."
+      </p>
+    </div>
+  </section>
+
+  <section id="section-2" class="subtopic">
+    <h2>Two Use Cases: The Easy Half and the Hard Half</h2>
+    <p>
+      Per <code>docs/curriculum/CURRICULUM_MAP.md</code>'s own framing
+      for this module, "PR review bots and CI troubleshooting agents,
+      done safely" are the two concrete jobs this chapter has to cover.
+      They are not equally hard, and it's worth being clear about why.
+    </p>
+    <p>
+      <strong>A PR review bot</strong> reads a diff and comments on it.
+      That's the entire job description. Every tool it needs —
+      <code>read_file</code>, <code>git_diff</code> — was already
+      <code>ALLOWED</code> under Chapter 11's exact policy, unchanged.
+      There is no REQUIRES_CONFIRMATION tool anywhere in this use
+      case's critical path, which means there is nothing for this
+      chapter to fix here at all:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">the PR review bot -- zero policy changes needed, from project/solution.py</span>
+      </div>
+      <pre><code>def demo_pr_review_bot(diff_text):
+    lines = diff_text.splitlines()
+    added = sum(1 for line in lines if line.startswith("+") and not line.startswith("+++"))
+    removed = sum(1 for line in lines if line.startswith("-") and not line.startswith("---"))
+    comment = (
+        f"Automated review: this diff adds {added} line(s) and removes "
+        f"{removed} line(s). No destructive shell commands or file writes "
+        "were needed to produce this comment -- read_file/git_diff cover "
+        "the entire task, so this scenario never touches TOOL_POLICY_CI at all."
+    )
+    return comment</code></pre>
+    </div>
+    <p>
+      This is the easy half, and it's easy for a real, structural
+      reason — not because reviewing code is a simple task in general
+      (Chapter 3 spent a whole chapter on how much judgment real
+      reviewing takes), but because the AGENT's OWN OUTPUT here is just
+      text: a comment. Nothing about producing that comment requires
+      changing the codebase, so nothing about it needed a new
+      permission tier, a new scope, or a policy decision at all.
+    </p>
+    <p>
+      <strong>A CI troubleshooting agent</strong> is the harder,
+      more interesting design problem, and it's worth being honest
+      about exactly where the difficulty comes from: it needs to
+      investigate a failing build or test and, to be genuinely useful,
+      propose or even apply a fix — which means it needs real WRITE
+      capability, in an environment with no human to grant it at
+      runtime. That's the tension Sections 1 and 2 have now both named
+      from different angles, and Section 3 is where this chapter
+      actually resolves it.
+    </p>
+  </section>
+
+  <section id="section-3" class="subtopic">
+    <h2>Resolving the Tension: A Second, Human-Decided Policy</h2>
+    <p>
+      The WRONG answer is loosening something at RUNTIME. It's worth
+      stating exactly what that would look like, because it's the
+      first thing most people reach for, and it's worth seeing why it
+      fails before building the actual fix:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">the WRONG fix -- do NOT do this (shown to be rejected, not shipped)</span>
+      </div>
+      <pre><code>def confirm_with_human(tool_name, args):
+    if CI_MODE:
+        return True   # <-- recreates Chapter 8's exact flaw, one layer up
+    summary = json.dumps(args)
+    prompt = f"[confirmation required] allow {tool_name}({summary})? [y/N]: "
+    try:
+        answer = input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        return False
+    return answer.strip().lower() in ("y", "yes")</code></pre>
+    </div>
+    <p>
+      This "works," in the sense that every tool call succeeds. That's
+      exactly the problem. Chapter 8's <code>git_commit(message,
+      confirm=True)</code> failed because the thing being checked (the
+      model's own tool call) controlled the value the check depended
+      on. This one-line fix does the identical thing, one layer up:
+      <code>CI_MODE</code>, set once and true for the whole run, now
+      pre-answers every confirmation for every tool with every possible
+      argument, for the entire duration of the run. It's not the model
+      setting the flag this time — but the check has been reduced to
+      "did someone flip the mode that always says yes," which is
+      exactly as blind to the SPECIFIC action being approved as the
+      original flaw was. A human deciding to turn on <code>CI_MODE</code>
+      once, in the abstract, is not the same guarantee as a human
+      confirming any particular action this specific run is about to
+      take.
+    </p>
+    <p>
+      The RIGHT answer is a SEPARATE policy — a second dict, decided by
+      a human ahead of time, reviewed via the exact same PR-review
+      process this whole course has taught since Chapter 3, that the
+      harness selects between based on which mode it's running in:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">TOOL_POLICY vs TOOL_POLICY_CI -- two dicts, both static, both reviewed via a real PR</span>
+      </div>
+      <pre><code># Chapter 11's exact interactive policy, unchanged.
+TOOL_POLICY = {
+    "read_file": ALLOWED, "list_directory": ALLOWED,
+    "git_status": ALLOWED, "git_diff": ALLOWED, "run_tests": ALLOWED,
+    "write_file": REQUIRES_CONFIRMATION, "edit_file": REQUIRES_CONFIRMATION,
+    "run_shell_command": REQUIRES_CONFIRMATION, "git_commit": REQUIRES_CONFIRMATION,
+    "send_email": BLOCKED,
+}
+
+# This chapter's new policy for unattended CI runs.
+TOOL_POLICY_CI = {
+    "read_file": ALLOWED, "list_directory": ALLOWED,
+    "git_status": ALLOWED, "git_diff": ALLOWED, "run_tests": ALLOWED,
+    "write_file": ALLOWED,        # scoped -- see below
+    "edit_file": BLOCKED,         # no narrow scope exists for an in-place edit
+    "run_shell_command": BLOCKED, # no narrow scope exists for an arbitrary command
+    "git_commit": ALLOWED,        # scoped -- see below
+    "send_email": BLOCKED,
+}
+
+CI_MODE = os.environ.get("ACAFE_CI_MODE") == "1"  # read ONCE, at startup
+
+def active_policy():
+    return TOOL_POLICY_CI if CI_MODE else TOOL_POLICY
+
+def check_permission(name):
+    return active_policy().get(name, BLOCKED)   # fail closed, in BOTH policies</code></pre>
+    </div>
+    <p>
+      Read <code>CI_MODE</code>'s definition carefully: it's computed
+      once, when the module is imported, from an environment variable
+      the CI WORKFLOW sets — not the agent, not a tool call, not
+      anything downstream of the model's own output. Nothing later in
+      this file, including every function that reads <code>CI_MODE</code>,
+      has any way to change it. That's the structural difference from
+      the wrong fix above: the wrong fix let the SAME running process
+      decide, per call, whether to bypass confirmation; this design
+      lets the harness decide, once, before the model has produced a
+      single token, WHICH already-reviewed policy applies — and from
+      that point on, every check is just a lookup in a static dict, the
+      same fail-closed <code>.get(name, BLOCKED)</code> pattern Chapter
+      11 built, applied to two dicts instead of one.
+    </p>
+    <p>
+      Notice what did NOT get more permissive across the board:
+      <code>edit_file</code> and <code>run_shell_command</code> went
+      from <code>REQUIRES_CONFIRMATION</code> to <code>BLOCKED</code>,
+      not <code>ALLOWED</code> — MORE restrictive in CI, not less. The
+      question this chapter's design asks per tool isn't "can we make
+      this work without a human," it's "does a narrow, code-checkable
+      scope exist for this tool at all." For <code>edit_file</code> and
+      <code>run_shell_command</code>, the honest answer is no — there's
+      no narrow prefix that makes an in-place edit of a tracked file
+      safe, and no scope narrow enough to pre-approve an arbitrary
+      shell command string. For <code>write_file</code> and
+      <code>git_commit</code>, the answer is yes, and here's what that
+      scope actually looks like in code:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">the scope checks that substitute for the confirmation CI can't give</span>
+      </div>
+      <pre><code>CI_SCRATCH_PREFIX = "ci-scratch/"
+
+def _in_ci_scratch(path):
+    normalized = path.replace("\\", "/")
+    if normalized.startswith("./"):
+        normalized = normalized[2:]
+    return normalized.startswith(CI_SCRATCH_PREFIX)
+
+def write_file(path, content):
+    if CI_MODE and not _in_ci_scratch(path):
+        return f"error: in CI mode, write_file may only write inside {CI_SCRATCH_PREFIX!r} -- refused: {path!r}."
+    # ... unchanged from Chapter 11 below this point ...
+
+PROTECTED_BRANCHES = {"main", "master"}
+
+def git_commit(message):
+    if CI_MODE:
+        branch = _current_branch()   # reads git itself, not a model-provided argument
+        if branch is None or branch in PROTECTED_BRANCHES:
+            return f"error: in CI mode, git_commit is refused on protected branch {branch!r} ..."
+    # ... unchanged from Chapter 11 below this point ...</code></pre>
+    </div>
+    <p>
+      Both checks share the same shape, and it's worth naming that
+      shape explicitly because it generalizes: a tier being
+      <code>ALLOWED</code> only guarantees <code>dispatch_tool_call</code>
+      won't refuse the call at the POLICY level — the function's OWN
+      body still enforces a narrower, pre-decided boundary before doing
+      anything real. This is Chapter 11's <code>_safe_path()</code> vs.
+      <code>TOOL_POLICY</code> distinction, one level deeper: now a
+      SINGLE tool's tier and its scope are two independent checks,
+      because "is this tool allowed to run in CI at all" and "does THIS
+      specific call, given its actual arguments, stay inside the
+      boundary a human pre-approved" are still, structurally, two
+      different questions.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... a genuinely new tool this chapter adds, and why does it matter for this exact design?</span>
+      <p>
+        <code>run_tests()</code> — narrow on purpose, taking ZERO
+        arguments, running exactly one fixed command. It's
+        <code>ALLOWED</code> in both policies, and it's a direct,
+        concrete instance of the least-privilege fix Chapter 11's own
+        retrospective named for <code>run_shell_command</code>'s
+        "structurally over-privileged by nature" problem: replace one
+        broad, gated capability with a narrow, purpose-built one. There
+        is no scope check needed inside <code>run_tests()</code> at
+        all — not because scope checks are optional, but because a
+        function that accepts no arguments and runs one fixed command
+        has no argument SPACE for a scope check to constrain in the
+        first place. That's what "narrow enough to state and verify
+        completely" actually looks like in code, not just in prose.
+      </p>
+    </div>
+  </section>
+
+  <section id="section-4" class="subtopic">
+    <h2>A Real CI Wiring</h2>
+    <p>
+      All of the above is harness logic — testable and, in this
+      chapter's project, actually tested, entirely offline. But the
+      chapter's title is "putting an agent IN CI," which means it's
+      worth showing what actually invokes this code from inside a real
+      GitHub Actions job, and what changes about how the agent loop
+      itself needs to behave once it's genuinely running unattended,
+      metered, on someone else's clock:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">from project/example-ci-workflow.yml -- illustrative, not wired into this repo's own CI</span>
+      </div>
+      <pre><code>ci-troubleshoot:
+  if: failure()
+  needs: [run-tests]
+  steps:
+    - uses: actions/checkout@v4
+    - name: Create a scratch branch for this run
+      run: git checkout -b "ci/auto-fix-${{ github.run_id }}"
+    - name: Run the CI troubleshooting agent
+      env:
+        ACAFE_CI_MODE: "1"     # the ONLY thing this step sets that changes behavior
+      run: python3 project/solution.py --mode=troubleshoot --task "..."
+    - name: Open a draft PR with the proposed fix
+      if: steps.check.outputs.has_changes == 'true'
+      uses: peter-evans/create-pull-request@v6
+      with:
+        branch: "ci/auto-fix-${{ github.run_id }}"
+        draft: true</code></pre>
+    </div>
+    <p>
+      Notice how little the workflow itself decides. It sets
+      <code>ACAFE_CI_MODE: "1"</code> — one environment variable, read
+      once by the harness before the agent runs — and it opens a
+      DRAFT pull request afterward, if the agent produced anything.
+      Nothing in the YAML widens a policy, grants a permission, or
+      auto-approves anything; <code>TOOL_POLICY_CI</code>,
+      <code>CI_SCRATCH_PREFIX</code>, and <code>PROTECTED_BRANCHES</code>
+      were all decided ahead of time, in the Python file, reviewed via
+      the same pull-request process everything else in this course goes
+      through.
+    </p>
+    <p>
+      One more thing changes about the agent loop itself once it's
+      genuinely running unattended and metered: Chapter 5 discussed
+      thrashing, looping, and stalling in the abstract — a failure
+      mode a learner watching their own terminal notices and can
+      interrupt. In CI, a run that thrashes doesn't just waste the
+      agent's own time; it burns real, metered CI minutes and blocks a
+      real pull request from merging while it does it, a concrete new
+      cost Chapter 5's discussion didn't have to reckon with. Chapter
+      4's step cap is still there, lowered for CI
+      (<code>MAX_STEPS_CI = 5</code> vs. 8 interactively), and this
+      chapter adds a wall-clock budget independent of step count, since
+      a single step that itself runs long could still burn significant
+      real time even under a low step cap:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">run_agent's CI-specific budget -- from project/solution.py</span>
+      </div>
+      <pre><code>MAX_STEPS_INTERACTIVE = 8
+MAX_STEPS_CI = 5
+CI_WALL_CLOCK_BUDGET_SECONDS = 90
+
+def run_agent(task, client):
+    max_steps = MAX_STEPS_CI if CI_MODE else MAX_STEPS_INTERACTIVE
+    deadline = time.monotonic() + CI_WALL_CLOCK_BUDGET_SECONDS if CI_MODE else None
+    ...
+    for step in range(1, max_steps + 1):
+        if deadline is not None and time.monotonic() > deadline:
+            print(f"[CI wall-clock budget of {CI_WALL_CLOCK_BUDGET_SECONDS}s exceeded -- stopping, not hanging]")
+            return messages
+        ...</code></pre>
+    </div>
+    <p>
+      This is Chapter 5's vocabulary with a dollar sign attached to it:
+      a run that stops cleanly on schedule isn't automatically "fine" —
+      it's fine because it stopped BEFORE it became a bill someone
+      has to notice and a PR someone has to keep waiting on.
+    </p>
+  </section>
+
+  <section id="section-5" class="subtopic">
+    <h2>What a Human Still Must Review</h2>
+    <p>
+      Nothing in this chapter makes a CI-run agent unsupervised. It
+      makes an agent whose blast radius is pre-scoped tightly enough
+      that its output landing somewhere low-stakes — a bot comment, a
+      draft PR, a commit on a disposable scratch branch — is an
+      acceptable outcome even BEFORE a human looks at it. That's a
+      meaningfully different claim than "this agent doesn't need
+      review," and it's worth being precise about which parts of this
+      chapter's design are doing which job:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">what's safe to land unreviewed vs. what still needs Chapter 3's checklist</span>
+      </div>
+      <pre><code>SAFE TO LAND BEFORE HUMAN REVIEW (this chapter's whole point):
+  - a PR review bot's comment           -- text, no side effects at all
+  - a commit on a disposable scratch branch, or a DRAFT pull request
+    -- reversible, isolated, nobody merges a draft by accident
+
+STILL NEEDS CHAPTER 3'S FULL CHECKLIST, EVERY TIME, NO EXCEPTIONS:
+  - merging that draft PR into anything that matters
+  - trusting the CONTENT of the agent's summary/diagnosis without reading it
+  - widening TOOL_POLICY_CI, CI_SCRATCH_PREFIX, or PROTECTED_BRANCHES itself
+    -- this is a real code change and gets the exact same PR review as
+       any other change to this repo, not a special "trusted config" exemption</code></pre>
+    </div>
+    <p>
+      The auto-merge scenario is worth naming explicitly, because it's
+      the single most likely way this whole design quietly stops
+      working without a single line of <code>TOOL_POLICY_CI</code>
+      ever changing: if a team later enables auto-merge on the CI
+      agent's own draft PRs "since it's always been reliable so far,"
+      nothing about the CODE changed — but the entire safety argument
+      this chapter makes (a draft PR is fine to land unreviewed because
+      a human still decides whether to merge it) has been quietly
+      removed by a process decision, not a policy decision. A
+      CI-safe agent's design can be entirely correct and still end up
+      unsafe in practice if the review step downstream of it gets
+      skipped — which is exactly why this course has treated "review
+      the diff" as a discipline since Chapter 3, not a one-time gate
+      that, once passed, can be forgotten.
+    </p>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p>
+        <strong>Problem:</strong> a team adopts this chapter's design,
+        ships <code>TOOL_POLICY_CI</code> reviewed and correct on day
+        one, and six months later the CI troubleshooting agent starts
+        committing things a reviewer would have flagged — without
+        anyone having touched <code>TOOL_POLICY_CI</code>,
+        <code>CI_SCRATCH_PREFIX</code>, or <code>PROTECTED_BRANCHES</code>
+        at all. <strong>Assumption being made:</strong> that a policy,
+        once written and reviewed, stays correct indefinitely — the
+        same implicit assumption a static denylist or a fixed set of
+        resource limits could tempt someone into making, if they
+        weren't reminded (as Chapters 8 and 11 both were, explicitly)
+        that a snapshot decision needs periodic re-checking against a
+        moving reality. <strong>What actually distinguishes it:</strong>
+        the code hasn't changed, but what it operates ON has —
+        <code>ci-scratch/</code> quietly became load-bearing (another
+        tool started reading files from it that were never meant to be
+        authoritative), or the team's branch-naming convention shifted
+        (feature branches now sometimes get named
+        <code>release-main</code>, which isn't literally in
+        <code>PROTECTED_BRANCHES</code> but functions like one is). The
+        POLICY is still exactly what a human decided; the WORLD the
+        policy was decided about moved underneath it. <strong>Why this
+        matters going forward:</strong> this is the same shape of gap
+        Chapter 11's retrospective found in Chapters 7-9's tools — not
+        a bug anyone can point to in a diff, but a design that was
+        correct when reviewed and needs the same kind of deliberate,
+        periodic re-review this course has modeled for every other
+        security-adjacent mechanism, not a one-time PR approval treated
+        as permanent. <strong>Working definition to carry forward:</strong>
+        a CI-safe policy isn't safe because it was reviewed once — it's
+        safe because the review discipline that produced it in the
+        first place gets applied again, deliberately, as the codebase
+        and conventions it governs keep changing around it.
+      </p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember</h2>
+      <ul>
+        <li>Dropping Chapter 11's agent into CI unchanged is SAFE (every
+        <code>REQUIRES_CONFIRMATION</code> call denies cleanly on closed
+        stdin, exactly the case <code>EOFError</code> handling exists
+        for) but USELESS (every tool capable of real work is
+        <code>REQUIRES_CONFIRMATION</code>, so it can't do any of it).</li>
+        <li>The WRONG fix is auto-answering "yes" inside
+        <code>confirm_with_human</code> when <code>CI_MODE</code> is
+        set — that recreates Chapter 8's exact self-granted-permission
+        flaw, just one layer up, blind to the specific action being
+        approved.</li>
+        <li>The RIGHT fix: a SEPARATE policy, <code>TOOL_POLICY_CI</code>,
+        decided by a human ahead of time and reviewed via a real PR,
+        selected by a <code>CI_MODE</code> flag read once at startup —
+        never something a tool call or a runtime script can flip.</li>
+        <li>Each tool made more permissive in CI (<code>write_file</code>,
+        <code>git_commit</code>) is paired with a code-level scope check
+        inside its own function body (a scratch-path prefix, a
+        protected-branch check) that substitutes for the confirmation CI
+        can't give. Tools with no narrow scope at all
+        (<code>edit_file</code>, <code>run_shell_command</code>) become
+        <code>BLOCKED</code> outright, not <code>ALLOWED</code> —
+        explicit and auditable, not a relied-upon accidental deny.</li>
+        <li>Two use cases: a PR review bot needs zero policy changes at
+        all (entirely read-only, already <code>ALLOWED</code> under
+        Chapter 11's exact policy); a CI troubleshooting agent needs
+        real write capability and is where the CI-specific scoping
+        actually earns its keep.</li>
+        <li><code>run_tests</code> is a new, narrow, zero-argument tool
+        — the least-privilege fix Chapter 11's retrospective named for
+        <code>run_shell_command</code>, applied concretely.</li>
+        <li>A run that thrashes in CI wastes real, metered CI minutes
+        and blocks a real PR — a concrete new cost on top of Chapter
+        5's abstract failure-mode discussion, addressed with a
+        lower CI step cap plus an independent wall-clock budget.</li>
+        <li>A CI-safe agent isn't an unsupervised agent — its blast
+        radius is pre-scoped tightly enough that landing in a low-stakes
+        place (a bot comment, a draft PR, a scratch branch) is fine even
+        before a human looks. Merging that draft, trusting its content,
+        or widening the policy itself all still need Chapter 3's full
+        review discipline, every time.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="what-is">
+    <span class="label">Interview questions (4 levels)</span>
+    See <a href="interview-questions.html">Chapter 12 interview questions</a>.
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>
