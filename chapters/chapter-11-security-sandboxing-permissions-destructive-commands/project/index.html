@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Project — AI Coding Agents for Everyone</title>
+<meta name="description" content="Module 5's real lab: add a harness-enforced permission-scope layer to the Module 3 agent, resolving Chapter 8's unshipped git_commit question for real.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-11">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../interview-questions.html">&larr; Back to interview questions</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 11 Project</span>
+    <span class="reading-time">~45 min · <span class="badge-difficulty">Module 5 Lab</span></span>
+  </div>
+  <h1>Project: Add Permission Scoping to the Module 3 Agent</h1>
+
+  <div class="hook">
+    <p>
+      Per <code>docs/curriculum/CURRICULUM_MAP.md</code>, Module 5's
+      lab is exactly this: "add permission scoping to the Module 3
+      agent." <code>starter.py</code> in this folder is Chapter 8's
+      reference agent, copied forward unchanged, plus a real
+      <code>git_commit</code> tool — the one Chapter 8 sketched, named
+      the flaw in (a <code>confirm=True</code> argument the model can
+      set on itself is not a real permission check), and shipped
+      nowhere. Your job is the missing piece: a permission-scope layer
+      that lives entirely in the harness, checked before any tool call
+      is dispatched, that a model cannot see, set, or talk its way
+      around.
+    </p>
+  </div>
+
+  <h2>What's provided</h2>
+  <p>
+    Every tool from Chapter 8 (<code>read_file</code>,
+    <code>write_file</code>, <code>edit_file</code>,
+    <code>list_directory</code>, a denylist-and-resource-limit-hardened
+    <code>run_shell_command</code>, <code>git_status</code>,
+    <code>git_diff</code>) plus two new tools: a real
+    <code>git_commit</code> (finally resolving Chapter 8's open
+    question) and a <code>send_email</code> stub included purely to
+    give this project a concrete example of the strictest policy tier.
+    None of the tool functions themselves are TODOs — they're tested,
+    working scaffold, the same role Chapter 8's five tools played for
+    that chapter's project.
+  </p>
+
+  <h2>Your task</h2>
+  <p>
+    Four TODOs in <code>starter.py</code>, all part of one connected
+    mechanism: define the three policy tiers
+    (<code>ALLOWED</code>/<code>REQUIRES_CONFIRMATION</code>/<code>BLOCKED</code>),
+    build <code>TOOL_POLICY</code> classifying every tool into one of
+    them, implement <code>check_permission()</code> (defaulting to
+    <code>BLOCKED</code> for anything unclassified) and
+    <code>confirm_with_human()</code> (a real <code>input()</code> read
+    from real stdin, denying by default on EOF), then wire the policy
+    check into <code>dispatch_tool_call</code> so it runs
+    <strong>before</strong> any tool function is ever called. Full spec
+    in the module docstring and each TODO.
+  </p>
+
+  <div class="what-is">
+    <span class="label">What "done" looks like</span>
+    Running <code>python3 starter.py</code> (or
+    <code>solution.py</code>) executes a five-part scripted demo with
+    no live model needed: an <code>ALLOWED</code> tool
+    (<code>read_file</code>) runs instantly; a
+    <code>REQUIRES_CONFIRMATION</code> tool (<code>write_file</code>)
+    pauses for a real stdin prompt and denies cleanly when no human
+    answers; a <code>BLOCKED</code> tool (<code>send_email</code>) is
+    refused before any prompt at all; a registered-but-unclassified
+    tool is refused too, proving the fail-closed default; and a
+    genuinely unknown tool name is rejected as it always was. None of
+    this requires Ollama to be running — the permission layer is pure
+    harness logic, verifiable on its own, exactly like Chapter 7's
+    exercises taught for tool-dispatch logic generally.
+  </div>
+
+  <h2>Why this is the right project for right now</h2>
+  <p>
+    Every chapter since 7 has been building toward a moment where the
+    harness has to make a decision the model cannot override. Chapter
+    7's <code>_safe_path()</code> did it for file paths. Chapter 8's
+    denylist did it for the worst shell commands. Both were real, but
+    both were narrow — a boundary and a blocklist, not a general answer
+    to "should this specific action, right now, actually be allowed to
+    happen." This project builds that general answer: a policy the
+    harness owns completely, checked before dispatch, with a genuine
+    human-in-the-loop pause for anything that changes state. It is the
+    direct, concrete resolution of the question Chapter 8 spent an
+    entire section naming and refusing to fake an answer to.
+  </p>
+
+  <div class="points-to-remember">
+    <h2>Before you call it done</h2>
+    <p>
+      Run <code>python3 starter.py &lt; /dev/null</code> — with stdin
+      closed, does every <code>REQUIRES_CONFIRMATION</code> call deny
+      cleanly instead of hanging? That single test is the most
+      important one in this project: a permission system that hangs or
+      silently defaults to yes when nobody's there to answer isn't
+      safer than having no permission system at all, in the specific
+      case that actually matters most (an agent running unattended).
+    </p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../interview-questions.html">&larr; Interview Questions</a>
+    <a href="../../../index.html">All Chapters &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Quiz — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interactive quiz for Security: Sandboxing, Permissions, Destructive Commands.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-11" data-chapter-id="chapter-11">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="lesson.html">&larr; Back to the lesson</a></p>
+
+  <span class="chapter-badge">Chapter 11 Quiz</span>
+  <h1>Security: Sandboxing, Permissions, Destructive Commands</h1>
+  <p>Eight questions. Fill in the blank, then check your answers.</p>
+
+  <div class="quiz-progress-wrap" aria-hidden="true">
+    <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+  </div>
+
+  <form onsubmit="return false;">
+    <div class="quiz-question">
+      <label for="q1"><span class="q-num">1</span> Chapter 8's <code>git_commit</code> sketch failed because its <code>confirm</code> argument lives inside the tool call's own arguments, which the __________ fully controls -- the same reason a raw <code>path</code> argument can't be trusted without <code>_safe_path()</code>.</label>
+      <div class="fib-row">
+        <input type="text" id="q1" class="fib-blank" data-answers="model" aria-label="Answer for question 1">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q2"><span class="q-num">2</span> This chapter's <code>check_permission()</code> looks up a tool in <code>TOOL_POLICY</code> and defaults any UNCLASSIFIED tool to __________, not ALLOWED -- fail closed, not open.</label>
+      <div class="fib-row">
+        <input type="text" id="q2" class="fib-blank" data-answers="BLOCKED,blocked" aria-label="Answer for question 2">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q3"><span class="q-num">3</span> <code>confirm_with_human()</code> reads from real __________ via Python's <code>input()</code> -- a channel the model's conversation cannot write to or observe.</label>
+      <div class="fib-row">
+        <input type="text" id="q3" class="fib-blank" data-answers="stdin,standard input" aria-label="Answer for question 3">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q4"><span class="q-num">4</span> If <code>input()</code> raises __________ (stdin closed, no human attached), <code>confirm_with_human()</code> denies by default rather than hanging or assuming yes.</label>
+      <div class="fib-row">
+        <input type="text" id="q4" class="fib-blank" data-answers="EOFError,EOFError,KeyboardInterrupt,EOF" aria-label="Answer for question 4">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q5"><span class="q-num">5</span> The shipped <code>git_commit(message)</code> function has no __________ parameter at all -- approval is decided by the harness before this function is ever called, not by an argument the model can set.</label>
+      <div class="fib-row">
+        <input type="text" id="q5" class="fib-blank" data-answers="confirm" aria-label="Answer for question 5">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q6"><span class="q-num">6</span> This chapter's real process-level isolation uses Python's <code>resource</code> module to set <code>RLIMIT_CPU</code> and <code>RLIMIT_AS</code> via a <code>preexec_fn</code> -- but deliberately does NOT set <code>RLIMIT_NPROC</code>, because that limit applies to the entire real __________, not just the subprocess tree.</label>
+      <div class="fib-row">
+        <input type="text" id="q6" class="fib-blank" data-answers="user account,user,uid" aria-label="Answer for question 6">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q7"><span class="q-num">7</span> Of this chapter's four destructive-command categories (data loss, scope escape, supply-chain/credential exposure, irreversible external effects), reading <code>~/.aws/credentials</code> is an example of __________ risk -- and notably requires no write-capable tool at all, since it's just a read.</label>
+      <div class="fib-row">
+        <input type="text" id="q7" class="fib-blank" data-answers="supply-chain,supply chain,credential,supply-chain/credential exposure,credential exposure" aria-label="Answer for question 7">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q8"><span class="q-num">8</span> The least-privilege retrospective on Chapters 7-9's tools concludes that <code>run_shell_command</code> is over-privileged __________ its nature -- not by a mistake anyone made, but as a direct consequence of what running an arbitrary command means.</label>
+      <div class="fib-row">
+        <input type="text" id="q8" class="fib-blank" data-answers="by,by its" aria-label="Answer for question 8">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div id="check-all-wrap">
+      <button type="button" id="check-all-btn" class="check-btn">Check All Answers</button>
+      <span id="quiz-score"></span>
+    </div>
+
+    <div class="quiz-celebration" id="quiz-celebration" aria-live="polite">
+      Perfect score. Chapter complete.
+    </div>
+  </form>
+
+  <div class="chapter-nav">
+    <a href="lesson.html">&larr; Back to Lesson</a>
+    <a href="exercises/index.html">Exercises &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/quiz-engine.js"></script>
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

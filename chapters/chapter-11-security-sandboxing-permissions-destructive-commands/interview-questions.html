@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Interview Questions — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interview questions for Security: Sandboxing, Permissions, Destructive Commands.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-11">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="practice/index.html">&larr; Back to practice bank</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 11 Interview Questions</span>
+    <span class="reading-time">~18 min</span>
+  </div>
+  <h1>Interview Questions: Security, Sandboxing, Permissions, Destructive Commands</h1>
+  <p>Grouped by level. Each includes a strong answer, a red flag, and a follow-up. A plain-markdown mirror of these same eight questions is available at <a href="interview-questions.md">interview-questions.md</a>.</p>
+
+  <div class="lesson-card">
+    <h2>1. (Beginner) Why doesn't a <code>confirm=True</code> argument on a tool like <code>git_commit</code> actually provide a real permission check?</h2>
+    <p><strong>Strong answer:</strong> A tool call, since this course's agent loop was built, is entirely produced by the model -- the function name and every argument, including a <code>confirm</code> field, are values the model itself chose to write. There is nothing stopping the model from simply including <code>confirm: true</code> in the exact same JSON blob it uses to call the tool in the first place. A permission check has to be based on information the entity being checked can't alter -- putting it inside the checked entity's own request defeats the point entirely.</p>
+    <p><strong>Red flag:</strong> Thinks a confirm flag is "mostly fine" because a well-behaved model probably wouldn't set it carelessly -- misses that the check needs to hold even when the model is wrong, confused, or (in an adversarial framing) deliberately manipulated, not just when it's behaving typically.</p>
+    <p><strong>Follow-up:</strong> "Where in the code does the REAL confirmation check live instead, and what makes that location trustworthy in a way the tool argument wasn't?"</p>
+    <p><strong>What this proves:</strong> Understands the actual mechanism of why the flag fails, not just that it "feels unsafe."</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>2. (Beginner) What does it mean for a permission check to "fail closed," and why does <code>check_permission()</code> default an unclassified tool to BLOCKED rather than ALLOWED?</h2>
+    <p><strong>Strong answer:</strong> "Fail closed" means that when something goes wrong or is ambiguous -- here, a tool nobody explicitly classified in the policy -- the safe outcome (refuse) is what happens automatically, rather than requiring someone to have remembered to set it up correctly. Defaulting to BLOCKED means a developer who adds a new tool and forgets to add a policy entry for it gets a tool that doesn't run (annoying, but safe) instead of a tool that runs completely unguarded the first time the model calls it (a real, silent security gap). The cost of the mistake is contained by the default, not by hoping the mistake never happens.</p>
+    <p><strong>Red flag:</strong> Can define "fail closed" abstractly but can't explain the concrete consequence of getting the default backward in this specific code.</p>
+    <p><strong>Follow-up:</strong> "What's the equivalent 'fail open' mistake someone could make in this exact function, and what would it look like in code?"</p>
+    <p><strong>What this proves:</strong> Connects a security principle to its specific, concrete implementation, not just the vocabulary.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>3. (Intermediate) <code>_safe_path()</code> (Chapter 7) and <code>TOOL_POLICY</code> (this chapter) are both harness-enforced checks the model can't override. Why does this agent need both, instead of just one general-purpose "harness says no" mechanism?</h2>
+    <p><strong>Strong answer:</strong> They answer genuinely different questions and catch genuinely different mistakes. <code>_safe_path()</code> asks "is this specific path even allowed to be touched at all" -- independent of which tool is asking. <code>TOOL_POLICY</code> asks "does this specific TOOL need a human's approval before it runs at all" -- independent of which path or argument it's being called with. A call to <code>write_file("notes.txt", ...)</code> passes <code>_safe_path()</code> easily (the path is inside the workspace) but should still require confirmation, because the risk of writing is about changing state, not about where the state happens to live. Collapsing them into one check would either make every read subject to confirmation friction it doesn't need, or make every write skip a check it does need, depending on which check "won."</p>
+    <p><strong>Red flag:</strong> Treats the two mechanisms as redundant or interchangeable, or can't name a concrete case where a call passes one and needs the other.</p>
+    <p><strong>Follow-up:</strong> "Can you think of a tool call that would FAIL <code>_safe_path()</code> but be ALLOWED under TOOL_POLICY, or vice versa?"</p>
+    <p><strong>What this proves:</strong> Understands that layered security mechanisms are deliberate, purpose-specific checks, not redundant belt-and-suspenders for the same risk.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>4. (Intermediate) A teammate proposes replacing this chapter's <code>resource.setrlimit</code>-based hardening with the claim "this makes run_shell_command sandboxed." What's your response?</h2>
+    <p><strong>Strong answer:</strong> That's overselling what it actually does. <code>resource.setrlimit</code> gives real, kernel-enforced CPU and memory caps on the subprocess, and a restricted environment hides the host's real secrets from it -- both genuine, verifiable protections. But it gives the command no separate filesystem view (it can still write anywhere the OS and <code>_safe_path()</code>'s boundary allow), no network isolation, and no process namespace isolation. A real sandbox -- where even an unrestricted <code>rm -rf /</code> only destroys a disposable container image -- needs OS or container-runtime primitives (Linux namespaces, cgroups, Docker, or a VM) underneath the Python process, which pure Python code cannot construct for itself. Calling resource limits "sandboxing" would mislead anyone reading the code about what's actually covered.</p>
+    <p><strong>Red flag:</strong> Either dismisses resource limits as worthless because they're "not a real sandbox," or accepts the "sandboxed" framing without pushing back on the specific gaps (filesystem, network, process namespace).</p>
+    <p><strong>Follow-up:</strong> "If you had access to Docker in this environment, what's the smallest change you'd make to actually close the filesystem-isolation gap?"</p>
+    <p><strong>What this proves:</strong> Can precisely scope a security claim instead of accepting or rejecting it wholesale -- exactly the "don't oversell" discipline this course has applied to every prior mitigation (the denylist, MCP's trade-offs).</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>5. (Senior) Walk through exactly what happens, step by step, when this chapter's agent runs as an unattended cron job and the model calls <code>write_file</code>.</h2>
+    <p><strong>Strong answer:</strong> <code>dispatch_tool_call</code> parses the arguments and finds <code>write_file</code> in <code>TOOL_FUNCTIONS</code>. It looks up the tool's tier via <code>check_permission("write_file")</code>, which returns <code>REQUIRES_CONFIRMATION</code>. That triggers <code>confirm_with_human("write_file", args)</code>, which prints a prompt and calls <code>input()</code>. Because this is a cron job with stdin closed (or redirected from <code>/dev/null</code>), <code>input()</code> immediately raises <code>EOFError</code>. The <code>except (EOFError, KeyboardInterrupt)</code> block catches it, prints a message noting no human was available, and returns <code>False</code>. Back in <code>dispatch_tool_call</code>, that <code>False</code> means the function returns an "error: write_file requires human confirmation, which was not granted" string WITHOUT ever calling the real <code>write_file</code> function -- the model sees that error as a tool result and has to continue the loop without the file ever having been written.</p>
+    <p><strong>Red flag:</strong> Says the agent "hangs" or "crashes" in this scenario, missing that the EOFError handling specifically prevents both of those outcomes -- or skips the mechanical detail of WHERE in the call chain the decision actually happens.</p>
+    <p><strong>Follow-up:</strong> "What would you need to change about this design if you actually wanted SOME confirmations to be auto-approved in an unattended CI context, without reopening the 'the model sets its own flag' problem?"</p>
+    <p><strong>What this proves:</strong> Can trace a multi-function control-flow path precisely, not just describe the intended behavior at a high level.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>6. (Senior) Design a threat-model argument for why <code>send_email</code> should be BLOCKED outright rather than REQUIRES_CONFIRMATION, when a human confirming it would seem to provide equivalent protection to git_commit's confirmation.</h2>
+    <p><strong>Strong answer:</strong> The two tools differ in a way that matters for confirmation-based defenses specifically: git_commit's blast radius is fully contained and inspectable BEFORE approval -- a human can run git_diff first and see exactly what they're approving, and even a bad commit is locally reversible. send_email's effect is external, immediate, and irreversible the moment it's approved -- there's no equivalent to "look at the diff first" for an email that's about to leave the system, and a human under time pressure, asked to approve a plausible-sounding "notify the on-call engineer" request, is exactly the kind of rushed, pattern-matched "yes" that confirmation prompts are vulnerable to. Because this agent has no legitimate task that requires contacting an external party at all, removing the decision from the runtime path entirely (BLOCKED) is safer than trusting every future confirmation prompt to be given carefully, especially for an action a human can't meaningfully undo after the fact.</p>
+    <p><strong>Red flag:</strong> Argues that "more human oversight is always safer," missing that a confirmation prompt is only as protective as the human's ability to actually evaluate what they're approving under real conditions -- for some actions, that ability is structurally limited regardless of how carefully the prompt is worded.</p>
+    <p><strong>Follow-up:</strong> "Is there ANY legitimate coding-agent task where an email tool would be worth having at REQUIRES_CONFIRMATION instead of BLOCKED? What would have to be true?"</p>
+    <p><strong>What this proves:</strong> Reasons about WHY a tier is appropriate for a specific tool's risk shape, rather than applying "more confirmation = more safety" as a blanket rule.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>7. (Architect) You're adapting this chapter's agent for a real, sensitive production codebase. Would you keep <code>run_shell_command</code> as a single general-purpose tool, or redesign it? Justify your answer with a concrete trade-off, not just a preference.</h2>
+    <p><strong>Strong answer:</strong> I'd replace it with several narrower, purpose-built tools -- <code>run_tests</code>, <code>run_linter</code>, <code>install_declared_dependency</code> -- each with its own policy tier, rather than keep one broad, gated capability. The trade-off is real in both directions: a single <code>run_shell_command</code> covers any task the denylist doesn't explicitly block, including tasks nobody anticipated, at the cost of a genuinely large worst-case blast radius per call (anything not on the denylist is fair game). Narrow, named tools shrink the worst case per tool dramatically -- <code>run_tests</code> can realistically only run the test suite, full stop -- at the direct cost of covering fewer unanticipated situations, meaning the model (or a human) has to explicitly add a new narrow tool every time a genuinely new capability is needed, which is friction Chapter 7-8's minimal-tool philosophy was originally built to avoid. For a real production codebase, I'd accept that friction; the whole point of least privilege is that the friction is the cost of the safety, not a bug in the design.</p>
+    <p><strong>Red flag:</strong> Picks a side without naming the concrete cost of that choice, or claims the narrow-tools redesign has no downside at all.</p>
+    <p><strong>Follow-up:</strong> "How would you decide, concretely, which shell capabilities are common enough to deserve their own named tool versus rare enough to leave uncovered entirely?"</p>
+    <p><strong>What this proves:</strong> Architect-level judgment -- makes a real design trade-off explicit instead of treating "more granular is always better" as a free win.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>8. (Architect) A stakeholder asks: "We already have the denylist from Chapter 8 and the workspace boundary from Chapter 7 -- why do we need a whole separate permission-scope system on top of that?" How do you respond?</h2>
+    <p><strong>Strong answer:</strong> Because the denylist and the workspace boundary defend against two specific, narrow risks -- a known-dangerous shell PATTERN, and a path escaping a known BOUNDARY -- and neither one answers the question "should this tool, this specific capability, ever run without a human deciding, regardless of what arguments it's called with." <code>git_commit</code> is the clearest case: no denylist pattern applies to it (committing isn't a dangerous string), and it operates entirely inside the workspace (so <code>_safe_path()</code> has nothing to say about it) -- yet it's exactly the kind of action (real, permanent, discoverable by every downstream consumer) that this course has argued since Chapter 3 deserves a human checkpoint before it becomes part of a project's real history. The permission-scope layer is the piece that generalizes "should a human decide this" into an explicit, auditable policy, instead of leaving it as an implicit property that happens to fall out of whichever narrower check gets checked first.</p>
+    <p><strong>Red flag:</strong> Claims the denylist and workspace boundary are "basically already doing this," without being able to name a real action (like git_commit) that neither one meaningfully restricts.</p>
+    <p><strong>Follow-up:</strong> "If budget only allowed building ONE of the three mechanisms (workspace boundary, denylist, permission-scope layer), which would you prioritize for a genuinely production agent, and why?"</p>
+    <p><strong>What this proves:</strong> Can explain to a non-technical stakeholder not just WHAT a new layer does, but WHY the existing layers, however real, leave a specific gap this one closes.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="practice/index.html">&larr; Practice Bank</a>
+    <a href="project/index.html">Project &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

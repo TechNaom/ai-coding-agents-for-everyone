@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Exercises — AI Coding Agents for Everyone</title>
+<meta name="description" content="Hands-on exercises for Security: Sandboxing, Permissions, Destructive Commands.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-11">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../quiz.html">&larr; Back to the quiz</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 11 Exercises</span>
+    <span class="reading-time">~45 min</span>
+  </div>
+  <h1>Exercises: Security, Sandboxing, Permissions, Destructive Commands</h1>
+  <p>These exercises don't need Ollama, a live model, or network access
+  to verify — <code>starter.py</code> and <code>solution.py</code> in
+  this folder rebuild the permission layer's own building blocks
+  (a fail-closed policy lookup, the full allow/confirm/block decision
+  flow, and a threat-category classifier) as small, testable functions.</p>
+
+  <div class="what-is">
+    <span class="label">Exercise standard</span>
+    Six tasks below. At least three are production-gear: harder,
+    ambiguous, real-world judgment calls rather than clean textbook
+    cases.
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">1</span> Implement <code>policy_for</code></h3>
+    <p>Open <code>starter.py</code>. Fill in TODO 1: a fail-closed
+    lookup that returns <code>BLOCKED</code> for any tool name not
+    explicitly present in the policy dict. Run
+    <code>python3 starter.py</code> and get the first four checks to
+    <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">2</span> Implement <code>evaluate_call</code></h3>
+    <p>Fill in TODO 2: the allow/confirm/block decision flow, using an
+    injectable confirmation function and an injectable "run the tool"
+    function instead of real stdin or real side effects. Get the next
+    six checks to <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">3</span> Implement <code>classify_threat</code></h3>
+    <p>Fill in TODO 3: classify a shell command string into one of this
+    chapter's four threat categories using keyword checks in a specific
+    priority order. Get the remaining eight checks to <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">4</span> (Production-gear) Design a policy for a tool this chapter never covered</h3>
+    <p>Your team is adding a <code>run_database_migration(sql_file)</code>
+    tool to an agent that already has this chapter's permission layer.
+    The migration runs against a real staging database (not
+    production) but is only reversible if a DBA manually restores from
+    a backup. Which of the three tiers (<code>ALLOWED</code>,
+    <code>REQUIRES_CONFIRMATION</code>, <code>BLOCKED</code>) does this
+    belong in, and why? Is a per-tool tier even fine-grained enough
+    here, or does this specific tool argue for something more — e.g. a
+    policy that also depends on which database the migration targets?
+    Write 3-4 sentences.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">5</span> (Production-gear) Trace what happens when stdin isn't there</h3>
+    <p>A teammate deploys this chapter's agent as a scheduled cron job
+    with no terminal attached — stdout goes to a log file, stdin is
+    connected to <code>/dev/null</code>. The agent calls
+    <code>write_file</code>, which is <code>REQUIRES_CONFIRMATION</code>.
+    Using <code>project/solution.py</code>'s actual
+    <code>confirm_with_human</code> (read it, don't guess), trace
+    exactly what happens: does the cron job hang forever, crash, or
+    return a clean result? What does your answer reveal about why "fails
+    closed on EOF" is a load-bearing design decision, not a defensive
+    nicety, for any agent that might ever run unattended?</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">6</span> (Production-gear) Review a PR that adds a tool without updating the policy</h3>
+    <p>A diff adds a new tool, <code>run_database_query(sql)</code>, to
+    <code>TOOLS</code> and <code>TOOL_FUNCTIONS</code> in a copy of
+    this chapter's agent — but the PR author forgot to add an entry for
+    it in <code>TOOL_POLICY</code>. Using <code>check_permission</code>'s
+    actual fail-closed default (not a guess about what "probably"
+    happens), what's the real, observable behavior the very first time
+    the model tries to call this new tool? Is this a bug worth
+    blocking the PR over, or is the fail-closed default already doing
+    its job here? Write 3-4 sentences explaining your answer with
+    reference to the actual code path.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../quiz.html">&larr; Back to Quiz</a>
+    <a href="../practice/index.html">Practice Bank &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

@@ -117,7 +117,8 @@ window.ACAFE_MODULES = [
         id: "chapter-11",
         num: 11,
         title: "Security: Sandboxing, Permissions, Destructive Commands",
-        description: "Containing what an agent can actually do to your codebase."
+        description: "Containing what an agent can actually do to your codebase.",
+        path: "chapters/chapter-11-security-sandboxing-permissions-destructive-commands/lesson.html"
       },
       {
         id: "chapter-12",
