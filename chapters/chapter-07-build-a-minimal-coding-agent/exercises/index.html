@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build: A Minimal Coding Agent Exercises — AI Coding Agents for Everyone</title>
+<meta name="description" content="Hands-on exercises for Build: A Minimal Coding Agent.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-07">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../quiz.html">&larr; Back to the quiz</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 7 Exercises</span>
+    <span class="reading-time">~35 min</span>
+  </div>
+  <h1>Exercises: Build: A Minimal Coding Agent</h1>
+  <p>This chapter's exercises don't need a running Ollama server to
+  verify — <code>starter.py</code> and <code>solution.py</code> in this
+  folder test the tool-dispatch logic and the loop's stop-condition
+  control flow with mocked/scripted turns instead of a live model, so
+  every exercise below is checkable by running the file directly.</p>
+
+  <div class="what-is">
+    <span class="label">Exercise standard</span>
+    Six tasks below. At least three are production-gear: harder,
+    ambiguous, real-world judgment calls rather than clean textbook
+    cases.
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">1</span> Implement <code>dispatch_tool_call</code></h3>
+    <p>Open <code>starter.py</code>. Fill in TODOs 1 through 4 inside
+    <code>dispatch_tool_call</code>: parse the JSON arguments string,
+    look up the right tool function, check every required argument is
+    present, and call it — returning a descriptive error string instead
+    of raising for each failure case. Run <code>python3 starter.py</code>
+    and get the first five checks to <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">2</span> Implement <code>run_loop_stub</code></h3>
+    <p>Fill in TODOs 1 through 4 inside <code>run_loop_stub</code>: walk
+    through a list of scripted "model turns," stop cleanly the moment a
+    turn has no tool call, and stop at the step cap otherwise — exactly
+    Chapter 4's clean stop and hard stop, driven by mocked data instead
+    of a real model call. Get the remaining three checks to
+    <code>PASS</code>.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">3</span> Trace a real failure by hand</h3>
+    <p>Without running any code, write out, step by step, what
+    <code>dispatch_tool_call("read_file", "{not valid json")</code>
+    actually returns and why — name each line of your implementation
+    that gets triggered, in order. Then run it and confirm your trace
+    was right. This is the same discipline Chapter 4's project had you
+    apply to a real transcript, now applied to code you wrote yourself.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">4</span> (Production-gear) Add a third tool to the dispatch table</h3>
+    <p>Add a new tool function <code>delete_file(path)</code> to
+    <code>starter.py</code> that removes a key from <code>FAKE_DISK</code>
+    (or returns an error string if the key doesn't exist), register it in
+    both <code>TOOL_FUNCTIONS</code> and <code>REQUIRED_ARGS</code>, and
+    add at least two new test cases to <code>main()</code> — one
+    well-formed call and one missing-argument call — without changing
+    <code>dispatch_tool_call</code>'s own logic at all. If you have to
+    modify <code>dispatch_tool_call</code> to make your new tool work,
+    that's a sign that function isn't actually general-purpose yet; note
+    what you had to change and why.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">5</span> (Production-gear) Construct a step-cap-at-exactly-N scenario</h3>
+    <p>Using <code>run_loop_stub</code>, construct a <code>scripted_turns</code>
+    list and a <code>max_steps</code> value such that the loop hits the
+    step cap on exactly step 3, not step 1 and not step 5. Before running
+    it, write down your prediction of the exact return value and why.
+    Then verify. This is deliberately more finicky than task 2's tests —
+    off-by-one mistakes in loop-boundary logic are a real, common class
+    of bug in actual agent harnesses, not just a classroom exercise.</p>
+  </div>
+
+  <div class="task-card">
+    <h3><span class="task-num">6</span> (Production-gear) Review your own dispatch function like Chapter 3 taught</h3>
+    <p>The lesson's <code>project/solution.py</code> has a
+    <code>list_files</code> tool with a real boundary-escape bug: it
+    doesn't confine its path argument to a safe root the way the other
+    tools do. Your <code>dispatch_tool_call</code> in this exercise
+    doesn't touch a real filesystem, so that exact bug can't happen here
+    — but explain, in 2-3 sentences, what the equivalent safety check
+    would need to look like if <code>FAKE_DISK</code> were swapped for a
+    real directory on disk, and where in your dispatch logic you'd add
+    it. Use Chapter 3's "is it consistent with the rest of the codebase's
+    patterns" question explicitly in your answer.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../quiz.html">&larr; Back to Quiz</a>
+    <a href="../practice/index.html">Practice Bank &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

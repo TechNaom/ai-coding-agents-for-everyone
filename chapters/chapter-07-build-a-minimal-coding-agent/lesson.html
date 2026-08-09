@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build: A Minimal Coding Agent — AI Coding Agents for Everyone</title>
+<meta name="description" content="Build a real, working coding agent from scratch: a system prompt, three real tools, and the plan/act/observe/repeat loop, running against a local open-source model via Ollama.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-07">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 7</span>
+    <span class="badge-difficulty">Intermediate</span>
+    <span class="reading-time">~30 min</span>
+  </div>
+
+  <h1>Build: A Minimal Coding Agent</h1>
+  <p class="lede">
+    Three chapters ago you learned to use a coding agent well. Three
+    chapters ago you opened the hood on what a tool call actually is,
+    named the ways a loop can fail, and learned why context is a finite,
+    competitively contested resource. Everything since Chapter 4 has been
+    mechanism, described from the outside. This chapter is where it
+    becomes real, working code you write and run yourself — a system
+    prompt, three genuine tools, and the plan/act/observe/repeat loop,
+    calling an actual model, with real side effects on real files.
+  </p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#hook">1. What you're about to build</a>
+    <a href="#setup">2. The model: Ollama, llama3.2, and what it costs in hardware</a>
+    <a href="#tools">3. The tools: read_file, write_file, run_shell_command</a>
+    <a href="#loop">4. The loop: calling the model, dispatching, repeating</a>
+    <a href="#running">5. Watching it actually run</a>
+    <a href="#reliability">6. A small model's tool calls aren't always clean — defend against that</a>
+    <a href="#hosted">7. Using a hosted API instead</a>
+    <a href="#thought-process">8. GenAI Builder Thought Process</a>
+    <a href="#recap">9. Points to remember</a>
+  </nav>
+
+  <div class="hook" id="hook">
+    <p>
+      Chapter 4 opened with a transcript — turn 1's <code>search_codebase</code>
+      call, turn 2's tool result putting a real file path into context. That
+      transcript was real in the sense that it accurately described how a
+      production coding agent behaves. It was not real in the sense that
+      you could run it. Nothing in Chapters 4 through 6 called an actual
+      model or executed an actual tool. This chapter closes that gap
+      completely: by the end of it you'll have a Python file that, run
+      against a real local model, genuinely reads and writes files and
+      runs shell commands, in a loop that starts, adapts, and stops on
+      its own — the exact mechanism you've been reading about, now
+      producing exactly that mechanism's real side effects.
+    </p>
+    <p>
+      Here's what a real run of the finished agent actually printed,
+      given the task "write hello.txt containing one line, then read it
+      back to confirm," against <code>llama3.2</code> running locally:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">a genuine run, unedited</span>
+      </div>
+      <pre><code>  step 1: write_file({"path": "hello.txt", "content": "Hello from the minimal agent."}) -> wrote 29 bytes to hello.txt
+  step 1: read_file({"path": "hello.txt"}) -> Hello from the minimal agent.
+[clean stop after 2 step(s)]
+The file hello.txt contains the line 'Hello from the minimal agent.' as confirmed.</code></pre>
+    </div>
+    <p>
+      Two tool calls, one loop iteration each producing a real file write
+      and a real file read, then a clean stop — Chapter 4's no-tool-call
+      turn, happening for real, in front of you, not described in the
+      abstract. Every section below builds toward exactly this file, one
+      real piece at a time, testing each piece before assembling the next
+      — the same discipline this course's own build process used to write
+      this chapter in the first place.
+    </p>
+  </div>
+
+  <section id="setup" class="subtopic">
+    <h2>The Model: Ollama, llama3.2, and What It Costs in Hardware</h2>
+    <p>
+      Every prior chapter's code examples, where they existed at all,
+      were illustrative — JSON shapes and pseudocode meant to be read, not
+      run. This chapter's code calls a real model, which means it needs a
+      real model to call. This course's default is <strong>Ollama</strong>,
+      a program that runs an open-source model entirely on your own
+      machine — no account, no API key, no per-call cost to anyone,
+      because nothing ever leaves your computer.
+    </p>
+    <p>
+      The model this chapter's code was actually tested against is
+      <strong><code>llama3.2</code></strong> — a 3-billion-parameter model,
+      about a 2GB download, with confirmed tool-calling support. It runs
+      on modest hardware: expect to need roughly 4GB of free RAM while
+      it's loaded and about 2GB of free disk for the model weights
+      themselves — a machine that can comfortably run a browser with a
+      dozen tabs open can run this. That's the direct replacement for
+      what earlier drafts of this course would have stated as a
+      dollar-cost: with a fully local model, the real cost moved from
+      "money per API call" to "RAM and disk on your own machine," and
+      it's worth stating plainly rather than glossing over.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... a tool-calling-capable model, and why does that matter here?</span>
+      Not every model a tool like Ollama can run supports structured tool
+      calls at all — some only ever produce plain text, no matter how
+      you prompt them. <code>llama3.2</code> was specifically chosen and
+      tested here because Ollama lists it with confirmed
+      <code>tools</code> capability. If you want a stronger model for
+      coding-specific tasks and have more RAM/disk to spare,
+      <code>qwen2.5-coder</code> is worth trying — it's a reasonable
+      candidate for this same setup, but unlike <code>llama3.2</code>, its
+      tool-calling behavior was not independently re-verified for this
+      chapter, so treat it as a documented next step to try yourself, not
+      a claim this chapter is making on your behalf.
+    </div>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">setup.sh</span>
+      </div>
+      <pre><code># 1. Install Ollama: https://ollama.com (macOS, Linux, Windows)
+# 2. Pull the model this chapter uses:
+ollama pull llama3.2
+# 3. Make sure the server is running (often starts automatically):
+ollama serve
+# 4. Install the one Python dependency this chapter needs:
+pip install openai</code></pre>
+    </div>
+    <p>
+      That last line is worth pausing on: this course does not use
+      Ollama's own Python package, and it does not use any third-party
+      agent framework. It uses the plain <strong><code>openai</code></strong>
+      Python package — the same client library people use to call
+      OpenAI's hosted API — pointed at Ollama's local server instead.
+      Ollama exposes a genuine OpenAI-compatible <code>/v1/chat/completions</code>
+      endpoint, so the same client that knows how to talk to OpenAI's API
+      can talk to your own machine instead, just by changing where it
+      connects:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">the one line that decides where this agent's brain lives</span>
+      </div>
+      <pre><code>from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+# api_key is a required placeholder here -- Ollama doesn't check it,
+# but the client library requires something non-empty to be passed.</code></pre>
+    </div>
+    <p>
+      Every tool call, every message, every part of the loop below flows
+      through this one <code>client</code> object. Section 7 of this
+      chapter comes back to this exact line and shows you how to point it
+      at a real hosted provider instead, if you ever want to — the rest
+      of the agent's code doesn't change at all.
+    </p>
+  </section>
+
+  <section id="tools" class="subtopic">
+    <h2>The Tools: read_file, write_file, run_shell_command</h2>
+    <p>
+      Chapter 4 explained that a tool is described to the model as a
+      name, a plain-language description, and a schema for its
+      arguments — and that description is the only thing that tells the
+      model the tool exists at all. This chapter deliberately keeps the
+      toolset to exactly three: enough to make a genuinely working coding
+      agent, not so many that the tool layer itself becomes the subject
+      (Chapter 8 is specifically about going deeper on file/shell/git
+      tools — this chapter's job is the loop, not tool breadth).
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">the tool schemas the model actually sees</span>
+      </div>
+      <pre><code>TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "read_file",
+            "description": "Read the full contents of a text file, given a path relative to the workspace.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path relative to the workspace root"}
+                },
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "write_file",
+            "description": "Write text content to a file, given a path relative to the workspace. Overwrites the file if it exists, creates it if not.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path relative to the workspace root"},
+                    "content": {"type": "string", "description": "The full text content to write"},
+                },
+                "required": ["path", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "run_shell_command",
+            "description": "Run a shell command inside the workspace directory and return its stdout, stderr, and exit code.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "description": "The shell command to run"}
+                },
+                "required": ["command"],
+            },
+        },
+    },
+]</code></pre>
+    </div>
+    <p>
+      A schema alone doesn't do anything — it's a description handed to
+      the model. The real function it maps to is where Chapter 4's
+      "harness" stops being an abstraction. Every one of these three
+      functions is confined to a single <code>WORKSPACE</code> directory,
+      using one shared helper that rejects any path trying to climb out
+      of it:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">the real functions the tool calls actually run</span>
+      </div>
+      <pre><code>import os, subprocess
+
+def _safe_path(path):
+    """Reject any path that would resolve outside the workspace directory."""
+    full = os.path.abspath(os.path.join(WORKSPACE, path))
+    if not full.startswith(os.path.abspath(WORKSPACE) + os.sep) and full != os.path.abspath(WORKSPACE):
+        raise ValueError(f"path escapes workspace: {path}")
+    return full
+
+def read_file(path):
+    try:
+        with open(_safe_path(path)) as f:
+            return f.read()
+    except FileNotFoundError:
+        return f"error: no such file: {path}"
+
+def write_file(path, content):
+    full = _safe_path(path)
+    os.makedirs(os.path.dirname(full), exist_ok=True)
+    with open(full, "w") as f:
+        f.write(content)
+    return f"wrote {len(content)} bytes to {path}"
+
+def run_shell_command(command):
+    result = subprocess.run(
+        command, shell=True, cwd=WORKSPACE, capture_output=True, text=True, timeout=15
+    )
+    return json.dumps({"stdout": result.stdout, "stderr": result.stderr, "exit_code": result.returncode})</code></pre>
+    </div>
+    <p>
+      <code>_safe_path</code> is a boundary in exactly Chapter 2's sense,
+      implemented as real code instead of an instruction hoped the model
+      follows: it doesn't matter what the model asks for, a path like
+      <code>"../../etc/passwd"</code> or an absolute path outside
+      <code>WORKSPACE</code> gets rejected before any file operation
+      happens, independent of the model's intent. This is also a preview
+      of Module 5's security material — a harness-enforced boundary, not
+      a model-trusted one — kept minimal here on purpose; Chapter 11
+      covers permission scoping and destructive commands in real depth.
+    </p>
+  </section>
+
+  <section id="loop" class="subtopic">
+    <h2>The Loop: Calling the Model, Dispatching, Repeating</h2>
+    <p>
+      Everything above is inert until something calls the model, reads
+      what it produced, and — if it's a tool call — actually runs the
+      right function and feeds the result back. That's the entire loop,
+      and it's short enough to read in one pass:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">the plan/act/observe/repeat loop, as real code</span>
+      </div>
+      <pre><code>MAX_STEPS = 8  # Chapter 4's hard stop, made concrete
+
+def dispatch_tool_call(tc):
+    """Turn one tool_use block into a real function call. Never raises."""
+    name = tc.function.name
+    try:
+        args = json.loads(tc.function.arguments)
+    except json.JSONDecodeError:
+        return f"error: invalid JSON arguments: {tc.function.arguments!r}"
+
+    if name not in TOOL_FUNCTIONS:
+        return f"error: unknown tool: {name}"
+
+    try:
+        return TOOL_FUNCTIONS[name](**args)
+    except KeyError as e:
+        return f"error: missing required argument {e} for {name}"
+    except Exception as e:
+        return f"error: tool {name} failed: {e}"
+
+
+def run_agent(task, client):
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": task},
+    ]
+
+    for step in range(1, MAX_STEPS + 1):
+        response = client.chat.completions.create(model=MODEL, messages=messages, tools=TOOLS)
+        msg = response.choices[0].message
+        messages.append(msg)  # confirmed: the raw message object appends directly
+
+        if not msg.tool_calls:
+            print(f"[clean stop after {step} step(s)]")
+            print(msg.content)
+            return messages  # Chapter 4's clean stop
+
+        for tc in msg.tool_calls:
+            result = dispatch_tool_call(tc)
+            messages.append({"role": "tool", "tool_call_id": tc.id, "content": str(result)})
+
+    print(f"[step cap reached after {MAX_STEPS} steps without a clean stop]")
+    return messages  # Chapter 4's hard stop</code></pre>
+    </div>
+    <p>
+      Read this against Chapter 4's own language and it should feel like
+      a direct translation, because it is one. "Plan" is the model's
+      prediction inside <code>chat.completions.create</code> — nothing
+      about picking the next step lives anywhere else; there's no
+      separate planning module. "Act" is <code>dispatch_tool_call</code>
+      actually invoking a real Python function with real side effects.
+      "Observe" is <code>messages.append({"role": "tool", ...})</code> —
+      literally placing a new block of text into the conversation the
+      model will read whole again on its very next call, exactly as
+      Chapter 4 described it: the model has no persistent awareness of
+      the function having run, only a new message it reads from scratch.
+      "Repeat" is the <code>for step in range(...)</code> loop itself.
+      And the two <code>return</code> statements are Chapter 4's clean
+      stop and hard stop, named in comments at the exact lines that
+      implement them, with the other three stop conditions (boundary,
+      failure, context-limit) available to add on top of this same shape
+      once you need them — a boundary stop is one more
+      <code>if name in BLOCKED_TOOLS: return</code> check before
+      dispatch; a failure stop is one more branch in
+      <code>dispatch_tool_call</code>'s exception handling that decides
+      some errors should end the loop instead of just being reported
+      back.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the system prompt doing here?</span>
+      <code>SYSTEM_PROMPT</code> is the very first message in
+      <code>messages</code>, present on every single call, and it's the
+      only place this agent states its own rules in plain language:
+      "you have three tools," "paths are relative to the workspace,"
+      "reply with plain text and no tool call when done." Nothing about
+      the loop's code enforces those rules directly — they're stated to
+      the model the same way any instruction is, and the model's
+      tool-selection behavior (Chapter 4, section 3) is what makes them
+      matter in practice. The one thing that <em>is</em> code-enforced,
+      not just requested, is <code>_safe_path</code> — worth noticing
+      which kind of "rule" each piece of this file actually is.
+    </div>
+  </section>
+
+  <section id="running" class="subtopic">
+    <h2>Watching It Actually Run</h2>
+    <p>
+      Assembled — <code>TOOLS</code>, the three tool functions,
+      <code>dispatch_tool_call</code>, <code>run_agent</code>, and a
+      <code>main()</code> that builds the <code>client</code> and calls
+      <code>run_agent</code> with a task — this is a complete, runnable
+      program (the full file is
+      <a href="project/starter.py"><code>project/starter.py</code></a>).
+      Two real runs against a local <code>llama3.2</code>, verbatim:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">run 1: "write hello.txt, then read it back to confirm"</span>
+      </div>
+      <pre><code>  step 1: write_file({"path": "hello.txt", "content": "Hello from the minimal agent."}) -> wrote 29 bytes to hello.txt
+  step 1: read_file({"path": "hello.txt"}) -> Hello from the minimal agent.
+[clean stop after 2 step(s)]
+The file hello.txt contains the line 'Hello from the minimal agent.' as confirmed.</code></pre>
+    </div>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">run 2: "run ls in the workspace and tell me what files are there"</span>
+      </div>
+      <pre><code>  step 1: run_shell_command({"command": "ls"}) -> {"stdout": "hello.txt\n", "stderr": "", "exit_code": 0}
+[clean stop after 2 step(s)]
+The files in the current workspace directory are: hello.txt</code></pre>
+    </div>
+    <p>
+      Neither of these was hand-written to look tidy. The model genuinely
+      decided, on its own, which tool matched each task, produced real
+      JSON arguments, and stopped cleanly once it had a tool result that
+      answered the question — the entire mechanism Chapters 4 through 6
+      described, now producing an actual file on an actual disk and an
+      actual shell command's actual output. Try it yourself with a
+      handful of different tasks — deleting or corrupting a file it wrote
+      earlier in the same session is a good one for watching an
+      observation genuinely redirect the next step, the same way Chapter
+      4's rate-limiting example did.
+    </p>
+  </section>
+
+  <section id="reliability" class="subtopic">
+    <h2>A Small Model's Tool Calls Aren't Always Clean — Defend Against That</h2>
+    <p>
+      Here's an honest finding from testing this exact chapter's code,
+      not a hypothetical: on one run, <code>llama3.2</code> produced a
+      tool call with an incomplete or wrong arguments object — a required
+      key the schema demanded simply wasn't present — and then produced a
+      correct one on a retry with identical input. Nothing about the
+      prompt changed between attempts. This is a real, measurable
+      property of small local models: they're less reliable at clean
+      tool-call argument formatting than the largest hosted models, and a
+      minimal agent's code has to be written assuming that will happen
+      sometimes, not treating it as a rare edge case to shrug off.
+    </p>
+    <p>
+      This connects directly to Chapter 5's premature-done and
+      going-off-the-rails failure modes: code that assumes
+      <code>args["path"]</code> always exists because the schema said it
+      was required is code that trusts the model's own text the way
+      Chapter 5 warned against trusting a clean stop's confidence.
+      Look back at <code>dispatch_tool_call</code> above — this is
+      exactly why it has three separate failure branches instead of one
+      happy path:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">the same three lines, isolated</span>
+      </div>
+      <pre><code>    except json.JSONDecodeError:
+        return f"error: invalid JSON arguments: {tc.function.arguments!r}"
+    ...
+    except KeyError as e:
+        return f"error: missing required argument {e} for {name}"</code></pre>
+    </div>
+    <p>
+      Both catch a specific, real way the model's output can fail to
+      match its own schema — malformed JSON entirely, or valid JSON
+      missing a key the schema marked <code>required</code>. Neither one
+      lets an exception propagate up and kill the loop. Instead, the
+      failure becomes a tool result like any other — a text block telling
+      the model exactly what went wrong, appended to the conversation the
+      same way a successful result would be. Concretely, that means the
+      model gets a real chance to see "missing required argument 'path'"
+      on its next turn and correct itself, the same self-correcting
+      dynamic Chapter 4 described for any other observation — instead of
+      the whole agent crashing on an ungraceful <code>KeyError</code>
+      traceback the first time a small model has an off turn. Larger
+      hosted models make this mistake less often, but "less often" is not
+      "never," and a minimal agent that only works when the model's
+      output happens to be perfect isn't actually minimal — it's fragile.
+    </p>
+  </section>
+
+  <section id="hosted" class="subtopic">
+    <h2>Using a Hosted API Instead</h2>
+    <p>
+      This course's own build stays free and open-source by default —
+      Ollama, running entirely on your machine, zero API key, zero cost
+      per call. But because OpenAI, Anthropic, and Google Gemini all
+      expose an endpoint that speaks the same request/response shape as
+      the <code>openai</code> client, pointing this exact agent at a
+      hosted provider instead is a <code>base_url</code>/<code>api_key</code>/
+      <code>model</code> change, not a rewrite. Every line of
+      <code>TOOLS</code>, every tool function, <code>dispatch_tool_call</code>,
+      and <code>run_agent</code> above is completely unaffected — only the
+      three lines that construct <code>client</code> and pick
+      <code>MODEL</code> change. If you try any of these, remember:
+      unlike Ollama, each one needs a real account and a real API key
+      from that provider, and each call costs real, small amounts of
+      money — check that provider's current pricing page before running
+      anything at scale, since the numbers below are current as of this
+      writing and providers change them.
+    </p>
+
+    <div class="what-is">
+      <span class="label">Swap 1 — OpenAI</span>
+      <div class="code-window">
+        <div class="code-window-bar">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="filename">diff against the Ollama baseline</span>
+        </div>
+        <pre><code>- client = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+- MODEL = "llama3.2"
++ client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])  # base_url defaults to OpenAI's own API
++ MODEL = "gpt-4o-mini"</code></pre>
+      </div>
+      <p>
+        OpenAI's client already defaults to OpenAI's own API when you
+        don't pass a <code>base_url</code> at all — this is the "home"
+        endpoint the <code>openai</code> package was originally built
+        for, so nothing else in the agent changes. <code>gpt-4o-mini</code>
+        is a genuinely low-cost model in OpenAI's current lineup, priced
+        (as of this writing) around $0.15 per million input tokens and
+        $0.60 per million output tokens — a single small agent task like
+        the ones this chapter ran costs a small fraction of a cent, but
+        it is a real, metered cost tied to a real API key, not the free
+        default.
+      </p>
+    </div>
+
+    <div class="what-is">
+      <span class="label">Swap 2 — Anthropic (Claude), via its OpenAI-compatible endpoint</span>
+      <div class="code-window">
+        <div class="code-window-bar">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="filename">diff against the Ollama baseline</span>
+        </div>
+        <pre><code>- client = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+- MODEL = "llama3.2"
++ client = OpenAI(api_key=os.environ["ANTHROPIC_API_KEY"], base_url="https://api.anthropic.com/v1/")
++ MODEL = "claude-sonnet-4-6"</code></pre>
+      </div>
+      <p>
+        Verified directly against Anthropic's current OpenAI SDK
+        compatibility docs while writing this section: the endpoint is
+        real, tool calls (<code>tools</code>, <code>tool_calls</code> in
+        the response, <code>role: "tool"</code> results) are fully
+        supported through it, and the request/response shape this
+        agent's code already uses maps over cleanly. Anthropic's own
+        documentation is explicit that this compatibility layer is meant
+        for testing and evaluating Claude against existing OpenAI-shaped
+        code, not as their recommended long-term production path — for
+        production use of Claude specifically, Anthropic points people at
+        their native API instead. For this chapter's purpose (proving
+        the same agent code works against a different provider with a
+        three-line change) it's exactly the right tool. Pricing for a
+        mid-tier Claude model like this is around $3 per million input
+        tokens and $15 per million output tokens as of this writing —
+        noticeably more per token than the OpenAI option above, so check
+        current numbers for whichever specific Claude model you pick.
+      </p>
+    </div>
+
+    <div class="what-is">
+      <span class="label">Swap 3 — Google Gemini, via its OpenAI-compatible endpoint</span>
+      <div class="code-window">
+        <div class="code-window-bar">
+          <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+          <span class="filename">diff against the Ollama baseline</span>
+        </div>
+        <pre><code>- client = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+- MODEL = "llama3.2"
++ client = OpenAI(api_key=os.environ["GEMINI_API_KEY"], base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
++ MODEL = "gemini-3.1-flash-lite"</code></pre>
+      </div>
+      <p>
+        Verified directly against Google's current Gemini OpenAI
+        compatibility docs while writing this section: Google publishes
+        this exact <code>.../v1beta/openai/</code> path specifically so
+        the <code>openai</code> client can talk to Gemini models
+        unmodified, and function/tool calling is documented as fully
+        supported through it using the same schema shape this agent's
+        <code>TOOLS</code> list already uses. A lightweight Gemini Flash
+        model is a genuinely low-cost option here too — current pricing
+        for the smallest Flash-Lite tier is roughly $0.25 per million
+        input tokens and $1.50 per million output tokens, in the same
+        ballpark as OpenAI's cheapest option above. As with both swaps
+        above, treat the exact price as something to re-check on the
+        provider's own pricing page, not a number this chapter guarantees
+        will still be current when you read it.
+      </p>
+    </div>
+
+    <p>
+      Notice what didn't need to change in any of the three diffs above:
+      <code>TOOLS</code>, <code>read_file</code>/<code>write_file</code>/
+      <code>run_shell_command</code>, <code>dispatch_tool_call</code>, and
+      <code>run_agent</code>'s entire loop. That's the practical payoff of
+      building this agent against the plain <code>openai</code> client
+      shape instead of a provider-specific SDK from the start: the
+      mechanism this whole course has been teaching — tool calls as
+      structured output, a harness that actually executes them, a loop
+      that stops on one of Chapter 4's conditions — isn't tied to any one
+      company's product. It's a property of how the request/response
+      shape works, and four different providers (Ollama included) all
+      speak close enough to the same shape that the same 80 lines of
+      Python work against any of them.
+    </p>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p><strong>Problem:</strong> a developer who's followed Chapters 4
+      through 6 conceptually sits down to actually write an agent loop
+      and reaches for a framework — an agent SDK, a "batteries included"
+      library — assuming the loop itself must be complicated enough to
+      need one.</p>
+      <p><strong>Assumption being made:</strong> that "the loop" is a
+      large, delicate piece of infrastructure, and that hand-writing it
+      risks getting something subtly wrong that a maintained library
+      would have handled correctly.</p>
+      <p><strong>What actually distinguishes it:</strong> the loop this
+      chapter built is under thirty lines — a <code>for</code> loop, one
+      API call, one <code>if</code> checking for tool calls, one nested
+      loop dispatching them, two <code>return</code> statements. Every
+      piece of apparent complexity in "building an agent" turns out to
+      live in the tool layer (what real functions exist, how carefully
+      they're scoped) and in defensive handling around the model's output
+      (Section 6's JSON/KeyError handling), not in the loop's control
+      flow itself. A framework mostly packages up decisions about the
+      tool layer and defensive handling that you can and, while learning,
+      probably should make yourself first.</p>
+      <p><strong>Why this matters before Chapter 8:</strong> Chapter 8
+      goes deeper on the tool layer specifically — more file operations,
+      real git integration, more careful shell-command handling. None of
+      that changes the loop you just built; it only adds more entries to
+      <code>TOOL_FUNCTIONS</code> and more schemas to <code>TOOLS</code>.
+      Understanding that the loop and the tool layer are separable pieces
+      — one short and stable, the other where real engineering effort
+      goes — is the single most useful mental model to carry into that
+      chapter.</p>
+      <p><strong>Working definition to carry forward:</strong> a minimal
+      coding agent is a short, boring control-flow loop wrapped around
+      two things that actually deserve care: a small set of real,
+      safely-scoped tools, and defensive handling that assumes the
+      model's output won't always perfectly match its own schema. The
+      loop itself is not the hard part, and shouldn't be treated like it
+      is.</p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember</h2>
+      <ul>
+        <li>This chapter's agent is built from scratch against the plain
+        <code>openai</code> Python package, pointed at Ollama's local
+        OpenAI-compatible endpoint (<code>base_url="http://localhost:11434/v1"</code>,
+        a placeholder <code>api_key</code>) by default — no third-party
+        agent framework, no Anthropic API dependency in the default path,
+        zero cost per call, using <code>llama3.2</code> (~2GB download,
+        roughly 4GB RAM to run) as the tested, confirmed
+        tool-calling-capable model.</li>
+        <li>A tool is a schema (name, description, argument shape) plus a
+        real Python function; the harness — not the model — is what
+        actually executes it and enforces boundaries like
+        <code>_safe_path</code>'s workspace confinement, independent of
+        what the model asks for.</li>
+        <li>The loop is a direct translation of Chapter 4's mechanism:
+        one API call per turn (plan, via prediction), tool dispatch (act,
+        real side effects), appending the result (observe, a new message
+        the model reads fresh next turn), and a <code>for</code> loop
+        (repeat) that ends on a clean stop (no tool call) or a step cap
+        (Chapter 4's hard stop) — with boundary and failure stops
+        addable in the same shape once needed.</li>
+        <li>A small local model's tool-call arguments won't always
+        perfectly match their schema — this was directly observed while
+        testing this chapter's own code, not assumed. Defensive handling
+        (catching <code>json.JSONDecodeError</code> and
+        <code>KeyError</code>, returning a descriptive error string
+        instead of crashing) is required discipline, not optional
+        polish, and it's the same "don't trust the model's own confident
+        output at face value" instinct Chapter 5 taught for premature
+        "done."</li>
+        <li>Because Ollama, OpenAI, Anthropic, and Gemini all speak
+        close enough to the same request/response shape, swapping this
+        agent to a hosted provider is a three-line change to
+        <code>client</code> and <code>MODEL</code> — everything else,
+        including the entire loop and tool layer, is untouched. Each
+        hosted option costs real, small amounts of money per call and
+        needs a real API key, unlike the free local default.</li>
+        <li>The loop's control flow is short and stable; real engineering
+        effort goes into the tool layer and defensive handling around the
+        model's output, not the loop itself — the mental model Chapter 8
+        builds on directly.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="what-is">
+    <span class="label">Interview questions (4 levels)</span>
+    See <a href="interview-questions.html">Chapter 7 interview questions</a>.
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

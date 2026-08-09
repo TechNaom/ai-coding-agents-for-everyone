@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build: A Minimal Coding Agent Practice Bank — AI Coding Agents for Everyone</title>
+<meta name="description" content="Practice bank for Build: A Minimal Coding Agent.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-07">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../exercises/index.html">&larr; Back to exercises</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 7 Practice Bank</span>
+    <span class="reading-time">~22 min</span>
+  </div>
+  <h1>Practice Bank: Build: A Minimal Coding Agent</h1>
+  <p>Short scenarios, one judgment question each — plus a small runnable
+  script (<code>starter.py</code> / <code>solution.py</code> in this
+  folder) that simulates all four of Chapter 4's directly-testable stop
+  conditions with no live model required. Predict, then run, then work
+  through the scenarios below.</p>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · First run</span>
+    <h3>The silent hang</h3>
+    <p>A learner runs their own version of this chapter's agent for the
+    first time. It hangs for ten seconds, then prints
+    <code>[step cap reached after 8 steps without a clean stop]</code>
+    with no error. They assume something crashed. What actually happened,
+    mechanically, and what's the first thing you'd have them check in the
+    printed step-by-step trace to diagnose <em>why</em> it never reached a
+    clean stop?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Review</span>
+    <h3>The missing safety check</h3>
+    <p>A coworker adds a new tool, <code>append_to_log(path, line)</code>,
+    to this chapter's agent, and it passes a quick manual test —
+    appending to a log file inside the workspace works fine. What's the
+    one thing about how it's implemented you'd insist on checking before
+    approving it, regardless of whether the manual test passed?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Cost decision</span>
+    <h3>The "just use GPT-4o for everything" pitch</h3>
+    <p>A team lead suggests skipping Ollama entirely and building every
+    learner exercise against a hosted OpenAI model instead, "since it's
+    only a few lines different anyway." What's the real tradeoff being
+    glossed over here, specifically for a course meant to be free and
+    runnable by anyone?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Debugging a flaky test call</span>
+    <h3>The tool call that almost worked</h3>
+    <p>While testing an agent against a small local model, you see one
+    run where a tool call's arguments are missing a required key, and the
+    very next identical-input run produces a perfectly formed one. A
+    teammate says "that's a bug in our code, it should be deterministic."
+    Is that the right diagnosis? What would you tell them instead, and
+    what should the code do about it regardless of the answer?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Provider swap</span>
+    <h3>The broken swap</h3>
+    <p>Someone swaps this chapter's agent from Ollama to Anthropic's
+    OpenAI-compatible endpoint by changing <code>base_url</code>,
+    <code>api_key</code>, and <code>model</code> as documented, but the
+    system prompt's multi-part instructions stop behaving quite the same
+    way they did before. Given what the lesson's hosted-provider section
+    noted about how Anthropic's compatibility layer handles system
+    messages, what's a plausible, specific explanation — not just "APIs
+    are different"?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Scoping a task</span>
+    <h3>The vague task string</h3>
+    <p>A learner passes the task <code>"clean up the workspace"</code> to
+    this chapter's agent with no acceptance criterion. Using Chapter 2's
+    scoping concepts and this chapter's <code>run_shell_command</code>
+    tool specifically, explain what could go wrong that wouldn't go wrong
+    with a task like <code>"delete only files ending in .tmp in the
+    workspace root"</code>.</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Extending the loop</span>
+    <h3>The missing boundary stop</h3>
+    <p>A junior engineer says "we don't need a boundary stop, the system
+    prompt already tells the model not to touch <code>secrets/</code>."
+    Using this chapter's distinction between a prompt instruction and a
+    harness-enforced check like <code>_safe_path</code>, explain why
+    that's not sufficient on its own, and sketch (in words, not code)
+    where a boundary stop would need to sit in <code>dispatch_tool_call</code>.</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../exercises/index.html">&larr; Exercises</a>
+    <a href="../interview-questions.html">Interview Questions &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

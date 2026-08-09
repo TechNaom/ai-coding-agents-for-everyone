@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 7: Pair With an AI, Then Critique It — AI Coding Agents for Everyone</title>
+<meta name="description" content="Pair with a coding agent to extend the Chapter 7 reference agent with a new tool, then critique its diff using Chapter 3's five-question review checklist -- catching a boundary escape, an ambiguous tool description, and an inconsistent error pattern.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-07">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="index.html">&larr; Back to the project</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 7 &mdash; Pair With an AI, Then Critique It</span>
+    <span class="reading-time">20 min</span>
+  </div>
+  <h1>Pair With an Agent to Extend the Reference Implementation</h1>
+
+  <div class="lesson-hero">
+    <h2>Step 1: You just read a working agent, not built one solo yet</h2>
+    <p>There's no solo build for this chapter — that's Chapter 8's job,
+    once file/shell/git tools get real depth. What you do have, right
+    now, is a real reference agent (<code>starter.py</code>) you've read
+    and can run. This page has you use an actual coding agent tool —
+    Claude Code, Cursor, or GitHub Copilot's agent mode, your choice, per
+    Module 1 — to extend it with one small new capability, and then
+    review what comes back the way Chapter 3 taught, not the way a
+    beginner would.</p>
+  </div>
+
+  <h2>Step 2: Pair with an agent</h2>
+  <p>Here's a real prompt you could hand a coding agent, pointed at your
+  own copy of <code>starter.py</code>:</p>
+
+  <div class="code-window">
+    <div class="code-window-bar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="filename">the-prompt.txt</span>
+    </div>
+    <pre><code>Add a fourth tool to this minimal agent, called list_files, that
+lists the contents of a directory inside the workspace. Follow the
+exact same pattern as the other three tools: a TOOLS schema entry,
+a plain function, and a TOOL_FUNCTIONS dispatch entry. Keep the
+change minimal -- don't touch anything else in the file.</code></pre>
+  </div>
+
+  <p>And here's a plausible response — the kind of diff a real coding
+  agent might hand back on the first try. Read it as if it just landed in
+  front of you, before scrolling to the critique below. (This is exactly
+  the diff sitting in this chapter's own <code>project/solution.py</code>
+  right now, if you want to open it side by side with
+  <code>starter.py</code>.)</p>
+
+  <div class="code-window">
+    <div class="code-window-bar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="filename">the-agent's-diff (list_files addition)</span>
+    </div>
+    <pre><code>+    {
++        "type": "function",
++        "function": {
++            "name": "list_files",
++            "description": "List a directory's contents.",
++            "parameters": {
++                "type": "object",
++                "properties": {
++                    "path": {"type": "string", "description": "Path relative to the workspace root"}
++                },
++                "required": ["path"],
++            },
++        },
++    },
+
++def list_files(path):
++    return os.listdir(path)
+
+ TOOL_FUNCTIONS = {
+     "read_file": read_file,
+     "write_file": write_file,
+     "run_shell_command": run_shell_command,
++    "list_files": list_files,
+ }</code></pre>
+  </div>
+
+  <p>It runs. It matches the ask ("a fourth tool, same pattern"). It's
+  also wrong in three separate, genuinely easy-to-miss ways — exactly the
+  kind of diff Chapter 3 warned you a green test run and a quick skim
+  both miss.</p>
+
+  <h2>Step 3: Where did the agent's diff lie to you?</h2>
+
+  <details class="qa-item">
+    <summary>Click to see the critique, walked through Chapter 3's five questions</summary>
+    <div class="qa-body">
+
+      <span class="qa-section-label flags">Question 2 — did it touch anything outside the stated boundary?</span>
+      <p><strong>What it looks like it does:</strong> <code>list_files(path)</code>
+      is one line, calling a standard-library function with the exact
+      argument name (<code>path</code>) every other tool in this file
+      uses. Nothing about it looks dangerous at a glance.</p>
+      <p><strong>What it actually does:</strong> every other tool in
+      <code>starter.py</code> — <code>read_file</code>,
+      <code>write_file</code>, <code>run_shell_command</code> (via its
+      fixed <code>cwd=WORKSPACE</code>) — routes its path through
+      <code>_safe_path()</code>, which rejects anything that would
+      resolve outside <code>WORKSPACE</code>. <code>list_files</code>
+      calls <code>os.listdir(path)</code> directly, with no confinement
+      at all. Ask the agent to list <code>"../../etc"</code> or an
+      absolute path like <code>"/etc"</code>, and it will happily return
+      real contents of a directory well outside the workspace this agent
+      was supposed to be scoped to — the exact boundary escape Chapter
+      2's boundaries and Chapter 3's checklist both exist to catch, now
+      baked into a tool a future task might call without anyone
+      reviewing that specific call.</p>
+      <p><strong>The fix:</strong> route <code>path</code> through
+      <code>_safe_path()</code> exactly like the other three tools do —
+      <code>os.listdir(_safe_path(path))</code>.</p>
+
+      <span class="qa-section-label flags">Question 4 — does it introduce patterns inconsistent with the rest of the file?</span>
+      <p><strong>What it looks like it does:</strong> the tool's
+      description, "List a directory's contents," reads like ordinary,
+      reasonable tool documentation — short and to the point, the same
+      style as the other three tools' one-line descriptions.</p>
+      <p><strong>What it actually does:</strong> it never says the
+      argument has to be a directory, not a file, and it doesn't
+      distinguish itself from <code>read_file</code>'s description
+      ("Read the full contents of a text file...") clearly enough for
+      the model to reliably tell them apart on an ambiguous request like
+      "show me what's in <code>billing/</code>." Chapter 4 already
+      established exactly this failure: two tools with similar,
+      under-specified descriptions get confused for each other, and the
+      model fills the resulting gap with a guess — not a hypothetical
+      here, it's a real property of this specific diff's wording.</p>
+      <p><strong>The fix:</strong> tighten the description to something
+      like "List the names of files and subdirectories directly inside a
+      directory (not a file) in the workspace," which disambiguates it
+      from <code>read_file</code> the same way <code>run_shell_command</code>'s
+      description already disambiguates itself from both.</p>
+
+      <span class="qa-section-label flags">Question 4, again — a second inconsistency, easy to miss because nothing crashes</span>
+      <p><strong>What it looks like it does:</strong> a one-line function
+      body, calling a function that either returns a list or raises —
+      normal Python, nothing alarming.</p>
+      <p><strong>What it actually does:</strong> <code>read_file</code>
+      catches its own likely failure (<code>FileNotFoundError</code>)
+      and returns a clean <code>f"error: no such file: {path}"</code>
+      string — a deliberate, established pattern in this file for how a
+      tool reports its own expected failure back to the model.
+      <code>list_files</code> does none of that; a missing directory
+      raises straight through to <code>dispatch_tool_call</code>'s
+      generic <code>except Exception</code> handler, producing a vague,
+      inconsistent message shaped like Python's own exception text
+      instead of the file's established
+      <code>"error: ..."</code> convention. Nothing crashes end to end —
+      dispatch's safety net catches it — but the diff quietly broke a
+      pattern the rest of the file bothered to establish on purpose.</p>
+      <p><strong>The fix:</strong> wrap the call and return a matching
+      message: <code>try: return os.listdir(_safe_path(path)) except
+      FileNotFoundError: return f"error: no such directory: {path}"</code>.</p>
+
+      <span class="qa-section-label flags">Questions 1, 3, and 5 — worth checking and coming up clean here</span>
+      <p>The diff does match what was asked (Q1 — a fourth tool, same
+      shape) and every line has an obvious one-sentence justification
+      (Q3 — nothing unexplained sneaks in). It's not a symptom-fix-for-a-
+      root-cause situation (Q5 — there's no bug being masked here, just a
+      missing tool being added). That's worth noticing too: a diff can
+      cleanly satisfy three of five questions and still be genuinely
+      unsafe to merge on the other two. Reading only far enough to feel
+      satisfied is exactly the habit Chapter 3 warned against.</p>
+
+    </div>
+  </details>
+
+  <h2>Step 4: Your entry for this chapter's playbook</h2>
+  <p>Fill this in for yourself — it's not saved or sent anywhere, just yours to keep (copy it into your own notes before you close this tab).</p>
+
+  <div class="playbook-template">
+    <div class="playbook-field">
+      <label for="playbook-prompt">Prompt I used with my own agent tool</label>
+      <textarea id="playbook-prompt" rows="2" placeholder="Paste or paraphrase the prompt you actually tried..."></textarea>
+    </div>
+    <div class="playbook-field">
+      <label for="playbook-caught">Flaw I would/wouldn't have caught before this chapter</label>
+      <textarea id="playbook-caught" rows="2" placeholder="Be honest -- which of the 3 flaws above would you have spotted on your own, and which of Chapter 3's five questions caught it?"></textarea>
+    </div>
+    <div class="playbook-field">
+      <label for="playbook-pattern">Pattern to watch for next time</label>
+      <textarea id="playbook-pattern" rows="2" placeholder="e.g. 'Check every new tool routes paths through the same safety function as the rest of the file' or 'Compare new tool descriptions against existing ones for overlap'"></textarea>
+    </div>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="index.html">&larr; Back to the Project</a>
+    <a href="../../../index.html">All Chapters &rarr;</a>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

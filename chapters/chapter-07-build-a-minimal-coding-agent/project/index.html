@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build: A Minimal Coding Agent Project — AI Coding Agents for Everyone</title>
+<meta name="description" content="Preview of the Level 2 Assisted project, which unlocks after Chapter 8. The reference minimal agent you'll extend is available now.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-07">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../interview-questions.html">&larr; Back to interview questions</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 7 Project</span>
+    <span class="reading-time">~3 min read · <span class="badge-coming-soon">L2 unlocks after Chapter 8</span></span>
+  </div>
+  <h1>Project Preview: Extend a Minimal Coding Agent</h1>
+  <p>This chapter doesn't ship the full Level 2 project yet. Module 3's
+  Level 2 (Assisted) project needs Chapter 8's real depth on file/shell/
+  git tools first, so it unlocks once that chapter is done — same pattern
+  Chapters 1 and 2 used for the Level 1 project.</p>
+
+  <div class="hook">
+    <p>
+      What's different this time: you don't have to wait to get hands-on.
+      This chapter's project directory already has a real, working,
+      three-tool reference agent — <code>starter.py</code> — the exact
+      agent built across the lesson. Read it, run it against Ollama, and
+      get comfortable with every line now. When the Level 2 project
+      unlocks after Chapter 8, you'll extend that same agent with a tool
+      of your own from a partial scaffold.
+    </p>
+  </div>
+
+  <h2>What's here right now</h2>
+  <p>
+    <a href="starter.py">starter.py</a> is the reference minimal agent —
+    download it, install <code>openai</code>, pull a model with Ollama,
+    and run it for real. <a href="solution.py">solution.py</a> is that
+    same agent with a fourth tool added the way an AI coding assistant
+    might hand it back — deliberately not a clean diff. Pair with an
+    agent to produce something like it yourself, then critique what comes
+    back, on <a href="ai-paired.html">the AI-paired page</a>.
+  </p>
+
+  <div class="what-is">
+    <span class="label">What the L2 project will ask you to do</span>
+    Per the course's curriculum map, Level 2 (Assisted) gives you a
+    partial scaffold of this same reference agent and has you add one new
+    tool of your own — a real extension, not a guided rewrite — after
+    Chapter 8 has covered file/shell/git tool design in the depth this
+    chapter deliberately didn't (Chapter 7 kept the toolset minimal on
+    purpose, so Chapter 8 has real room to go deeper).
+  </div>
+
+  <div class="points-to-remember">
+    <h2>Why waiting for the graded version matters</h2>
+    <p>
+      Shipping the graded Level 2 project before Chapter 8 would mean
+      asking you to design a new tool's safety boundaries (like the
+      <code>list_files</code> boundary escape you can find in
+      <code>solution.py</code> right now) before you've actually covered
+      what those boundaries need to guard against. The reference agent
+      above is real and runnable today; the graded extension waits one
+      chapter so it tests something you've actually been taught.
+    </p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="ai-paired.html">Pair With an AI Now &rarr;</a>
+    <a href="../../../index.html">All Chapters &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

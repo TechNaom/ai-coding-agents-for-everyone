@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build: A Minimal Coding Agent Quiz — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interactive quiz for Build: A Minimal Coding Agent.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-07" data-chapter-id="chapter-07">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="lesson.html">&larr; Back to the lesson</a></p>
+
+  <span class="chapter-badge">Chapter 7 Quiz</span>
+  <h1>Build: A Minimal Coding Agent</h1>
+  <p>Eight questions. Fill in the blank, then check your answers.</p>
+
+  <div class="quiz-progress-wrap" aria-hidden="true">
+    <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+  </div>
+
+  <form onsubmit="return false;">
+    <div class="quiz-question">
+      <label for="q1"><span class="q-num">1</span> This chapter's agent is built using the plain <code>openai</code> Python package pointed at Ollama's local __________-compatible endpoint, rather than any third-party agent framework.</label>
+      <div class="fib-row">
+        <input type="text" id="q1" class="fib-blank" data-answers="OpenAI" aria-label="Answer for question 1">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q2"><span class="q-num">2</span> The model tested and used by default in this chapter is __________, a roughly 2GB, tool-calling-capable open-weight model.</label>
+      <div class="fib-row">
+        <input type="text" id="q2" class="fib-blank" data-answers="llama3.2" aria-label="Answer for question 2">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q3"><span class="q-num">3</span> <code>_safe_path</code> rejects any path that would resolve outside the __________ directory, enforced by the harness's code regardless of what the model asks for.</label>
+      <div class="fib-row">
+        <input type="text" id="q3" class="fib-blank" data-answers="workspace" aria-label="Answer for question 3">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q4"><span class="q-num">4</span> When the model's response has no <code>tool_calls</code>, the loop ends on Chapter 4's __________ stop.</label>
+      <div class="fib-row">
+        <input type="text" id="q4" class="fib-blank" data-answers="clean" aria-label="Answer for question 4">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q5"><span class="q-num">5</span> <code>MAX_STEPS</code> being reached without a clean stop is Chapter 4's __________ stop, enforced by the harness regardless of what the model wants to do next.</label>
+      <div class="fib-row">
+        <input type="text" id="q5" class="fib-blank" data-answers="hard" aria-label="Answer for question 5">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q6"><span class="q-num">6</span> On one real test run in this chapter, <code>llama3.2</code> produced a tool call with __________ arguments (a required key missing) before a retry with identical input produced a correct one — the honest reliability caveat this chapter names.</label>
+      <div class="fib-row">
+        <input type="text" id="q6" class="fib-blank" data-answers="incomplete,invalid,wrong,malformed" aria-label="Answer for question 6">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q7"><span class="q-num">7</span> <code>dispatch_tool_call</code> catches <code>json.JSONDecodeError</code> and __________ instead of letting either exception crash the whole loop when the model's tool-call arguments don't match what the schema promised.</label>
+      <div class="fib-row">
+        <input type="text" id="q7" class="fib-blank" data-answers="KeyError" aria-label="Answer for question 7">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q8"><span class="q-num">8</span> Swapping this agent from Ollama to a hosted provider like OpenAI, Anthropic, or Gemini only requires changing the <code>base_url</code>, <code>api_key</code>, and __________ — the tool layer and the loop itself stay exactly the same.</label>
+      <div class="fib-row">
+        <input type="text" id="q8" class="fib-blank" data-answers="model" aria-label="Answer for question 8">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div id="check-all-wrap">
+      <button type="button" id="check-all-btn" class="check-btn">Check All Answers</button>
+      <span id="quiz-score"></span>
+    </div>
+
+    <div class="quiz-celebration" id="quiz-celebration" aria-live="polite">
+      Perfect score. Chapter complete.
+    </div>
+  </form>
+
+  <div class="chapter-nav">
+    <a href="lesson.html">&larr; Back to Lesson</a>
+    <a href="exercises/index.html">Exercises &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/quiz-engine.js"></script>
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

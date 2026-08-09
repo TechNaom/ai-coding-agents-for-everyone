@@ -68,14 +68,15 @@ window.ACAFE_MODULES = [
   },
   {
     title: "Module 3 — Building a Coding Agent",
-    summary: "Hands-on construction with the Claude Agent SDK.",
+    summary: "Hands-on construction, built from scratch against a local open-source model via Ollama.",
     examPath: null,
     chapters: [
       {
         id: "chapter-07",
         num: 7,
         title: "Build: A Minimal Coding Agent",
-        description: "A real, working agent using the Claude Agent SDK, tested end to end."
+        description: "A real, working agent built from scratch against Ollama, tested end to end.",
+        path: "chapters/chapter-07-build-a-minimal-coding-agent/lesson.html"
       },
       {
         id: "chapter-08",

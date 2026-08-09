@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build: A Minimal Coding Agent Interview Questions — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interview questions for Build: A Minimal Coding Agent.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-07">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="practice/index.html">&larr; Back to practice bank</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 7 Interview Questions</span>
+    <span class="reading-time">~16 min</span>
+  </div>
+  <h1>Interview Questions: Build: A Minimal Coding Agent</h1>
+  <p>Grouped by level. Each includes a strong answer, a red flag, and a follow-up. A plain-markdown mirror of these same eight questions is available at <a href="interview-questions.md">interview-questions.md</a>.</p>
+
+  <div class="lesson-card">
+    <h2>1. (Beginner) What are the three pieces you need to build even the most minimal working coding agent?</h2>
+    <p><strong>Strong answer:</strong> A system prompt describing the agent's rules and available tools in plain language, a set of real tools (each a schema the model sees plus an actual function that runs), and a loop that calls the model, checks for tool calls, dispatches them to real functions, appends the results back into the conversation, and repeats until a clean stop or a step cap.</p>
+    <p><strong>Red flag:</strong> Describes "the agent" as a single black-box call to a model, without separating the tool layer (real functions with real side effects) from the loop (the control flow deciding when to call the model again).</p>
+    <p><strong>Follow-up:</strong> "Which of those three pieces actually executes a file write or shell command — the model, or something else?"</p>
+    <p><strong>What this proves:</strong> Understands that "the agent" is a harness around a model, not the model itself doing anything directly.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>2. (Beginner) In this chapter's agent, what's the difference between a tool's schema and a tool's function?</h2>
+    <p><strong>Strong answer:</strong> The schema (in the <code>TOOLS</code> list) is a name, description, and argument shape shown to the model so it knows the tool exists and how to call it — it's plain data, not code. The function (like <code>read_file</code>) is the real Python code that actually runs when the harness dispatches a tool call, with real side effects like opening a file on disk.</p>
+    <p><strong>Red flag:</strong> Treats the schema as if it "runs" something, or can't explain why a tool needs both a description in the schema and a separate implementation.</p>
+    <p><strong>Follow-up:</strong> "If you changed a tool's description in the schema but not its underlying function, what would break, and what wouldn't?"</p>
+    <p><strong>What this proves:</strong> Distinguishes the model-facing description from the harness-side implementation, a distinction Chapter 4 introduced conceptually and this chapter made concrete.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>3. (Intermediate) Walk through what happens, mechanically, from the moment <code>run_agent</code> gets a tool call back from the model to the moment the model sees the result.</h2>
+    <p><strong>Strong answer:</strong> The raw response message (including its <code>tool_calls</code>) is appended to <code>messages</code>. For each tool call, <code>dispatch_tool_call</code> parses its JSON arguments, looks up the matching Python function, and calls it, catching any JSON or missing-argument errors along the way. Whatever string comes back — a real result or a descriptive error — gets appended as a new message with <code>role: "tool"</code> and the matching <code>tool_call_id</code>. The next call to <code>chat.completions.create</code> re-sends the entire conversation, including that new tool message, and the model reads it fresh.</p>
+    <p><strong>Red flag:</strong> Skips the JSON-parsing and dispatch step, or thinks the model "sees" the function execute rather than reading a text message about its result on the next call.</p>
+    <p><strong>Follow-up:</strong> "Why does the tool message need a matching <code>tool_call_id</code> instead of just being appended as plain text?"</p>
+    <p><strong>What this proves:</strong> Can trace the real data flow, not just describe the loop in the abstract the way Chapter 4 could before any code existed.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>4. (Intermediate) Why does <code>dispatch_tool_call</code> catch both <code>json.JSONDecodeError</code> and <code>KeyError</code> separately, instead of one broad <code>except Exception</code> around everything?</h2>
+    <p><strong>Strong answer:</strong> They're different, genuinely observed failure modes with different causes: <code>JSONDecodeError</code> means the model's <code>tool_calls[i].function.arguments</code> string wasn't even valid JSON; <code>KeyError</code> means the JSON parsed fine but a required argument the schema demanded was missing. Both were worth naming explicitly because this chapter directly observed a small local model produce incomplete tool-call arguments during real testing — not a hypothetical. A single broad catch-all would still prevent a crash, but naming the specific failure gives the model (and a human debugging the transcript) a much clearer signal about what actually went wrong.</p>
+    <p><strong>Red flag:</strong> Says the separate catches don't matter because "it all gets caught anyway," missing that the specific error message returned to the model is itself useful, actionable information for its next turn.</p>
+    <p><strong>Follow-up:</strong> "What would the agent's next turn probably look like if it got back a generic 'something went wrong' instead of 'missing required argument path'?"</p>
+    <p><strong>What this proves:</strong> Connects defensive coding practice to the actual mechanism (a new message shaping the next prediction) instead of treating error handling as boilerplate.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>5. (Senior) A teammate wants to swap this chapter's agent from Ollama to a hosted provider "for better reliability" but is worried it'll require rewriting the tool layer. How do you respond?</h2>
+    <p><strong>Strong answer:</strong> It shouldn't, and if it does, that's worth investigating rather than accepting as necessary. Because the agent is built against the plain <code>openai</code> client's request/response shape — not anything Ollama-specific — swapping to OpenAI, Anthropic's OpenAI-compatible endpoint, or Gemini's OpenAI-compatible endpoint is a three-line change: <code>base_url</code>, <code>api_key</code>, and <code>model</code>. <code>TOOLS</code>, every tool function, <code>dispatch_tool_call</code>, and the loop itself are provider-agnostic by construction. If a teammate's swap needs more than that, the tool layer probably has an Ollama-specific assumption baked in somewhere worth finding and removing.</p>
+    <p><strong>Red flag:</strong> Assumes switching providers always requires a new SDK or a meaningfully different code path, without knowing about the shared OpenAI-compatible shape this chapter's design leans on deliberately.</p>
+    <p><strong>Follow-up:</strong> "What's one thing that actually might behave differently after that swap, even though the code doesn't change?" (Acceptable answers: cost per call, rate limits, subtle differences in how reliably the new model fills tool-call arguments, or provider-specific compatibility caveats like Anthropic's documented limitations on this layer.)</p>
+    <p><strong>What this proves:</strong> Understands the design choice (build against a shared client shape) and its concrete payoff, not just that "it's supposed to be flexible."</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>6. (Senior) The <code>list_files</code> tool added in this chapter's <code>project/solution.py</code> doesn't call <code>_safe_path()</code> the way the other three tools do. Why is that a real problem, and how would you catch it in review?</h2>
+    <p><strong>Strong answer:</strong> Every other tool in the file confines its path argument to the workspace directory via <code>_safe_path()</code>, which is a harness-enforced boundary, not a model-trusted instruction. <code>list_files</code> calling <code>os.listdir(path)</code> directly means a call with a path like <code>"../../etc"</code> or an absolute path silently returns real contents from outside the intended workspace — no crash, no obvious error, just a boundary quietly not being enforced for one specific tool. Chapter 3's review checklist catches this under "did it touch anything outside the stated boundary" and "is it consistent with the rest of the codebase's patterns" — reading the diff for what it does differently from the established pattern nearby, not just whether it runs.</p>
+    <p><strong>Red flag:</strong> Says it's fine because "it still works" or because nothing crashes when they mentally run it, without checking whether the new code follows the same safety pattern as the code right next to it.</p>
+    <p><strong>Follow-up:</strong> "What kind of test would catch this bug automatically, versus what only a manual code review would catch?"</p>
+    <p><strong>What this proves:</strong> Applies Chapter 3's review discipline to real, agent-produced tool code, not just to application-level diffs — a skill Module 5's security chapters build on directly.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>7. (Architect) You're deciding whether a new internal tool (say, a CI-troubleshooting agent) should be built with a hand-rolled loop like this chapter's, or with a heavier agent framework. What factors would actually drive that decision?</h2>
+    <p><strong>Strong answer:</strong> The loop's control flow itself is genuinely small (well under 50 lines here) and rarely the source of real engineering cost — the real cost is in the tool layer (how many tools, how carefully they're scoped and sandboxed) and in operational concerns a framework might actually help with: retries, observability/tracing across many concurrent agent runs, structured logging of tool calls for audit, or built-in support for more complex planning strategies than plan-per-turn. A hand-rolled loop is the right call when the toolset is small and the team wants to understand and control every line (this course's own reason for teaching it this way); a framework earns its complexity when the operational surface — many tools, many concurrent runs, compliance/audit requirements — genuinely outgrows what a team wants to maintain by hand.</p>
+    <p><strong>Red flag:</strong> Treats "framework vs. hand-rolled" as purely a matter of taste or team seniority, without naming concrete operational factors (observability, retries, audit, concurrency) that actually differentiate the two options.</p>
+    <p><strong>Follow-up:</strong> "What's the first operational problem you'd expect to hit with a hand-rolled loop like this one at ten times the usage?"</p>
+    <p><strong>What this proves:</strong> Architect-level judgment that separates "the loop is simple" (true, and worth knowing) from "therefore frameworks are never worth it" (not a valid conclusion) — a nuanced, defensible framework instead of a blanket opinion.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h2>8. (Architect) How would you explain to a security-conscious stakeholder why this chapter's <code>_safe_path</code> function matters more than the system prompt's instruction that "paths are relative to the workspace"?</h2>
+    <p><strong>Strong answer:</strong> The system prompt is a request made to the model, evaluated the same probabilistic way every other prediction is — nothing guarantees the model always honors it, especially under an adversarial or malformed input, or simply an off turn from a smaller model (Section 6's reliability caveat generalizes here too). <code>_safe_path</code> is a check the harness runs on every single tool call regardless of what the model asked for or claimed — a path that tries to escape the workspace is rejected by code, not by hoping the model behaved. The security posture of an agent should be evaluated by what the harness enforces unconditionally, not by what its prompt asks nicely for — this is exactly the distinction Module 5 (Chapters 11-12) builds a full security and CI-integration treatment around.</p>
+    <p><strong>Red flag:</strong> Treats the system prompt's instruction and the code-level check as roughly equivalent safeguards, or can't articulate why a probabilistic model output is a weaker guarantee than a deterministic code check.</p>
+    <p><strong>Follow-up:</strong> "If you had to remove one of the two — the prompt instruction or the code-level check — which would you keep, and why?"</p>
+    <p><strong>What this proves:</strong> Can translate a code-level implementation detail into a security posture argument a non-engineering stakeholder can act on — directly anticipating Module 5's content rather than treating this chapter's tools as already "safe by design."</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="practice/index.html">&larr; Practice Bank</a>
+    <a href="project/index.html">Project &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>
