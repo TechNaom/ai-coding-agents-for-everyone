@@ -21,7 +21,7 @@ EVALUATE → SECURE → OPTIMIZE → SCALE → ARCHITECT progression; layered
 depth for 5 personas; story-first; no shallow tutorials; 13 chapters,
 don't pad; all content original.
 
-## Current state (as of 2026-08-09, Modules 1-5 complete — only the capstone left)
+## Current state (as of 2026-08-10, COURSE CONTENT-COMPLETE — all 13 chapters live)
 
 **Read `PROJECT_STATE.md` for the authoritative, up-to-date status.**
 
@@ -143,59 +143,64 @@ No website root `index.html` yet (Step 9, comes later).
 
 ## Current task
 
-**Modules 1-5 (Chapters 1-12) are all complete, including the Module 5
-written exam.** Only one chapter remains in the entire 13-chapter
-course: **Chapter 13, the capstone (Module 6, Architect level)**. Per
-`docs/curriculum/CURRICULUM_MAP.md`: "design (and partially implement)
-an agentic workflow for a realistic engineering org" — specifically
-the L4 Architecture Challenge: design an agentic CI workflow (a PR
-review bot or CI troubleshooting agent) for a **regulated engineering
-org**, as a **business problem only**, not another from-scratch code
-build. This should look different in shape from Chapters 7-12 — more
-architecture proposal/ADRs/trade-off analysis/rubric, less "here's a
-new working agent," similar in spirit to `mcp-for-everyone`'s own
-capstone. Read Chapters 3, 5, 7-12 first — the capstone should
-synthesize the whole course (review discipline, failure modes, the
-agent-building mechanism, the security/CI model), applied to one
-coherent, realistic scenario with real constraints (compliance, audit
-trail, blast radius, accountability). It can include real code where a
-concrete mechanism benefits (e.g. a policy snippet) but the center of
-this chapter is the design document.
+**There is no next chapter. The course is content-complete**: all 13
+chapters, all 6 modules, all applicable written exams (Modules 1, 2,
+4, 5 — Module 3's assessment is embedded in Chapter 9's practice bank,
+Module 6's is the capstone rubric itself, neither needed a separate
+exam file), the homepage, and the roadmap are all live and CI-verified
+on real GitHub Actions runners. Chapter 13 (the capstone) synthesizes
+the whole course into one architecture design for a regulated org —
+read `quality-audits/chapter-13-audit.md` and the chapter itself before
+touching anything related to it.
 
-After Chapter 13, the course is content-complete. Remaining work
-becomes polish: verify every quality audit is present/accurate, and a
-final cross-chapter consistency pass now that the whole arc exists.
+**If picking this repo up cold, the actual remaining work is
+polish/maintenance, not new content**:
+1. Re-verify Chapter 7's `project/starter.py`/`solution.py` and
+   Chapter 9's full agent-loop path against a live model once Ollama
+   is reliably reachable — the one thing never independently observed
+   live across five build sessions (a persistent sandbox-wide
+   generation hang, not a code bug). Everything else in those chapters
+   was live-tested.
+2. A full cross-chapter consistency read-through now that all 13
+   chapters exist — terminology drift across sessions, forward-
+   references actually paid off, and a spot-check for the
+   interview-questions-callout/footer-link gap Chapter 11's first
+   draft had (fixed there, but worth checking other chapters weren't
+   built with the same omission before review caught it).
+3. Anything the user asks for specifically — don't invent new scope.
 
-**Speed note**: parallel background-agent builds have been validated
-three times now (Chapter 9 + Module 1/2 exams; Chapter 10 + the CI
-extension; sequential-but-correct for Chapter 11 + 12 which genuinely
-depended on order). Keep using judgment about genuine independence
-rather than forcing parallelism for its own sake.
+**Speed note**: parallel background-agent builds were validated
+repeatedly across this course's build (Chapter 9 + Module 1/2 exams;
+Chapter 10 + the CI extension; the capstone + the exam-HTML-conversion
+task). Chapters 11 and 12 were correctly built sequentially since 12
+genuinely depended on 11. Keep using judgment about genuine
+independence rather than forcing parallelism for its own sake.
 
 **Local-testing gotcha, learned from Chapter 11**: `scripts/local_check.sh`
 must be run with `< /dev/null` (or from a genuinely non-interactive
 shell) once a chapter's code calls `input()` for a live confirmation
 demo (Chapter 11 onward) — an open stdin in an interactive shell makes
 `input()` block for real instead of hitting `EOFError` the way it does
-in CI (confirmed against the real GitHub Actions log for Chapter 11's
-commit: `input()` hit EOF immediately there, denied, and continued
-correctly). A "failure" without `< /dev/null` is a local-shell
-artifact, not a real bug — verify against `< /dev/null` before
-concluding something is broken.
+in CI. A "failure" without `< /dev/null` is a local-shell artifact, not
+a real bug.
 
-**Known gaps to close when possible, not blocking**: Chapter 7's
-`project/starter.py`/`solution.py` and Chapter 9's full agent-loop
-path against a live model haven't been re-observed live yet (disclosed
-in their respective quality-audits) — re-run once Ollama is reliably
-reachable; it hung across all five build sessions so far that tried
-(check `ollama ps` / try a plain completion first, every time, don't
-assume resolved).
+**User-reported UI gap, fixed 2026-08-10**: the sidebar's "Module
+Written Exam" links pointed straight at raw `.md` files, rendering as
+unstyled plain text on GitHub Pages. Fixed with
+`templates/written-exam.template.html` (reuses existing CSS classes,
+answer keys hidden in a `<details>` accordion) applied to all 4 exam
+files; `chapters-data.js`'s `examPath` fields now point at `.html`,
+the `.md` files stay as raw/portable source. The user explicitly chose
+"fix this course only" — the identical gap exists in `mcp-for-everyone`
+and is NOT fixed there; don't assume it was.
 
 ## Next task after that
 
-Chapter 13 (capstone) is the last chapter of the whole course. Once
-it's done, this course's content is complete — shift to polish/review
-mode. Don't mass-generate ahead of validation.
+There is no "next task after that" in the content sense — see "Current
+task" above for the polish/maintenance items that remain. Don't
+mass-generate new content unless the user explicitly asks for
+something beyond the 13 chapters (e.g. a new module, deeper capstone
+examples).
 
 ## Important architectural decisions (see PROJECT_STATE.md for full detail)
 

@@ -315,6 +315,44 @@ production-grade, interview-ready, original content only).
       left `ALLOWED` in CI, `RLIMIT_NPROC` misused as if subprocess-
       scoped, no CI wall-clock budget) plus a severity-ranking question.
       15 numbered items total. Registered in `chapters-data.js`.
+- [x] **Chapter 13 built and live — the capstone, completes the entire
+      13-chapter course**: "Capstone: Design an Agent Workflow for a
+      Real Team." Synthesizes every module into one architecture for
+      Meridian Ledger, a fictional PCI-DSS Level 1 + SOX Section 404
+      payments company — "regulated" visibly constrains the design
+      throughout, not just labels it. A hybrid of Chapter 12's two CI
+      use cases, split by a code-checked regulated-path classifier
+      (substring containment, overrides an otherwise-`ALLOWED` tier
+      outright); mandatory, refused-not-defaulted actor attribution for
+      SOX individual accountability; a redacted, write-before-execution
+      audit log; a human-review tier that now also asks WHO is
+      qualified to review; Chapter 5's failure modes reframed as
+      compliance risk, fixed with an independent-check-outside-the-
+      model principle applied to a diagnosis instead of a fix. Ships 3
+      real, filled-out ADRs and a genuine 7-criterion capstone rubric
+      plus a cross-cutting "did you name a real gap in your own design"
+      honesty check. Two real bugs found and fixed while building
+      (a prefix-vs-substring classifier gap, a PAN-redaction regex that
+      consumed a trailing space) — disclosed in the audit. Module 6's
+      assessment is the rubric itself, per CURRICULUM_MAP.md — no
+      separate written exam file, deliberately.
+- [x] **Written exams rendered as styled HTML (user-reported gap
+      fixed)**: the sidebar's "Module Written Exam" link previously
+      pointed straight at raw `.md` files, which GitHub Pages serves as
+      unstyled plain text — no header, sidebar, or CSS, unlike every
+      other page. Added `templates/written-exam.template.html` (reuses
+      only existing CSS classes; answer keys hidden by default in a
+      `<details>` accordion) and applied it to all 4 existing exams
+      (Modules 1, 2, 4, 5 — Module 3 never had a separate exam file,
+      its assessment is the code-review checklist embedded in Chapter
+      9's practice bank). `chapters-data.js`'s `examPath` fields now
+      point at the `.html` pages; the `.md` files stay as the raw/
+      portable source. This same gap exists in `mcp-for-everyone` and
+      likely other TechNaom courses — flagged, not fixed there (out of
+      scope, user explicitly chose "fix this course only").
+
+**THE COURSE IS NOW CONTENT-COMPLETE: all 13 chapters, all 6 modules,
+all applicable written exams, homepage, and roadmap are live.**
 
 ## Pending / Not Started
 
@@ -394,47 +432,47 @@ scenarios/8 interview questions minimum, tested code before writing).
 
 ## Next Recommended Task
 
-**Modules 1-5 (Chapters 1-12) are all complete, including the Module 5
-written exam.** This is the last outstanding chapter: **Chapter 13,
-the capstone (Module 6, Architect level)** — the final chapter of the
-entire 13-chapter course. Per `docs/curriculum/CURRICULUM_MAP.md`:
-"Design (and partially implement) an agentic workflow for a realistic
-engineering org" — the L4 Architecture Challenge specifically asks
-learners to design an agentic CI workflow (a PR review bot or CI
-troubleshooting agent) for a **regulated engineering org**, as a
-**business problem only** (not another from-scratch code build — this
-capstone is architecture/design-level synthesis, matching
-`mcp-for-everyone`'s own capstone's ADR/architecture rigor). Read
-Chapters 3, 5, 7-12 first — the capstone should synthesize the whole
-course: Chapter 3's review discipline, Chapter 5's failure modes,
-Chapters 7-9's agent-building mechanism, Chapters 11-12's security/CI
-model, all applied to a single coherent, realistic org scenario with
-real constraints (compliance, audit trail, blast radius, who's
-accountable when the agent is wrong). Expect this chapter to look
-different in shape from Chapters 7-12 — less "here's working code,"
-more "here's a full architecture proposal with ADRs, trade-off
-analysis, and a rubric," similar in spirit to how `mcp-for-everyone`'s
-own capstone chapter was built. It can still include real, runnable
-code where a concrete mechanism benefits from it (e.g. a policy
-snippet), but the CENTER of this chapter is the design document, not a
-new agent implementation.
+**The course is content-complete: all 13 chapters, all 6 modules, all
+applicable written exams, homepage, and roadmap are live and
+CI-verified.** There is no next chapter to build. Remaining work is
+polish and maintenance, roughly in priority order:
 
-After Chapter 13, the entire 13-chapter course is content-complete.
-Remaining work becomes polish: verify every chapter's quality audit is
-present and accurate, consider building out `capstones/`-style
-supporting material if warranted, and a final full read-through pass
-checking cross-chapter consistency now that the whole arc exists
-end to end.
+1. **Re-verify the two disclosed live-model gaps** once Ollama is
+   reliably reachable in this environment: Chapter 7's
+   `project/starter.py`/`solution.py` and Chapter 9's full agent-loop
+   path were never independently observed running live against a real
+   model (a sandbox-wide Ollama generation hang blocked this across
+   five separate build sessions — check `ollama ps` / try a plain
+   completion first, every time, don't assume it's resolved). Every
+   other piece of these chapters' code (tool logic, dispatch, MCP
+   wiring) was live-tested; only the full end-to-end loop-against-a-
+   real-model path is the gap.
+2. **A full cross-chapter consistency read-through** now that the
+   whole 13-chapter arc exists end to end — check terminology stayed
+   consistent (e.g. "tool tier," "fail closed," "harness-enforced")
+   across chapters written by different build sessions weeks apart,
+   verify forward-references actually got paid off (Chapters 1/2/4 ->
+   5, Chapter 4 -> 6, Chapters 7/8/9 -> 11, Chapter 11 -> 12), and spot
+   -check a sample of lesson.html files for the two consistency gaps
+   found in Chapter 11's first draft (missing interview-questions
+   callout, missing footer GitHub link) in case any other chapter has
+   the same gap undetected.
+3. **Consider extending `scripts/local_check.sh`/`ci.yml` further** if
+   new gaps turn up in the read-through (the `practice/solution.py`
+   coverage gap was already fixed after Chapter 7-9 flagged it).
+4. **Polish tasks from the original build plan** (Step 12 in the
+   original roadmap): CONTRIBUTING.md/CHANGELOG.md are already done;
+   revisit whether anything else needs updating now that the course
+   scope (Ollama-based, not Claude-Agent-SDK-based) is settled and
+   complete.
+5. When running `scripts/local_check.sh` locally on Chapter 11 or
+   later, always use `< /dev/null` (or a genuinely non-interactive
+   shell) — a chapter whose code calls `input()` for a live
+   confirmation demo will hang/appear to fail if your shell's stdin
+   stays open, which does not reflect real CI behavior.
 
-Also outstanding, not blocking: re-run Chapter 7's `project/starter.py`/
-`solution.py` and Chapter 9's full agent-loop-against-a-live-model path
-once Ollama is reliably reachable (both disclosed as not-live-verified
-due to a persistent sandbox-wide generation hang across five build
-sessions now — check `ollama ps` / try a plain completion before
-assuming it's resolved, every time). Also: when running
-`scripts/local_check.sh` locally on Chapter 11 or later, always use
-`< /dev/null` (or a genuinely non-interactive shell) — a chapter whose
-code calls `input()` for a live confirmation demo will hang/appear to
-fail if your shell's stdin stays open, which does not reflect real CI
-behavior (CI's stdin is already closed, confirmed via the real GitHub
-Actions log for Chapter 11's commit).
+Not currently planned unless the user asks: building out a
+`capstones/`-style directory of additional worked capstone examples
+(python-for-everyone has 4; this course's own capstone chapter already
+ships 3 real ADRs and a full worked example, which may be sufficient
+for a focused-topic course at this course's sizing).
