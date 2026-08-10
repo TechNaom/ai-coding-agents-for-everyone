@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capstone Project — AI Coding Agents for Everyone</title>
+<meta name="description" content="The capstone submission: a design document, ADRs, and a small regulated-path-aware CI policy extension, graded against the real capstone rubric.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-13">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../interview-questions.html">&larr; Back to interview questions</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 13 Capstone Submission</span>
+    <span class="reading-time">Level 4 · Architecture Challenge</span>
+  </div>
+  <h1>Submit the Capstone</h1>
+  <p>A design document and ADRs are the real submission here — not a
+  new agent build. A small, focused code extension is included because
+  one mechanism (a regulated-path-aware CI policy) benefits from being
+  shown precisely, the same way Chapters 11-12 showed their own policy
+  layers in code.</p>
+
+  <div class="hook">
+    <p>
+      <code>solution.py</code> in this folder is a worked reference for
+      the Meridian Ledger scenario this chapter's lesson builds —
+      it is <strong>one</strong> way to extend Chapter 12's
+      <code>TOOL_POLICY_CI</code> pattern for a regulated org, not
+      <em>the</em> correct answer. Your own submission should design a
+      workflow for your OWN chosen regulated scenario (it does not have
+      to be payments/SOX — HIPAA, a government-contractor framework,
+      or a different financial-services angle are all legitimate),
+      with your own reasoning, your own ADRs, and your own honest gaps.
+    </p>
+  </div>
+
+  <div class="download-links">
+    <a href="starter.py">starter.py</a>
+    <a href="solution.py">solution.py (one worked example, not the answer key)</a>
+    <a href="adr-template.md">adr-template.md</a>
+    <a href="capstone-rubric.md">capstone-rubric.md</a>
+  </div>
+
+  <h2>What to submit</h2>
+  <ol>
+    <li>A specific business scenario: one real regulated domain, what
+    the org builds, what's actually at stake if the agent gets it
+    wrong.</li>
+    <li>A permission-scope design covering both interactive and CI
+    modes, built on Chapters 11-12's <code>TOOL_POLICY</code>/
+    <code>TOOL_POLICY_CI</code> pattern, adapted to your scenario's
+    compliance-driven boundaries.</li>
+    <li>A concrete audit-trail and attribution design — who is
+    accountable for each agent action, and how would an auditor verify
+    it from the artifacts your design produces.</li>
+    <li>An explicit list of what still requires human review, and by
+    whom — not just "a human," a specific role or designation if your
+    scenario's compliance regime calls for one.</li>
+    <li>At least one Chapter 5 failure mode, addressed concretely for
+    an unattended, regulated context — not a restatement of Chapter 5's
+    abstract description.</li>
+    <li>At least 2-3 ADRs, in <code>adr-template.md</code>'s format, for
+    genuinely contestable decisions in your own design — see
+    <code>example-adrs/</code> for three worked examples from the
+    Meridian Ledger scenario (structure/rigor reference, not content to
+    copy).</li>
+    <li>At least one thing your own design honestly does NOT solve.</li>
+  </ol>
+
+  <div class="what-is">
+    <span class="label">Optional: complete starter.py's three TODOs</span>
+    <code>starter.py</code> has the regulated-path classifier, the
+    CI-mode write check, and the CI-mode commit check removed. Filling
+    them in and confirming your output matches <code>solution.py</code>'s
+    is a useful, small, concrete exercise — but it is not scored
+    separately from the design document, and completing it is not a
+    substitute for producing your own scenario's design.
+  </div>
+
+  <div class="what-is">
+    <span class="label">Self-check before calling this done</span>
+    Score your own submission against every criterion in
+    <code>capstone-rubric.md</code>, honestly. A submission landing
+    "Does Not Meet" on even one criterion has a real, specific gap
+    worth closing — the rubric names exactly which one.
+  </div>
+
+  <div class="points-to-remember">
+    <h2>Why This Project Is the Right Way to Close This Course</h2>
+    <p>
+      This is the synthesis of everything: the tested-before-trusted
+      discipline from Chapter 3 onward, the failure-mode vocabulary
+      from Chapter 5, the from-scratch agent mechanism from Chapters
+      7-9, and the permission/CI safety model from Chapters 11-12 — all
+      applied, deliberately, to one coherent scenario with real stakes.
+      If you can produce a submission like this, you can walk into a
+      real design review at a real regulated engineering org and
+      defend an agentic CI workflow to a real compliance auditor —
+      which was the whole point of building toward this, one chapter
+      at a time.
+    </p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../interview-questions.html">&larr; Interview Questions</a>
+    <a href="../../../index.html">All Chapters &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capstone: Design an Agent Workflow for a Real Team — AI Coding Agents for Everyone</title>
+<meta name="description" content="The final chapter: design a full CI agent workflow for a regulated engineering org, synthesizing every mechanism this course built, with real ADRs and a real rubric.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-13">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; Back to all chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 13 · Capstone</span>
+    <span class="badge-difficulty">Architect</span>
+    <span class="reading-time">~55 min read · multi-hour design project</span>
+  </div>
+
+  <h1>Capstone: Design an Agent Workflow for a Real Team</h1>
+  <p class="lede">
+    Twelve chapters built toward this one, in order: Module 1 taught
+    you to use an agent well and read its output like a senior
+    engineer. Module 2 opened the loop mechanism and named the ways it
+    fails. Module 3 built a real agent, from scratch, with real tools.
+    Module 4 hardened your eye for the specific bugs a fluent-sounding
+    agent produces. Module 5 made an agent safe to run unattended, then
+    safe to run in CI. This chapter — the last one — doesn't teach a
+    new mechanism. It asks you to take every mechanism this course
+    built and design a real, defensible architecture with them, for an
+    org where getting it wrong has consequences beyond a bad PR.
+  </p>
+
+  <nav class="page-toc" aria-label="On this page">
+    <span class="toc-label">On this page</span>
+    <a href="#hook">1. The business problem</a>
+    <a href="#section-scope">2. Which use case fits: a hybrid, not a single agent</a>
+    <a href="#section-policy">3. The permission-scope design, extended for a regulated org</a>
+    <a href="#section-audit">4. Audit trail and attribution</a>
+    <a href="#section-review">5. What still requires human review</a>
+    <a href="#section-failure">6. Failure modes when a silent failure is a compliance event</a>
+    <a href="#section-adr">7. ADR practice</a>
+    <a href="#section-rubric">8. The capstone rubric</a>
+    <a href="#thought-process">9. GenAI Builder Thought Process</a>
+    <a href="#recap">10. Points to remember</a>
+  </nav>
+
+  <div class="hook" id="hook">
+    <p>
+      <strong>Meridian Ledger</strong> is a fictional, mid-size,
+      publicly traded payments-infrastructure company. It operates the
+      card-payment processing rails for several thousand mid-market
+      e-commerce merchants, and it sells a reconciliation and
+      general-ledger product those merchants' own finance teams use to
+      close their books every month. Two regulatory regimes govern
+      Meridian Ledger's engineering org, and they are not abstract:
+      Meridian Ledger is a <strong>PCI-DSS Level 1 Service
+      Provider</strong> — the strictest tier, requiring an annual
+      on-site assessment by a Qualified Security Assessor — because it
+      directly processes cardholder data (card numbers, expiry dates,
+      CVVs) on behalf of its merchants. And because Meridian Ledger is
+      publicly traded and its ledger's own output feeds its audited
+      financial statements, its general-ledger and reconciliation code
+      is in scope for <strong>SOX Section 404</strong> — a change to
+      that logic has to be traceable to a specific, accountable
+      decision-maker, the same way a change to any other
+      internal-control-relevant system does.
+    </p>
+    <p>
+      Engineering leadership wants to adopt the kind of agentic CI
+      workflow this course built in Chapters 11-12 — a PR review bot,
+      a CI troubleshooting agent that investigates and proposes fixes
+      for failing builds. Compliance has one question before any of it
+      ships: <em>"Chapters 11 and 12 already resolved the case where
+      nobody's watching. What resolves the case where getting it wrong
+      isn't just a bad diff — it's a reportable incident, a lost PCI
+      certification, or a line in a SOX material-weakness
+      disclosure?"</em> That question is this chapter's actual subject.
+    </p>
+  </div>
+
+  <section id="section-scope" class="subtopic">
+    <h2>Which Use Case Fits: A Hybrid, Not a Single Agent</h2>
+    <p>
+      Chapter 12 named two CI use cases and was honest that they aren't
+      equally hard: a PR review bot is entirely read-only and needed
+      zero new mechanism at all — every tool it uses was already
+      <code>ALLOWED</code> under Chapter 11's original policy. A CI
+      troubleshooting agent needs real write capability, which is where
+      Chapter 12's <code>TOOL_POLICY_CI</code> actually earned its
+      keep. For Meridian Ledger, that same asymmetry is the starting
+      point of the design, not a detail to resolve later — the two use
+      cases have genuinely different risk profiles here, and treating
+      them identically would either over-restrict the easy half or
+      under-restrict the hard one.
+    </p>
+    <p>
+      The design this chapter builds toward, worked out in full in
+      <a href="project/example-adrs/001-hybrid-use-case-not-a-single-agent.md">ADR-001</a>:
+      a PR review bot runs org-wide, on every PR, in every path,
+      comment-only — no policy change from Chapter 11 needed anywhere.
+      A CI troubleshooting agent runs everywhere too, but its
+      <em>effective capability</em> depends on what the PR it's
+      responding to actually touches — checked mechanically against a
+      regulated-path classifier, not by routing PRs to different agent
+      configurations by hand. A build failing in
+      <code>tools/lint_config.py</code> gets the full Chapter 12
+      treatment. A build failing in
+      <code>ledger/gl_posting/rounding.py</code> gets the review bot's
+      comment and nothing more — the troubleshooting agent's write path
+      is structurally unavailable there, which Section 3 shows in code.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the actual argument against "just be more careful" as a design?</span>
+      <p>
+        A tempting shortcut is: keep Chapter 12's design exactly as-is,
+        and just instruct the agent (via its system prompt) to avoid
+        touching sensitive files. This fails for the identical
+        structural reason Chapter 8's <code>confirm=True</code> flag
+        failed and Chapter 12's rejected "auto-answer yes" fix failed:
+        it puts a compliance-critical decision inside the model's own
+        judgment, where nothing external verifies it was followed. A
+        prompt instruction is not a control a QSA can point to and
+        verify held every single time — a code-level check, evaluated
+        by the harness before a write happens, is. This chapter's whole
+        design is that same lesson, applied one more level up: from
+        "don't trust the model to decide if an action is safe" to
+        "don't trust the model to decide if a PATH is regulated."
+      </p>
+    </div>
+  </section>
+
+  <section id="section-policy" class="subtopic">
+    <h2>The Permission-Scope Design, Extended for a Regulated Org</h2>
+    <p>
+      The starting point is Chapters 11-12's exact three-tier
+      vocabulary and two-policy structure, unchanged:
+      <code>ALLOWED</code>/<code>REQUIRES_CONFIRMATION</code>/<code>BLOCKED</code>,
+      a static <code>TOOL_POLICY</code> for interactive use and a
+      separate, more restrictive <code>TOOL_POLICY_CI</code> for
+      unattended runs, both fail-closed by default. What's new here is
+      a boundary neither prior chapter needed: a classifier that
+      distinguishes ordinary code from code inside the Cardholder Data
+      Environment (CDE, PCI-DSS scope) or the general-ledger path (SOX
+      ICFR scope), and a rule that this boundary <strong>overrides</strong>
+      an otherwise-<code>ALLOWED</code> tier, not just narrows it the
+      way Chapter 12's <code>CI_SCRATCH_PREFIX</code> did:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">from project/solution.py -- the regulated-path classifier</span>
+      </div>
+      <pre><code>CDE_PATH_PATTERNS = ("payments/card_intake/", "payments/tokenization/", "vendor/psp_adapter/")
+GL_PATH_PATTERNS = ("ledger/gl_posting/", "ledger/reconciliation/")
+
+def regulated_category(path):
+    normalized = path.replace("\\", "/")
+    if normalized.startswith("./"):
+        normalized = normalized[2:]
+    # Substring containment, not a leading-prefix match: a regulated
+    # pattern nested under ci-scratch/ still counts.
+    if any(p in normalized for p in CDE_PATH_PATTERNS):
+        return "CDE"
+    if any(p in normalized for p in GL_PATH_PATTERNS):
+        return "GL"
+    return None</code></pre>
+    </div>
+    <p>
+      Notice the comment: this check uses substring containment, not a
+      leading-prefix match the way Chapter 12's
+      <code>_in_ci_scratch()</code> did. That's a deliberate, specific
+      difference, not an inconsistency — Chapter 12's scratch check
+      exists to confirm a write lands <em>inside</em> an intended
+      boundary, so a prefix match is exactly right. This check exists
+      to catch a write that touches a regulated pattern
+      <em>anywhere</em> in its path, including nested under a directory
+      that would otherwise look safe (<code>ci-scratch/payments/tokenization/notes.txt</code>)
+      — the scratch-prefix allowance was never a legitimate reason for
+      a regulated pattern to stop mattering.
+    </p>
+    <p>
+      Here's where that classifier actually gets consulted — in
+      <code>write_file</code>, checked <em>before</em> the scratch-scope
+      check, so a regulated hit wins regardless of scoping, and in
+      <code>git_commit</code>, checked against files git itself reports
+      as staged, never against anything the model claims about its own
+      change:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">from project/solution.py -- the ordering that makes the override real</span>
+      </div>
+      <pre><code>def write_file(path, content):
+    if CI_MODE:
+        category = regulated_category(path)
+        if category is not None:
+            return f"error: {path!r} falls inside this org's {category} " \
+                   "(regulated) path patterns -- refused unconditionally, " \
+                   "regardless of ci-scratch/ scoping."
+        if not _in_ci_scratch(path):
+            return f"error: write_file may only write inside {CI_SCRATCH_PREFIX!r}."
+    # ... unchanged write below this point ...
+
+def git_commit(message, actor=None):
+    if CI_MODE:
+        branch = _current_branch()
+        if branch is None or branch in PROTECTED_BRANCHES:
+            return f"error: refused on protected branch {branch!r}."
+        staged = _staged_files()             # from git itself, not the model
+        regulated_hits = [(f, regulated_category(f)) for f in staged if regulated_category(f)]
+        if regulated_hits:
+            return f"error: refusing to commit -- staged changes touch regulated paths: {regulated_hits}"
+        if not actor:
+            return "error: refusing to commit with no attributable actor."
+    # ... unchanged commit below this point ...</code></pre>
+    </div>
+    <p>
+      Two things worth being precise about, both live-verified in
+      <code>project/solution.py</code>. First, the ordering: a path
+      that is BOTH inside <code>ci-scratch/</code> AND matches a
+      regulated pattern is still refused — the regulated check runs
+      first and short-circuits, so "technically inside the scratch
+      scope" never gets a chance to look sufficient on its own. Second,
+      <code>git_commit</code>'s regulated check reads
+      <code>git diff --cached --name-only</code> directly, the same
+      "read the real state, not the model's account of it" discipline
+      Chapter 12's protected-branch check used (<code>git rev-parse</code>,
+      not a model-provided branch name) — a model claiming its own
+      staged changes don't touch anything sensitive has no bearing on
+      whether this check passes.
+    </p>
+  </section>
+
+  <section id="section-audit" class="subtopic">
+    <h2>Audit Trail and Attribution</h2>
+    <p>
+      Chapters 11-12 never needed to answer "who is accountable for
+      this specific action" — a permission check answers "was this
+      allowed," which is a different question. SOX Section 404 asks the
+      second question directly, and "the CI bot did it" is not an
+      answer a SOX auditor accepts for a change to an ICFR-scoped
+      system. This design's fix, worked out in full in
+      <a href="project/example-adrs/003-oidc-actor-attribution-not-shared-service-identity.md">ADR-003</a>:
+      propagate the identity of whoever actually triggered the CI run —
+      in a real deployment, via the workflow's verified OIDC token
+      claims, not a plain environment variable a workflow step could
+      set to anything — into every audit-log entry and every commit the
+      agent produces.
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">from project/solution.py -- attribution refused, not defaulted</span>
+      </div>
+      <pre><code>def git_commit(message, actor=None):
+    if CI_MODE:
+        ...
+        if not actor:
+            return ("error: refusing to commit in CI mode with no attributable "
+                     "actor -- SOX individual-accountability requires every "
+                     "change to be traceable to a specific triggering human.")
+        message = f"{message}\n\nAgent-Run-Id: {run_id}\nTriggered-By: {actor}"
+    # commit proceeds with the trailer-appended message</code></pre>
+    </div>
+    <p>
+      Read that <code>if not actor</code> branch the way you'd read
+      Chapter 11's <code>TOOL_POLICY.get(name, BLOCKED)</code>: the
+      absence of an accountable identity is treated as a reason to
+      refuse, not a gap to paper over with a placeholder like
+      <code>"ci-bot"</code>. A shared service identity would make every
+      commit succeed, but it would answer a different, weaker question
+      than the one compliance actually asked — it says "the automation
+      ran," not "here is the specific person accountable for this
+      change," and those are not the same guarantee.
+    </p>
+    <p>
+      The second half of this section's mechanism is a structured,
+      append-only log — written <em>before</em> each tool call runs, so
+      even a call that crashes the process still leaves a record it was
+      attempted, and passed through a narrow redaction scrub before
+      anything is written, because the audit trail itself is read by
+      more people (compliance, auditors) than the codebase is, and
+      cannot become a second place a real card number leaks:
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">from project/solution.py -- audit_log() and redact_card_data()</span>
+      </div>
+      <pre><code>PAN_PATTERN = re.compile(r"\b\d(?:[ -]?\d){12,18}\b")
+
+def redact_card_data(text):
+    return PAN_PATTERN.sub("[REDACTED-PAN]", text)
+
+def audit_log(event):
+    record = dict(event)
+    record["ts"] = time.time()
+    record["ci_mode"] = CI_MODE
+    if "args" in record:
+        record["args"] = redact_card_data(json.dumps(record["args"]))
+    with open(AUDIT_LOG_PATH, "a") as f:
+        f.write(json.dumps(record) + "\n")</code></pre>
+    </div>
+    <p>
+      This is honestly scoped, not oversold: <code>redact_card_data()</code>
+      is a narrow, defense-in-depth scrub for the audit log
+      specifically, not Meridian Ledger's real PCI masking control
+      (that lives in the actual payment-processing code, entirely out
+      of this file's scope). It exists because a tool's <em>arguments</em>
+      — a diagnosis string, a proposed fix's content — could plausibly
+      contain something PAN-shaped even when the call itself is
+      legitimate, and the log is exactly the kind of secondary surface
+      Chapter 11's threat model warned isn't covered by a permission
+      check alone.
+    </p>
+  </section>
+
+  <section id="section-review" class="subtopic">
+    <h2>What Still Requires Human Review</h2>
+    <p>
+      Chapter 12 closed with a clear line between what's safe to land
+      unreviewed (a bot comment, a scratch commit, a draft PR) and what
+      still needs Chapter 3's full review discipline every time
+      (merging, trusting the agent's own narrative, changing the policy
+      itself). That line holds here too, with one addition specific to
+      a regulated org: WHO is qualified to grant the review that
+      remains mandatory is no longer just "any engineer on the team."
+    </p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">what's safe to land unreviewed vs. what needs a specific, designated reviewer</span>
+      </div>
+      <pre><code>SAFE TO LAND BEFORE ANY HUMAN REVIEW (unchanged from Chapter 12):
+  - a PR review bot's comment                    -- text, no side effects
+  - a scoped commit on a scratch branch, non-regulated paths only,
+    landing as a DRAFT pull request               -- reversible, isolated
+
+STILL NEEDS CHAPTER 3'S FULL CHECKLIST, EVERY TIME (unchanged in KIND,
+narrower in scope than Chapter 12 because of ADR-001's split):
+  - merging any draft PR the agent opened
+  - trusting the agent's own diagnosis/summary content without reading it
+  - widening TOOL_POLICY_CI, CDE_PATH_PATTERNS, or GL_PATH_PATTERNS itself
+
+NEW FOR THIS ORG -- REQUIRES A COMPLIANCE-DESIGNATED REVIEWER SPECIFICALLY,
+NOT JUST ANY ENGINEER:
+  - any human-authored PR that DOES touch a CDE or GL path (the agent
+    never touches these at all, but a human still has to, and that
+    human-authored change needs a reviewer with the standing to sign
+    off on ICFR-scoped or CDE-scoped changes)
+  - any change to CDE_PATH_PATTERNS / GL_PATH_PATTERNS themselves --
+    this list defines what "regulated" even MEANS to every other
+    mechanism in this design, so a change to it gets the same review
+    rigor as a change to the regulated code it protects</code></pre>
+    </div>
+    <p>
+      The last line matters enough to say directly: this design's
+      entire compliance argument rests on <code>CDE_PATH_PATTERNS</code>
+      and <code>GL_PATH_PATTERNS</code> being accurate and current. A
+      PR that quietly narrows either list — even with a plausible-sounding
+      justification in the commit message — is not an ordinary code
+      change; it's a change to the thing every other control in this
+      chapter depends on, and treating it as routine is exactly the
+      kind of gap a real design review has to catch.
+    </p>
+  </section>
+
+  <section id="section-failure" class="subtopic">
+    <h2>Failure Modes When a Silent Failure Is a Compliance Event</h2>
+    <p>
+      Chapter 5 named four failure modes in the abstract: looping,
+      stalling, going off the rails, and premature "done." Chapter 12
+      gave looping/thrashing a concrete cost in CI (real, metered
+      minutes; a blocked PR). This design has to reckon with a sharper
+      version of the same idea for a different failure mode:
+      <strong>premature "done" and going-off-the-rails aren't just
+      wasted time here — they're compliance risk, specifically when
+      they touch a claim about regulated code.</strong>
+    </p>
+    <p>
+      Concretely: a CI troubleshooting agent investigating a failing
+      test in <code>ledger/reconciliation/</code> is correctly barred
+      from writing there directly (Section 3's regulated-path block).
+      But nothing stops it from producing a confident, wrong DIAGNOSIS
+      in its final message — "the rounding discrepancy is caused by a
+      float-precision issue in the tax calculation, not the ledger
+      posting logic itself" — that a reviewer might trust without
+      independently re-verifying, exactly the going-off-the-rails
+      pattern Chapter 5 described, except the thing being trusted
+      without verification here is a claim about financial-reporting
+      logic, not an internal tool's behavior.
+    </p>
+    <div class="what-is">
+      <span class="label">What is... the actual mitigation, and why isn't "review the diagnosis carefully" enough on its own?</span>
+      <p>
+        Chapter 5's real fix for going off the rails was never "read
+        more carefully" alone — it was putting a check OUTSIDE the
+        model, that runs independently of whatever the model claims.
+        For this design, that means: any agent-produced diagnosis that
+        touches a CDE or GL path doesn't just get read by a human, it
+        triggers a MANDATORY, automated, independent re-run of the
+        specific failing check the agent is diagnosing, with the
+        result attached alongside the agent's own narrative — not
+        instead of human review, but as a second, independently-derived
+        data point a reviewer can compare the agent's claim against,
+        the same "acceptance criteria run independently" principle
+        Chapter 5 named, applied to a diagnosis instead of a fix.
+      </p>
+    </div>
+    <p>
+      One more addition specific to this context: Chapter 12's design
+      logged what the harness DID. This design's audit log
+      (Section 4) also has to make <code>BLOCKED</code>/<code>REFUSED</code>
+      decisions visible, not just silently correct — a pattern of
+      repeated refused attempts against a CDE path (the agent
+      repeatedly trying, and failing, to write somewhere it shouldn't)
+      is itself a signal worth surfacing to a security team, not merely
+      evidence the guardrail worked. A permission system that only
+      alerts on what it ALLOWED is blind to exactly the pattern a
+      regulated org's security team would want visibility into.
+    </p>
+  </section>
+
+  <section id="section-adr" class="subtopic">
+    <h2>ADR Practice</h2>
+    <p>
+      Three of this design's genuinely contestable decisions are
+      written up as real Architecture Decision Records, following
+      <a href="project/adr-template.md">the ADR template</a> in this
+      chapter's project folder:
+    </p>
+    <ul>
+      <li><a href="project/example-adrs/001-hybrid-use-case-not-a-single-agent.md">ADR-001</a>
+      — why a hybrid of both CI use cases, split by regulated-path
+      classification enforced in code, rather than one agent
+      configuration applied uniformly.</li>
+      <li><a href="project/example-adrs/002-scoped-auto-commit-vs-report-only.md">ADR-002</a>
+      — whether the CI troubleshooting agent may auto-commit at all in
+      a regulated context, and why "scoped auto-commit, draft PR only"
+      beat both "full Chapter 12 privilege, unmodified" and
+      "report-only, no write capability at all."</li>
+      <li><a href="project/example-adrs/003-oidc-actor-attribution-not-shared-service-identity.md">ADR-003</a>
+      — why every action is attributed to the triggering human via
+      propagated identity, rejecting both a shared CI service account
+      and a separate human "approve this run" gate.</li>
+    </ul>
+    <p>
+      Read these as a model for the rigor an ADR needs — genuine
+      alternatives, honest trade-offs, a stated consequence, and (where
+      relevant) an explicit compliance note — not as the only correct
+      answers to the questions they address. Your own capstone
+      submission's ADRs, for your own chosen scenario, are expected to
+      reach different, equally well-argued decisions where your
+      scenario's actual constraints point that way.
+    </p>
+  </section>
+
+  <section id="section-rubric" class="subtopic">
+    <h2>The Capstone Rubric</h2>
+    <p>
+      Per <code>docs/curriculum/CURRICULUM_MAP.md</code>, Module 6's
+      assessment IS this capstone's rubric — there is no separate
+      written exam for this module. The full rubric, with
+      does-not-meet/meets/exceeds levels for seven criteria plus a
+      cross-cutting honesty check, lives in
+      <a href="project/capstone-rubric.md">project/capstone-rubric.md</a>.
+      Skim its seven headings here; use the full document to actually
+      grade a submission (yours or someone else's):
+    </p>
+    <ol>
+      <li>Business scenario specificity</li>
+      <li>Correct application of the permission-scope model (Chapters 11-12)</li>
+      <li>Regulated-path / blast-radius scoping specific to the org</li>
+      <li>Audit trail and attributability</li>
+      <li>Human review gate correctly distinguished from what's safe to automate</li>
+      <li>At least one Chapter 5 failure mode addressed concretely in the unattended context</li>
+      <li>ADR quality</li>
+    </ol>
+    <p>
+      Plus one cross-cutting check that applies to the whole submission
+      independent of the seven scores above: does it explicitly name at
+      least one thing its own design does <em>not</em> solve? Every
+      real mechanism this course built — Chapter 8's denylist, Chapter
+      11's sandboxing, Chapter 12's policy-drift risk — shipped with an
+      honestly stated limitation. A capstone submission with zero
+      acknowledged gaps is a red flag on its own, regardless of how the
+      seven scored criteria land.
+    </p>
+  </section>
+
+  <section id="thought-process" class="subtopic">
+    <h2>GenAI Builder Thought Process</h2>
+    <div class="thinking-box">
+      <p>
+        <strong>Problem:</strong> a learner finishes this chapter's
+        design, scores well against every rubric criterion, and asks:
+        "the regulated-path classifier, the audit log, the actor
+        attribution — haven't I basically just rebuilt Chapter 12 with
+        two extra checks bolted on?" <strong>Assumption being made:</strong>
+        that "extra checks" is a fair description of what changed, the
+        same way someone might describe Chapter 11's permission layer
+        as "Chapter 8's denylist with more steps." <strong>What actually
+        distinguishes it:</strong> every mechanism in this chapter is
+        traceable to a SPECIFIC, NAMED constraint this org's regulatory
+        context imposes — the regulated-path classifier exists because
+        PCI-DSS Requirement 7 (need-to-know access) and SOX ICFR scope
+        say certain code cannot be touched unattended, full stop, not
+        because "more checks are generally safer." The actor
+        attribution exists because SOX explicitly requires individual
+        accountability, not because "logging who did what is good
+        practice" in the abstract. A design built by adding checks
+        because more checks feel safer, with no specific requirement
+        driving each one, is exactly the kind of "security theater"
+        this course has avoided since Chapter 8's honest denylist
+        framing — a real design traces every mechanism back to a named
+        threat or a named requirement, and can say NO to a proposed
+        check that doesn't trace to either. <strong>Why this matters
+        going forward:</strong> the discipline that makes this chapter
+        a genuine synthesis and not just "Chapter 12 plus more" is the
+        same discipline every prior chapter modeled — Chapter 11's
+        four-category threat model, Chapter 3's "could you explain this
+        change in one sentence" test, applied here to your OWN design's
+        every mechanism, not just to an agent's diff. <strong>Working
+        definition to carry forward:</strong> a mechanism belongs in a
+        real architecture because a named constraint requires it, not
+        because it makes the design feel more thorough — and being able
+        to state that constraint specifically, for every mechanism you
+        propose, is the actual skill this whole course has been
+        building toward.
+      </p>
+    </div>
+  </section>
+
+  <section id="recap" class="subtopic">
+    <div class="points-to-remember">
+      <h2>Points To Remember</h2>
+      <ul>
+        <li>This is the course's final chapter, and its shape is
+        deliberately different: less new working code, more a full
+        architecture proposal — synthesizing Module 1's review
+        discipline, Module 2's failure-mode vocabulary, Module 3's
+        from-scratch agent mechanism, Module 4's bug-detection habits,
+        and Module 5's permission/CI safety model into one coherent
+        design for a realistic, regulated org.</li>
+        <li>The scenario (Meridian Ledger: PCI-DSS Level 1 + SOX
+        Section 404) is deliberately specific — "regulated" has to
+        visibly constrain the architecture, not just label it, and
+        every design decision in this chapter traces back to a named
+        requirement from one of those two regimes.</li>
+        <li>A hybrid of both Chapter 12 use cases, split by a
+        code-checked regulated-path classifier, beats either a single
+        uniform policy or a review-bot-only design (ADR-001) — the
+        classifier uses substring containment and overrides an
+        otherwise-<code>ALLOWED</code> tier outright, not just narrows
+        it the way <code>CI_SCRATCH_PREFIX</code> does.</li>
+        <li>Every agent-produced commit requires a real, propagated
+        actor identity — <code>git_commit</code> refuses to commit at
+        all without one, the same fail-closed discipline Chapters 11-12
+        applied to permission tiers, applied here to accountability
+        (ADR-003).</li>
+        <li>The audit log is written before each tool call runs (so a
+        crash still leaves a record) and passed through a narrow
+        redaction scrub (so the audit trail itself can't become a
+        second place sensitive data leaks).</li>
+        <li>What's safe to land unreviewed and what needs a human
+        haven't changed in kind from Chapter 12 — but WHO is qualified
+        to grant that review has: a compliance-designated reviewer, not
+        just any engineer, for anything touching a regulated path or
+        the pattern lists that define "regulated" in the first place.</li>
+        <li>Going off the rails and premature "done" (Chapter 5) become
+        compliance risks, not just wasted CI time, when they touch a
+        claim about regulated logic — the fix is the same principle
+        Chapter 5 named (an independent check outside the model's own
+        output), applied to a diagnosis, not just a fix.</li>
+        <li>The capstone rubric, not a separate written exam, is
+        Module 6's assessment — seven scored criteria plus a
+        cross-cutting honesty-about-gaps check, matching this course's
+        no-overclaiming standard from Chapter 1 onward.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="what-is">
+    <span class="label">Interview questions (4 levels)</span>
+    See <a href="interview-questions.html">Chapter 13 interview questions</a>.
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../../index.html">&larr; All Chapters</a>
+    <a href="quiz.html">Take the Quiz &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+    <span><a href="https://github.com/TechNaom/ai-coding-agents-for-everyone">github.com/TechNaom/ai-coding-agents-for-everyone</a></span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

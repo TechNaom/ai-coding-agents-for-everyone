@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capstone Practice Bank — AI Coding Agents for Everyone</title>
+<meta name="description" content="Scenario-based judgment practice for a regulated-org CI agent workflow.">
+<link rel="stylesheet" href="../../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-13">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../../index.html">All Chapters</a>
+      <a href="../../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../exercises/index.html">&larr; Back to exercises</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Chapter 13 Practice Bank</span>
+    <span class="reading-time">~35 min</span>
+  </div>
+  <h1>Practice Bank: Scenario Judgment for a Regulated CI Agent</h1>
+  <p>A runnable script (<code>starter.py</code> / <code>solution.py</code>
+  in this folder) hands you six real tool calls and asks what Meridian
+  Ledger's regulated-org CI policy decides for each one, and why.
+  Predict, then run, then work through the six scenarios below, which
+  extend the same judgment to situations the script's six calls don't
+  cover.</p>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The report that never gets written</span>
+    <h3>A summary about a regulated file isn't itself a regulated path</h3>
+    <p>The CI troubleshooting agent investigates a failing test in
+    <code>ledger/gl_posting/rounding.py</code>, correctly diagnoses the
+    bug in its final message, but every <code>write_file</code> call it
+    tries (even inside <code>ci-scratch/</code>, with a summary that
+    only quotes a few lines of the GL file for context) succeeds — the
+    SUMMARY isn't a regulated path itself, even though it's ABOUT one.
+    Does this chapter's design consider that acceptable? What's the
+    actual boundary — "never touch a regulated path" or "never touch a
+    regulated path's actual CONTENT" — and does <code>classify_path</code>
+    (which only looks at path strings) enforce the second one at all?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · A dependency bump that touches everything</span>
+    <h3>One commit, 40 files, one of them regulated</h3>
+    <p>A routine dependency version bump touches 40 files across the
+    repo, including one file under <code>ledger/reconciliation/</code>,
+    because that file imports the bumped package. The CI troubleshooting
+    agent is asked to auto-fix a resulting type error in 39 of those 40
+    files. Using this chapter's <code>git_commit</code> staged-path
+    check, what happens if the agent stages all 40 files in one commit?
+    What would you recommend the agent (or the harness around it) do
+    instead, so the 39 legitimate fixes aren't blocked by the one
+    regulated file mixed into the same change?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The actor field that lies</span>
+    <h3>A hardcoded placeholder satisfies the check, not the requirement</h3>
+    <p>A workflow sets <code>MERIDIAN_TRIGGERED_BY</code> to a
+    hardcoded string, <code>"scheduled-nightly-run"</code>, for every
+    nightly scheduled CI run, since no specific human triggered it.
+    Every commit this run produces passes the "actor is non-empty"
+    check and gets attributed to that string. Does this satisfy
+    ADR-003's stated goal (SOX individual accountability), or does it
+    just satisfy the CODE'S check while missing the actual requirement?
+    What's the difference between "the field is populated" and "the
+    field identifies an accountable individual"?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · A regulated path that used to be safe</span>
+    <h3>The classifier didn't change; what the code does changed underneath it</h3>
+    <p>Eighteen months after this design ships,
+    <code>analytics/legacy_reports/</code> — long classified as neither
+    CDE nor GL — starts receiving a new kind of export that includes
+    unmasked account numbers, because a well-meaning engineer added a
+    "raw data" mode to an existing report generator, with no change to
+    <code>CDE_PATH_PATTERNS</code>. Using this chapter's own
+    honest-gaps framing (and Chapter 12's policy-drift discussion),
+    whose responsibility is it to catch this, and at what point in the
+    process — code review of the report-generator change, or a separate
+    periodic audit of <code>CDE_PATH_PATTERNS</code> itself?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · Two failing checks, one root cause</span>
+    <h3>A human copying an agent's scratch proposal into a regulated path</h3>
+    <p>The CI troubleshooting agent runs <code>run_tests</code>, gets a
+    failure in <code>ledger/gl_posting/rounding_test.py</code>, and —
+    correctly barred from writing to <code>ledger/gl_posting/</code>
+    directly — writes a proposed fix to
+    <code>ci-scratch/gl_posting_fix_proposal.py</code> instead, with a
+    clear summary. A reviewer later merges that proposal by hand,
+    moving the code from scratch into the real GL path themselves. Does
+    this outcome match ADR-002's intended design, or does something
+    about "a human copies code an agent wrote in a scratch file
+    directly into a regulated path" deserve MORE scrutiny than an
+    ordinary human-authored PR to that same path would get — and if so,
+    what, specifically?</p>
+  </div>
+
+  <div class="scenario-card">
+    <span class="scenario-tag">Scenario · The audit log itself becomes evidence</span>
+    <h3>Answering a real QSA assessment question from the log alone</h3>
+    <p>Six months into production, a PCI-DSS QSA assessment asks
+    Meridian Ledger to produce every CI-agent-triggered action that
+    touched (or attempted to touch) a CDE path in the last quarter.
+    Using this chapter's <code>audit_log()</code> design (every call
+    logged BEFORE the tool runs, including refused ones), can this
+    question actually be answered from the log file alone? What's
+    missing, if anything — and does a <code>REFUSED</code> decision
+    belong in that answer at all, or only <code>ALLOWED</code> ones?</p>
+  </div>
+
+  <div class="chapter-nav">
+    <a href="../exercises/index.html">&larr; Exercises</a>
+    <a href="../interview-questions.html">Interview Questions &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../../assets/progress.js"></script>
+<script src="../../../assets/chapters-data.js"></script>
+<script src="../../../assets/sidebar.js"></script>
+</body>
+</html>

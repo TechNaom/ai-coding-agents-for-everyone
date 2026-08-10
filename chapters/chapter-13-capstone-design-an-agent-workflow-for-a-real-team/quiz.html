@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capstone Quiz — AI Coding Agents for Everyone</title>
+<meta name="description" content="Interactive quiz for the Chapter 13 capstone, synthesizing concepts across the whole course.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="chapter-13" data-chapter-id="chapter-13">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="lesson.html">&larr; Back to the lesson</a></p>
+
+  <span class="chapter-badge">Chapter 13 Quiz</span>
+  <h1>Capstone: Design an Agent Workflow for a Real Team</h1>
+  <p>Eight questions, spanning this chapter and the course-wide
+  concepts it synthesizes. Fill in the blank, then check your answers.</p>
+
+  <div class="quiz-progress-wrap" aria-hidden="true">
+    <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+  </div>
+
+  <form onsubmit="return false;">
+    <div class="quiz-question">
+      <label for="q1"><span class="q-num">1</span> Meridian Ledger's regulated-path classifier, <code>regulated_category()</code>, uses __________ containment against its path patterns, not a leading-prefix match -- so a regulated pattern nested under ci-scratch/ still counts.</label>
+      <div class="fib-row">
+        <input type="text" id="q1" class="fib-blank" data-answers="substring" aria-label="Answer for question 1">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q2"><span class="q-num">2</span> In write_file, the regulated-path check runs __________ the ci-scratch/ scope check -- so a path that is both inside the scratch prefix AND matches a regulated pattern is still refused.</label>
+      <div class="fib-row">
+        <input type="text" id="q2" class="fib-blank" data-answers="before" aria-label="Answer for question 2">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q3"><span class="q-num">3</span> git_commit's regulated-path check reads which files are staged from __________ itself (git diff --cached --name-only), never from anything the model claims it changed.</label>
+      <div class="fib-row">
+        <input type="text" id="q3" class="fib-blank" data-answers="git" aria-label="Answer for question 3">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q4"><span class="q-num">4</span> This chapter's git_commit refuses to commit in CI mode if no __________ identity is attached -- SOX's individual-accountability requirement, enforced as a hard refusal rather than a best-effort label.</label>
+      <div class="fib-row">
+        <input type="text" id="q4" class="fib-blank" data-answers="actor" aria-label="Answer for question 4">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q5"><span class="q-num">5</span> audit_log() writes its record __________ the tool call it describes actually runs -- so even a call that crashes the process still leaves a record it was attempted.</label>
+      <div class="fib-row">
+        <input type="text" id="q5" class="fib-blank" data-answers="before" aria-label="Answer for question 5">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q6"><span class="q-num">6</span> ADR-002 rejects both "full Chapter 12 privilege, unmodified" and "report-only, no write capability at all," choosing scoped auto-commit restricted to non-regulated paths on a disposable branch, landing only as a __________ pull request a human must review before merging.</label>
+      <div class="fib-row">
+        <input type="text" id="q6" class="fib-blank" data-answers="draft" aria-label="Answer for question 6">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q7"><span class="q-num">7</span> Per this chapter's failure-mode section, an agent's confident but wrong diagnosis of regulated-code logic is this course's Chapter __________ failure mode ("going off the rails"), except the untrusted claim now carries compliance risk, not just wasted time.</label>
+      <div class="fib-row">
+        <input type="text" id="q7" class="fib-blank" data-answers="5,five" aria-label="Answer for question 7">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div class="quiz-question">
+      <label for="q8"><span class="q-num">8</span> Per docs/curriculum/CURRICULUM_MAP.md, Module 6's assessment is the capstone __________ itself -- there is no separate written exam for this module.</label>
+      <div class="fib-row">
+        <input type="text" id="q8" class="fib-blank" data-answers="rubric" aria-label="Answer for question 8">
+        <button type="button" class="check-btn">Check</button>
+        <span class="fib-feedback" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <div id="check-all-wrap">
+      <button type="button" id="check-all-btn" class="check-btn">Check All Answers</button>
+      <span id="quiz-score"></span>
+    </div>
+
+    <div class="quiz-celebration" id="quiz-celebration" aria-live="polite">
+      Perfect score. Course complete.
+    </div>
+  </form>
+
+  <div class="chapter-nav">
+    <a href="lesson.html">&larr; Back to Lesson</a>
+    <a href="exercises/index.html">Exercises &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/quiz-engine.js"></script>
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>
