@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{EXAM_TITLE}} — AI Coding Agents for Everyone</title>
+<meta name="description" content="Written exam for {{MODULE_TITLE}}: {{EXAM_DESCRIPTION}}">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; All Chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">{{MODULE_TITLE}} — Written Exam</span>
+    <span class="reading-time">{{READING_TIME}}</span>
+  </div>
+  <h1>{{EXAM_TITLE}}</h1>
+
+  <div class="what-is">
+    <span class="label">Plain markdown version</span>
+    This exam is also available as plain markdown, for offline or
+    portable use: <a href="{{MD_FILENAME}}">{{MD_FILENAME}}</a>.
+  </div>
+
+  <div class="lesson-card">
+    <h2>Coverage</h2>
+    <p>{{COVERAGE_TEXT_WITH_CHAPTER_LINKS}}</p>
+    <p>{{ASSESSMENT_TYPE_TEXT}}</p>
+    <p>{{INSTRUCTIONS_TEXT}}</p>
+  </div>
+
+  <!-- Repeat this block per lettered part (Part A, B, C, D...) -->
+  <h2>{{PART_LETTER}} — {{PART_TITLE}}</h2>
+  <p>{{PART_INTRO_TEXT}}</p>
+
+  <!-- Multiple choice question -->
+  <div class="quiz-question">
+    <p><strong>{{QUESTION_ID}}.</strong> {{QUESTION_TEXT}}</p>
+    <ul>
+      <li>(a) {{CHOICE_A}}</li>
+      <li>(b) {{CHOICE_B}}</li>
+      <li>(c) {{CHOICE_C}}</li>
+      <li>(d) {{CHOICE_D}}</li>
+    </ul>
+  </div>
+
+  <!-- Short answer / scenario / architecture question -->
+  <div class="lesson-card">
+    <h3>{{QUESTION_ID}}. {{QUESTION_TITLE}}</h3>
+    <p>{{QUESTION_BODY_TEXT}}</p>
+    <!-- Optional embedded code/diff -->
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">{{FILENAME}}</span>
+      </div>
+      <pre><code>{{CODE_OR_DIFF}}</code></pre>
+    </div>
+  </div>
+
+  <!-- Answer key, collapsed by default so answers aren't spoiled -->
+  <h2>Answer Key</h2>
+  <details class="qa-item">
+    <summary>Click to reveal the answer key</summary>
+    <div class="qa-body">
+      <h3>{{PART_LETTER}} ({{PART_TITLE}}):</h3>
+      <p>{{ANSWER_LIST_OR_SELF_CHECK_TEXT}}</p>
+    </div>
+  </details>
+
+  <div class="chapter-nav">
+    <a href="{{BACK_LINK_HREF}}">&larr; {{BACK_LINK_LABEL}}</a>
+    <a href="../../index.html">All Chapters &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

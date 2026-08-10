@@ -13,7 +13,7 @@ window.ACAFE_MODULES = [
   {
     title: "Module 1 — Using Coding Agents Well",
     summary: "The daily-practice layer: prompting, scoping, and reviewing before any internals.",
-    examPath: "assessments/written-exams/module-1-exam.md",
+    examPath: "assessments/written-exams/module-1-exam.html",
     chapters: [
       {
         id: "chapter-01",
@@ -41,7 +41,7 @@ window.ACAFE_MODULES = [
   {
     title: "Module 2 — How Coding Agents Actually Work",
     summary: "Open the hood on the agentic loop.",
-    examPath: "assessments/written-exams/module-2-exam.md",
+    examPath: "assessments/written-exams/module-2-exam.html",
     chapters: [
       {
         id: "chapter-04",
@@ -97,7 +97,7 @@ window.ACAFE_MODULES = [
   {
     title: "Module 4 — Reviewing AI-Generated Code Critically",
     summary: "The human half of \"AI proposes, human reviews.\"",
-    examPath: "assessments/written-exams/module-4-exam.md",
+    examPath: "assessments/written-exams/module-4-exam.html",
     chapters: [
       {
         id: "chapter-10",
@@ -111,7 +111,7 @@ window.ACAFE_MODULES = [
   {
     title: "Module 5 — Production & Safety",
     summary: "What changes when an agent operates on a live codebase and in CI.",
-    examPath: "assessments/written-exams/module-5-exam.md",
+    examPath: "assessments/written-exams/module-5-exam.html",
     chapters: [
       {
         id: "chapter-11",
@@ -138,7 +138,8 @@ window.ACAFE_MODULES = [
         id: "chapter-13",
         num: 13,
         title: "Capstone: Design an Agent Workflow for a Real Team",
-        description: "A Level 4 architecture challenge closing the course."
+        description: "A Level 4 architecture challenge closing the course.",
+        path: "chapters/chapter-13-capstone-design-an-agent-workflow-for-a-real-team/lesson.html"
       }
     ]
   }

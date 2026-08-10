@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 1 Written Exam — AI Coding Agents for Everyone</title>
+<meta name="description" content="Written exam for Module 1 — Using Coding Agents Well: multiple choice, short answer, scenario, and architecture questions covering Chapters 1-3.">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-active-chapter="">
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle chapter list" aria-expanded="false">Chapters</button>
+<aside id="chapter-sidebar" class="sidebar" data-root="../../" aria-label="Chapter navigation"></aside>
+<div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+<header class="top-bar">
+  <div class="page">
+    <a href="../../index.html" class="brand">AI Coding Agents for Everyone</a>
+    <nav>
+      <a href="../../index.html">All Chapters</a>
+      <a href="../../docs/curriculum/index.html">Roadmap</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <p><a href="../../index.html">&larr; All Chapters</a></p>
+
+  <div class="page-meta">
+    <span class="chapter-badge">Module 1 — Written Exam</span>
+    <span class="reading-time">~40 min</span>
+  </div>
+  <h1>Module 1 Written Exam — Using Coding Agents Well</h1>
+
+  <div class="what-is">
+    <span class="label">Plain markdown version</span>
+    This exam is also available as plain markdown, for offline or
+    portable use: <a href="module-1-exam.md">module-1-exam.md</a>.
+  </div>
+
+  <div class="lesson-card">
+    <h2>Coverage</h2>
+    <p>Covers <a href="../../chapters/chapter-01-why-coding-agents-arent-just-autocomplete/lesson.html">Chapter 1 (Why Coding Agents Aren't Just Autocomplete)</a>, <a href="../../chapters/chapter-02-prompting-and-scoping-tasks-for-an-agent/lesson.html">Chapter 2 (Prompting and Scoping Tasks for an Agent)</a>, <a href="../../chapters/chapter-03-reading-and-reviewing-an-agents-diff-like-a-senior-engineer/lesson.html">Chapter 3 (Reading and Reviewing an Agent's Diff Like a Senior Engineer)</a>.</p>
+    <p>Assessment type (per <code>docs/curriculum/CURRICULUM_MAP.md</code>): concept + judgment quiz. Expect a mix of multiple choice, short answer, and scenario/judgment questions that ask you to apply what Chapters 1&ndash;3 actually taught &mdash; not just recall definitions.</p>
+    <p>No open resources needed beyond the three chapters themselves. For short-answer and scenario questions, write full sentences &mdash; a bullet list of keywords doesn't demonstrate understanding.</p>
+  </div>
+
+  <h2>Part A &mdash; Multiple Choice</h2>
+  <p>Choose the single best answer for each.</p>
+
+  <div class="quiz-question">
+    <p><strong>A1.</strong> What is the actual structural difference that makes a coding agent something other than "a bigger, smarter autocomplete"?</p>
+    <ul>
+      <li>(a) It was trained on a larger code corpus</li>
+      <li>(b) It has a larger context window than inline-suggestion tools</li>
+      <li>(c) It runs a loop that decides its own next step and acts through real tools (search, read, run, edit) across multiple turns, reacting to what those tools actually return</li>
+      <li>(d) It has a chat-style interface instead of inline suggestions</li>
+    </ul>
+  </div>
+
+  <div class="quiz-question">
+    <p><strong>A2.</strong> Per Chapter 2, which of the following is <em>not</em> one of the three jobs a fact has to do in order to count as "enough context" in a prompt?</p>
+    <ul>
+      <li>(a) Help the agent locate the right part of the codebase</li>
+      <li>(b) Establish what "correct" looks like for this specific task</li>
+      <li>(c) Make the agent's summary sound more confident and detailed</li>
+      <li>(d) State what the agent is and isn't allowed to touch</li>
+    </ul>
+  </div>
+
+  <div class="quiz-question">
+    <p><strong>A3.</strong> Per Chapter 3, what does it mean for an agent's output to be "confidently wrong"?</p>
+    <ul>
+      <li>(a) The agent hedges its language whenever it's uncertain about a change</li>
+      <li>(b) The agent's output is stated with the same tone and formatting whether it's actually right or actually wrong, so tone carries no reliable signal</li>
+      <li>(c) The agent refuses to make a change unless it is fully certain</li>
+      <li>(d) The agent flags every risky change with an explicit warning comment</li>
+    </ul>
+  </div>
+
+  <div class="quiz-question">
+    <p><strong>A4.</strong> In Chapter 3's review triage order, what should a reviewer check <em>first</em>, before reading a single line of code?</p>
+    <ul>
+      <li>(a) Whether variable names follow the team's style guide</li>
+      <li>(b) The list of changed files, compared against the prompt's stated boundary</li>
+      <li>(c) The total number of lines changed</li>
+      <li>(d) Whether the commit message is well-written</li>
+    </ul>
+  </div>
+
+  <h2>Part B &mdash; Concept / Short Answer</h2>
+  <p>Answer in your own words, in full sentences.</p>
+
+  <div class="lesson-card">
+    <h3>B1.</h3>
+    <p>Chapter 1 says "autocomplete predicts, an agent decides." Explain what this means mechanically, using the plan/act/observe/repeat loop. In your answer, be specific about why the "act" step has "no autocomplete equivalent."</p>
+  </div>
+
+  <div class="lesson-card">
+    <h3>B2.</h3>
+    <p>Chapter 2 distinguishes a task scoped "too small" from one scoped "too large." Explain the real cost of each &mdash; not just "it's inefficient" or "it's risky," but the specific mechanism each failure produces.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h3>B3.</h3>
+    <p>List Chapter 3's five diff-review checklist questions in your own words. For each one, give a one-sentence explanation of the specific failure it's designed to catch (a passing-but-wrong fix, an out-of-scope edit, etc.).</p>
+  </div>
+
+  <h2>Part C &mdash; Scenario / Judgment Questions</h2>
+
+  <div class="lesson-card">
+    <h3>C1. Rank these three prompts.</h3>
+    <p>A teammate is about to hand a coding agent one of the following three prompts for the same underlying bug &mdash; a shopping cart total that double-counts a promo discount when a user applies two stackable codes in the same session. Rank them from best-scoped to worst-scoped, and justify the ranking using Chapter 2's concepts (context, scope, boundary, acceptance criterion) &mdash; not just a gut feeling about which "sounds better."</p>
+    <ul>
+      <li><strong>Prompt X:</strong> "Users say the cart total is wrong sometimes when they use promo codes. Fix it."</li>
+      <li><strong>Prompt Y:</strong> "Rework the whole promo-code system in <code>cart/promos.py</code> to be more robust, and fix anything else that looks off while you're there."</li>
+      <li><strong>Prompt Z:</strong> "In <code>cart/promos.py</code>, applying two stackable promo codes in the same session double-counts the second discount (repro: <code>tests/cart/test_promos.py::test_stacked_codes</code>). Find the root cause and fix only that file and its test file. Don't touch <code>cart/checkout.py</code> without asking first. Acceptance: <code>test_stacked_codes</code> passes and <code>pytest tests/cart/</code> still passes."</li>
+    </ul>
+  </div>
+
+  <div class="lesson-card">
+    <h3>C2. Diagnose the scoping failure.</h3>
+    <p>An agent was given the prompt: "Add rate limiting to the <code>/api/upload</code> endpoint, and clean up any other issues you notice in that file while you're in there." It comes back having added rate limiting <em>and</em> having refactored three helper functions, renamed a shared constant that two other endpoints import, and reformatted roughly half the file. Using Chapter 2's vocabulary, explain specifically what was missing from the original prompt that allowed this to happen, and rewrite the prompt so the same outcome couldn't occur.</p>
+  </div>
+
+  <div class="lesson-card">
+    <h3>C3. Apply the five-question checklist.</h3>
+    <p>A prompt reads: "In <code>notifications/email.py</code>, customers with multi-package shipments receive a duplicate 'order shipped' email per extra package. Reproduce with <code>tests/notifications/test_email.py::test_multi_package_shipment</code>. Fix the root cause in <code>notifications/email.py</code>; don't touch the queue consumer in <code>workers/queue.py</code>. Acceptance: the named test passes and <code>pytest tests/notifications/</code> still passes." The agent returns this diff:</p>
+    <div class="code-window">
+      <div class="code-window-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="filename">diff</span>
+      </div>
+      <pre><code>--- a/notifications/email.py
++++ b/notifications/email.py
+@@
+-def send_shipped_email(order):
+-    for package in order.packages:
+-        _send(order.customer_email, "order_shipped", package)
++SENT_CACHE = set()
++
++def send_shipped_email(order):
++    for package in order.packages:
++        key = (order.id, package.id)
++        if key in SENT_CACHE:
++            continue
++        SENT_CACHE.add(key)
++        _send(order.customer_email, "order_shipped", package)
+
+--- a/workers/queue.py
++++ b/workers/queue.py
+@@
+-RETRY_LIMIT = 3
++RETRY_LIMIT = 5</code></pre>
+    </div>
+    <p>The named test passes, and so does <code>pytest tests/notifications/</code>. Walk through Chapter 3's five checklist questions against this diff. For at least two of the five, identify a concrete problem &mdash; naming the specific line or file involved &mdash; and explain why a green test run didn't catch it.</p>
+  </div>
+
+  <h2>Part D &mdash; Architecture / Production Question</h2>
+
+  <div class="lesson-card">
+    <h3>D1.</h3>
+    <p>You're writing a team-wide standard for what fields every agent prompt must include before a task is handed off (similar to what Chapter 2's interview questions describe). List the non-negotiable fields, and for each one, name the specific Chapters 1&ndash;3 failure it directly guards against (e.g., guesswork from an under-specified request, uncontrolled blast radius, an unverifiable "done" claim, a diff nobody can trace back to a stated boundary). Then explain, in one or two sentences, how you'd keep this standard from becoming pure overhead on genuinely small, low-risk tasks.</p>
+  </div>
+
+  <h2>Answer Key</h2>
+  <details class="qa-item">
+    <summary>Click to reveal the answer key</summary>
+    <div class="qa-body">
+      <h3>Part A (Multiple Choice):</h3>
+      <ol>
+        <li>A1 &mdash; (c)</li>
+        <li>A2 &mdash; (c)</li>
+        <li>A3 &mdash; (b)</li>
+        <li>A4 &mdash; (b)</li>
+      </ol>
+
+      <p><strong>Parts B, C, and D &mdash; self-check, not a published key.</strong></p>
+      <p>These questions have no single correct sentence &mdash; they're graded on whether your reasoning traces back to specific chapter content, not on matching an exact phrase. To check your own answers:</p>
+      <ul>
+        <li>Compare Part B against each chapter's "Points to Remember" section and its <code>interview-questions.html</code> page (especially the Beginner and Intermediate questions, which cover the same ground in a different format).</li>
+        <li>Compare Part C against Chapter 2's "Scoping the Task" and "Boundaries" sections, and Chapter 3's "What to Actually Check" and "Reviewing Efficiently, Not Evenly" sections. If your ranking in C1 puts Prompt Z first and can name at least three concrete things it has that X and Y lack (a specific file, a repro, an explicit boundary, a checkable acceptance condition), you've answered it well. If your C3 answer flags both the out-of-boundary <code>workers/queue.py</code> edit and the unjustified <code>RETRY_LIMIT</code> change, and questions whether an in-process <code>SENT_CACHE</code> set actually survives a worker restart or is shared across multiple worker processes (i.e., whether this is a root-cause fix or a symptom fix), you've applied the checklist correctly.</li>
+        <li>Compare Part D against Chapter 2's Architect-level interview questions (7 and 8), which cover exactly this kind of team-standard design question, including the red flags for a standard that's too vague to audit.</li>
+      </ul>
+      <p>If you can defend your answer against the "red flag" descriptions in the relevant <code>interview-questions.html</code> pages, you've answered it well.</p>
+    </div>
+  </details>
+
+  <div class="chapter-nav">
+    <a href="../../chapters/chapter-03-reading-and-reviewing-an-agents-diff-like-a-senior-engineer/lesson.html">&larr; Back to Chapter 3</a>
+    <a href="../../index.html">All Chapters &rarr;</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="page">
+    <span>AI Coding Agents for Everyone — free, visual, engineering-first GenAI learning.</span>
+  </div>
+</footer>
+
+<script src="../../assets/progress.js"></script>
+<script src="../../assets/chapters-data.js"></script>
+<script src="../../assets/sidebar.js"></script>
+</body>
+</html>
